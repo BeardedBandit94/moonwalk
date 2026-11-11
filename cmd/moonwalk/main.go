@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -15,9 +16,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BeardedBandit94/moonwalk/internal/discover"
 	"github.com/BeardedBandit94/moonwalk/internal/graph"
 	"github.com/BeardedBandit94/moonwalk/internal/relate"
 	"github.com/BeardedBandit94/moonwalk/internal/tfcode"
+	"github.com/BeardedBandit94/moonwalk/internal/tfstate"
 	"github.com/BeardedBandit94/moonwalk/internal/view"
 	"github.com/BeardedBandit94/moonwalk/internal/web"
 )
@@ -40,9 +43,11 @@ the resources that are written but not applied yet. With -code and no state,
 the graph is built from the configuration alone.
 
 Each <state> is one of:
-  path         a state file, or the JSON form of a plan ('terraform show
+  path         a state file; or the JSON form of a plan ('terraform show
                -json <planfile>'), which shows the state the plan was made
-               against with its changes marked; named after its path
+               against with its changes and any drift marked; or the output
+               of 'terraform query -json', whose resources are shown as
+               unmanaged unless a state holds them; named after its path
   directory    every .tfstate file below it, hidden directories excluded
   -            standard input, named "stdin"
   name=<any of the above>   the same, under a name of your choosing
@@ -155,7 +160,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		}
 	}
 
-	g, code, err := loadGraph(fs.Args(), o.code, stdin)
+	g, code, err := loadGraph(fs.Args(), o.code, stdin, stderr)
 	if err != nil {
 		return err
 	}
@@ -234,18 +239,44 @@ type multiFlag []string
 func (m *multiFlag) String() string     { return strings.Join(*m, ",") }
 func (m *multiFlag) Set(v string) error { *m = append(*m, v); return nil }
 
-// loadGraph reads the states the arguments name into one graph, joins the
-// configurations to them, and works out containment and glue. It returns
+// loadGraph reads the states the arguments name into one graph, adds what
+// listings of the cloud found beyond them, joins the configurations, and
+// works out containment and glue. It returns
 // the configurations by the source each belongs to.
-func loadGraph(args, codeDirs []string, stdin io.Reader) (*graph.Graph, map[string]*tfcode.Config, error) {
+func loadGraph(args, codeDirs []string, stdin io.Reader, stderr io.Writer) (*graph.Graph, map[string]*tfcode.Config, error) {
 	inputs, err := resolveInputs(args)
 	if err != nil {
 		return nil, nil, err
 	}
 	g := graph.New()
+	// States first: what a listing of the cloud found is unmanaged only if
+	// no state holds it.
+	type listing struct {
+		source string
+		data   []byte
+	}
+	var listings []listing
 	for _, in := range inputs {
-		if err := in.load(g, stdin); err != nil {
+		data, err := in.read(stdin)
+		if err != nil {
 			return nil, nil, err
+		}
+		if discover.IsQueryOutput(data) {
+			listings = append(listings, listing{in.source, data})
+			continue
+		}
+		if err := tfstate.Load(g, in.source, bytes.NewReader(data)); err != nil {
+			return nil, nil, err
+		}
+	}
+	states := len(inputs) - len(listings)
+	for _, l := range listings {
+		res, err := discover.Load(g, l.source, bytes.NewReader(l.data))
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, e := range res.Errors {
+			fmt.Fprintf(stderr, "moonwalk: the listing in %s is incomplete, so resources may be missing from it: %s\n", l.source, e)
 		}
 	}
 
@@ -254,9 +285,13 @@ func loadGraph(args, codeDirs []string, stdin io.Reader) (*graph.Graph, map[stri
 		source, dir := splitName(spec)
 		switch {
 		case source != "":
-		case len(inputs) == 1:
-			source = inputs[0].source
-		case len(inputs) == 0:
+		case states == 1:
+			for _, in := range inputs {
+				if !slices.ContainsFunc(listings, func(l listing) bool { return l.source == in.source }) {
+					source = in.source
+				}
+			}
+		case states == 0:
 			source = dir
 		default:
 			return nil, nil, fmt.Errorf("say which state the code in %s belongs to: -code <name>=%s", dir, dir)
@@ -332,7 +367,7 @@ func serve(g *graph.Graph, code map[string]*tfcode.Config, args, codeDirs []stri
 	go watch(args, codeDirs, 2*time.Second, func() {
 		// Standard input was read once and cannot be read again; watch
 		// never calls back when it is among the states.
-		fresh, freshCode, err := loadGraph(args, codeDirs, nil)
+		fresh, freshCode, err := loadGraph(args, codeDirs, nil, stderr)
 		if err != nil {
 			fmt.Fprintf(stderr, "moonwalk: a file changed but could not be loaded, so the explorer still shows the last good version: %v\n", err)
 			return
@@ -501,11 +536,11 @@ func writeView(w io.Writer, d view.Document) error {
 		indent := strings.Repeat("  ", it.Depth-1)
 		switch {
 		case it.Kind == view.KindResource:
-			fmt.Fprintf(&b, "%s%s%s\n", indent, it.Label, marks(string(it.Status), it.Change, it.NotInCode, "  (", ")"))
+			fmt.Fprintf(&b, "%s%s%s\n", indent, it.Label, marks(statusText(it.Status, it.Drift), it.Change, it.NotInCode, "  (", ")"))
 		case it.Expanded:
-			fmt.Fprintf(&b, "%s%s  (%s, %s)\n", indent, it.Label, kindName(it.Kind), plural(it.Resources, "resource"))
+			fmt.Fprintf(&b, "%s%s  (%s, %s%s)\n", indent, it.Label, kindName(it.Kind), plural(it.Resources, "resource"), tally(it))
 		default:
-			fmt.Fprintf(&b, "%s+ %s  (%s, %s)\n", indent, it.Label, kindName(it.Kind), plural(it.Resources, "resource"))
+			fmt.Fprintf(&b, "%s+ %s  (%s, %s%s)\n", indent, it.Label, kindName(it.Kind), plural(it.Resources, "resource"), tally(it))
 		}
 		from := path(it.ID)
 		for _, r := range relations[it.ID] {
@@ -527,6 +562,28 @@ func writeView(w io.Writer, d view.Document) error {
 	}
 	_, err := io.WriteString(w, b.String())
 	return err
+}
+
+// statusText names a status, saying how a drifted resource drifted.
+func statusText(status graph.Status, drift string) string {
+	if status == graph.StatusDrifted && drift != "" {
+		return "drifted: " + drift
+	}
+	return string(status)
+}
+
+// tally says how many of a group's resources are not simply managed.
+func tally(it view.Item) string {
+	out := ""
+	for _, c := range []struct {
+		n    int
+		what string
+	}{{it.Unmanaged, "unmanaged"}, {it.Drifted, "drifted"}, {it.Declared, "declared"}} {
+		if c.n > 0 {
+			out += fmt.Sprintf(", %d %s", c.n, c.what)
+		}
+	}
+	return out
 }
 
 // marks renders what is unusual about a resource: a status other than
@@ -606,7 +663,7 @@ func writeGraph(w io.Writer, d graph.Document) error {
 			n := d.Nodes[i]
 			status := ""
 			if n.Status != graph.StatusManaged {
-				status = string(n.Status)
+				status = statusText(n.Status, n.Drift)
 			}
 			fmt.Fprintf(&b, "  %s%s%s\n", n.Address, partitionLabel(n), marks(status, n.Change, n.NotInCode, "  [", "]"))
 			for _, e := range edges[n.ID] {

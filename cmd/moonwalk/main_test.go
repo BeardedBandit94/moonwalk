@@ -18,6 +18,10 @@ const fixtures = "../../internal/tfstate/testdata/"
 // few resources more.
 const code = "../../internal/tfcode/testdata/network"
 
+// found holds real `terraform query -json` output and a state that manages
+// part of what it lists.
+const found = "../../internal/discover/testdata/"
+
 // planCode is the configuration the plan fixture was made from.
 const planCode = "../../internal/tfcode/testdata/plan"
 
@@ -75,6 +79,9 @@ func TestGraphGolden(t *testing.T) {
 		{"plan-view.golden", []string{"view", "-group-by", "source", "p=" + fixtures + "plan.json"}},
 		{"plan-with-code.golden", []string{"view", "-code", planCode, "p=" + fixtures + "plan.json"}},
 		{"plan-changes.golden", []string{"graph", "-format", "json", "-direct", "p=" + fixtures + "plan.json"}},
+		{"discover-view.golden", []string{"view", "-group-by", "account,region,network", "prod=" + found + "managed.tfstate", "cloud=" + found + "query.jsonl"}},
+		{"discover-graph.golden", []string{"graph", "-format", "json", "-attributes", "cloud=" + found + "query.jsonl", "prod=" + found + "managed.tfstate"}},
+		{"drift-view.golden", []string{"view", "-group-by", "source", "d=" + fixtures + "drift.json"}},
 		{"network-view-filter.golden", []string{"view", "-format", "json", "-type", "aws_iam_*,aws_vpc", "-region", "global", "net=" + fixtures + "network.tfstate"}},
 	}
 	for _, c := range cases {
@@ -297,6 +304,49 @@ func TestPlan(t *testing.T) {
 	out, err = runCLI(t, "", "view", "-group-by", "source", "-code", planCode, fixtures+"plan.json")
 	if err != nil || !strings.Contains(out, "terraform_data.delete  (to delete, not in code)") {
 		t.Errorf("plan with code: %v\n%s", err, out)
+	}
+}
+
+func TestDiscovery(t *testing.T) {
+	// The order of the arguments does not matter: states are loaded first.
+	for _, args := range [][]string{
+		{"prod=" + found + "managed.tfstate", "cloud=" + found + "query.jsonl"},
+		{"cloud=" + found + "query.jsonl", "prod=" + found + "managed.tfstate"},
+	} {
+		out, err := runCLI(t, "", append([]string{"view", "-status", "unmanaged", "-group-by", "source"}, args...)...)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, want := range []string{"2 resources in", "cloud  (source, 2 resources, 2 unmanaged)",
+			"aws_subnet.subnet-0aa000000000000b2  (unmanaged)", "aws_subnet.subnet-0aa000000000000c3  (unmanaged)"} {
+			if !strings.Contains(out, want) {
+				t.Errorf("%v: missing %q in:\n%s", args, want, out)
+			}
+		}
+	}
+	// A listing's attributes are never printed: it does not say which are secret.
+	out, err := runCLI(t, "", "graph", "-format", "json", "-attributes", found+"query.jsonl")
+	if err != nil || strings.Contains(out, "cidr_block") || !strings.Contains(out, `"attributes_withheld": true`) {
+		t.Errorf("listing attributes: %v", err)
+	}
+	// With one state and one listing, code needs no name: it belongs to the state.
+	out, err = runCLI(t, "", "view", "-group-by", "source", "-code", code, "prod="+found+"managed.tfstate", "cloud="+found+"query.jsonl")
+	if err != nil || !strings.Contains(out, "prod  (source") || !strings.Contains(out, "(declared)") {
+		t.Errorf("code with a state and a listing: %v\n%s", err, out)
+	}
+	// An error in the listing is passed on as a warning.
+	listing := `{"@level":"info","type":"version","terraform":"1.14.0"}` + "\n" +
+		`{"@level":"error","type":"diagnostic","diagnostic":{"severity":"error","summary":"Error listing","detail":"AccessDenied"}}` + "\n"
+	_, warnings, err := runCLIWithWarnings(t, listing, "graph", "cloud=-")
+	if err != nil || !strings.Contains(warnings, "incomplete") || !strings.Contains(warnings, "AccessDenied") {
+		t.Errorf("listing error: err %v, warnings %q", err, warnings)
+	}
+}
+
+func TestDrift(t *testing.T) {
+	out, err := runCLI(t, "", "view", "-status", "drifted", "-group-by", "source", fixtures+"drift.json")
+	if err != nil || !strings.Contains(out, "local_file.removed  (drifted: deleted)") || !strings.Contains(out, "1 resource in") {
+		t.Errorf("drift: %v\n%s", err, out)
 	}
 }
 

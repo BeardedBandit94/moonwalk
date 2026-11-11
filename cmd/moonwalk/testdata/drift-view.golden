@@ -1,0 +1,7 @@
+3 resources in 4 items, grouped by source
+
+d  (source, 3 resources, 1 drifted)
+  local_file.kept
+  local_file.removed  (drifted: deleted)
+  terraform_data.uses
+      -> local_file.removed

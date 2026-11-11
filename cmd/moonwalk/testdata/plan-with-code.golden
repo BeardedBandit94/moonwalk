@@ -1,8 +1,8 @@
 9 resources in 12 items, grouped by source, account, region, module
 
-p  (source, 9 resources)
-  module.net  (module, 4 resources)
-    terraform_data.subnet  (block, 3 resources)
+p  (source, 9 resources, 3 declared)
+  module.net  (module, 4 resources, 2 declared)
+    terraform_data.subnet  (block, 3 resources, 1 declared)
       terraform_data.subnet[0]
           -> terraform_data.keep
       terraform_data.subnet[1]

@@ -19,8 +19,8 @@ type Filter struct {
 	Changes []string
 	// Types may also hold patterns such as "aws_iam_*".
 	Types []string
-	// Search matches a resource whose address or type contains it,
-	// ignoring case.
+	// Search matches a resource whose address, type, name or cloud ID
+	// contains it, ignoring case.
 	Search string
 	// Around is a node ID. It matches that resource and every resource
 	// joined to it by an edge of any kind, in either direction.
@@ -54,7 +54,9 @@ func (f Filter) matcher(g *graph.Graph) func(graph.Node) bool {
 			len(f.Changes) > 0 && !slices.Contains(f.Changes, n.Change) && !(n.Change != "" && slices.Contains(f.Changes, "any")),
 			len(f.Types) > 0 && !matchesAny(f.Types, n.Type),
 			search != "" && !strings.Contains(strings.ToLower(n.Address), search) &&
-				!strings.Contains(strings.ToLower(n.Type), search):
+				!strings.Contains(strings.ToLower(n.Type), search) &&
+				!strings.Contains(strings.ToLower(n.CloudID), search) &&
+				!strings.Contains(strings.ToLower(n.Name), search):
 			return false
 		}
 		return true

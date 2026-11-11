@@ -1,0 +1,11 @@
+4 resources in 8 items, grouped by account, region, network
+
+123456789012  (account, 4 resources, 2 unmanaged)
+  us-east-1  (region, 4 resources, 2 unmanaged)
+    prod::aws_vpc.main  (network, 3 resources, 1 unmanaged)
+      prod::aws_subnet.private  (block, 1 resource)
+        prod::aws_subnet.private[0]
+            -> prod::aws_vpc.main
+      cloud::aws_subnet.subnet-0aa000000000000b2  (unmanaged)
+      prod::aws_vpc.main
+    cloud::aws_subnet.subnet-0aa000000000000c3  (unmanaged)

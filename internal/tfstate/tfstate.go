@@ -124,6 +124,9 @@ type resource struct {
 	dependsOn []string
 	// declared marks a resource that a plan will create: it is in no state yet.
 	declared bool
+	// drift is "changed" or "deleted" when a plan's refresh found the
+	// resource to differ from its state.
+	drift string
 }
 
 func add(g *graph.Graph, source string, p parsed) error {
@@ -151,9 +154,13 @@ func add(g *graph.Graph, source string, p parsed) error {
 			// lists only what it refers to itself.
 			n.DependenciesDirect = true
 		}
+		if rs[i].drift != "" {
+			n.Status, n.Drift = graph.StatusDrifted, rs[i].drift
+		}
 		n.AttributesWithheld = p.withheld && len(n.Attributes) > 0
 		p.secrets.scrub(n.Attributes)
-		n.Account, n.Region = partition(n.Provider, n.Type, n.Attributes)
+		n.Account, n.Region = Partition(n.Provider, n.Type, n.Attributes)
+		n.CloudID = CloudID(n.Provider, n.Attributes)
 		if n.Mode != graph.ModeManaged {
 			continue
 		}

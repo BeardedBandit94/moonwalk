@@ -6,13 +6,13 @@ import (
 	"github.com/BeardedBandit94/moonwalk/internal/graph"
 )
 
-// partition derives the owning account and the region of a resource from its
+// Partition derives the owning account and the region of a resource from its
 // attributes. It is best effort and returns empty strings when the provider
 // is not recognised or the attributes do not say.
 //
 // It runs on redacted attributes, so a value the state marks as sensitive is
 // never used.
-func partition(provider, resourceType string, attrs map[string]any) (account, region string) {
+func Partition(provider, resourceType string, attrs map[string]any) (account, region string) {
 	switch lastSegment(provider) {
 	case "aws":
 		return awsPartition(resourceType, attrs)
@@ -22,6 +22,26 @@ func partition(provider, resourceType string, attrs map[string]any) (account, re
 		return googlePartition(attrs)
 	}
 	return "", ""
+}
+
+// CloudID returns what the cloud itself calls a resource, from its
+// attributes: an ARN, a self link, or failing those its ID. It is empty for
+// providers that are not clouds, whose IDs mean nothing outside Terraform.
+func CloudID(provider string, attrs map[string]any) string {
+	switch lastSegment(provider) {
+	case "aws":
+		if arn := str(attrs, "arn"); arn != "" {
+			return arn
+		}
+	case "google", "google-beta":
+		if link := str(attrs, "self_link"); link != "" {
+			return link
+		}
+	case "azurerm":
+	default:
+		return ""
+	}
+	return str(attrs, "id")
 }
 
 // infersRegion reports whether a resource of this provider that states no

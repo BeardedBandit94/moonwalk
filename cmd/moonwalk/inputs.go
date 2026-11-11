@@ -7,27 +7,20 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/BeardedBandit94/moonwalk/internal/graph"
-	"github.com/BeardedBandit94/moonwalk/internal/tfstate"
 )
 
-// input is one state to load: where it is and what to call it.
+// input is one file to load: where it is and what to call it.
 type input struct {
 	source string
 	path   string // "-" means standard input.
 }
 
-func (in input) load(g *graph.Graph, stdin io.Reader) error {
+// read returns the bytes of the input.
+func (in input) read(stdin io.Reader) ([]byte, error) {
 	if in.path == "-" {
-		return tfstate.Load(g, in.source, stdin)
+		return io.ReadAll(stdin)
 	}
-	f, err := os.Open(in.path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	return tfstate.Load(g, in.source, f)
+	return os.ReadFile(in.path)
 }
 
 // resolveInputs expands the command-line arguments into the states to load,

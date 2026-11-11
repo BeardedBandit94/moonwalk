@@ -1,7 +1,7 @@
 9 resources in 11 items, grouped by source
 
-p  (source, 9 resources)
-  module.net.terraform_data.subnet  (block, 3 resources)
+p  (source, 9 resources, 3 declared)
+  module.net.terraform_data.subnet  (block, 3 resources, 1 declared)
     module.net.terraform_data.subnet[0]
         -> terraform_data.keep
     module.net.terraform_data.subnet[1]
