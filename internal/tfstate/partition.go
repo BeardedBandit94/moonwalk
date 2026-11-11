@@ -6,8 +6,8 @@ import "strings"
 // attributes. It is best effort and returns empty strings when the provider
 // is not recognised or the attributes do not say.
 //
-// Only these two values leave the adapter; the attributes themselves are not
-// kept, because state stores secrets in plain text.
+// It runs on redacted attributes, so a value the state marks as sensitive is
+// never used.
 func partition(provider string, attrs map[string]any) (account, region string) {
 	switch lastSegment(provider) {
 	case "aws":
@@ -81,9 +81,13 @@ func googlePartition(attrs map[string]any) (account, region string) {
 	return account, lastSegment(str(attrs, "location"))
 }
 
-// str returns attrs[key] if it is a string, and "" otherwise.
+// str returns attrs[key] if it is a string that was not redacted, and ""
+// otherwise.
 func str(attrs map[string]any, key string) string {
 	s, _ := attrs[key].(string)
+	if s == Redacted {
+		return ""
+	}
 	return s
 }
 

@@ -1,0 +1,194 @@
+{
+  "schema_version": 1,
+  "nodes": [
+    {
+      "id": "lab::module.net[\"a\"].terraform_data.subnet[0]",
+      "source": "lab",
+      "address": "module.net[\"a\"].terraform_data.subnet[0]",
+      "config_address": "module.net.terraform_data.subnet",
+      "module": "module.net[\"a\"]",
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "subnet",
+      "provider": "terraform.io/builtin/terraform",
+      "status": "managed",
+      "attributes": {
+        "id": "88afd6a5-f7db-3718-96d8-b81fa2a13dec",
+        "input": "af7b5553-f3e7-643d-35b1-3ee32f9d37fa",
+        "output": "af7b5553-f3e7-643d-35b1-3ee32f9d37fa",
+        "triggers_replace": null
+      }
+    },
+    {
+      "id": "lab::module.net[\"a\"].terraform_data.subnet[1]",
+      "source": "lab",
+      "address": "module.net[\"a\"].terraform_data.subnet[1]",
+      "config_address": "module.net.terraform_data.subnet",
+      "module": "module.net[\"a\"]",
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "subnet",
+      "provider": "terraform.io/builtin/terraform",
+      "status": "managed",
+      "attributes": {
+        "id": "0c9ae448-4a1f-cb81-d45b-0ac0b849807e",
+        "input": "af7b5553-f3e7-643d-35b1-3ee32f9d37fa",
+        "output": "af7b5553-f3e7-643d-35b1-3ee32f9d37fa",
+        "triggers_replace": null
+      }
+    },
+    {
+      "id": "lab::module.net[\"a\"].terraform_data.vpc",
+      "source": "lab",
+      "address": "module.net[\"a\"].terraform_data.vpc",
+      "config_address": "module.net.terraform_data.vpc",
+      "module": "module.net[\"a\"]",
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "vpc",
+      "provider": "terraform.io/builtin/terraform",
+      "status": "managed",
+      "attributes": {
+        "id": "af7b5553-f3e7-643d-35b1-3ee32f9d37fa",
+        "input": null,
+        "output": null,
+        "triggers_replace": null
+      }
+    },
+    {
+      "id": "lab::module.net[\"b\"].terraform_data.subnet[0]",
+      "source": "lab",
+      "address": "module.net[\"b\"].terraform_data.subnet[0]",
+      "config_address": "module.net.terraform_data.subnet",
+      "module": "module.net[\"b\"]",
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "subnet",
+      "provider": "terraform.io/builtin/terraform",
+      "status": "managed",
+      "attributes": {
+        "id": "b40c80de-4ecc-c5e6-7e71-6c547f04f20e",
+        "input": "e1c59d21-2115-9edf-ead4-8729b1279dbb",
+        "output": "e1c59d21-2115-9edf-ead4-8729b1279dbb",
+        "triggers_replace": null
+      }
+    },
+    {
+      "id": "lab::module.net[\"b\"].terraform_data.subnet[1]",
+      "source": "lab",
+      "address": "module.net[\"b\"].terraform_data.subnet[1]",
+      "config_address": "module.net.terraform_data.subnet",
+      "module": "module.net[\"b\"]",
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "subnet",
+      "provider": "terraform.io/builtin/terraform",
+      "status": "managed",
+      "attributes": {
+        "id": "1fb2f958-ca89-24ad-e93c-ae157136f9ca",
+        "input": "e1c59d21-2115-9edf-ead4-8729b1279dbb",
+        "output": "e1c59d21-2115-9edf-ead4-8729b1279dbb",
+        "triggers_replace": null
+      }
+    },
+    {
+      "id": "lab::module.net[\"b\"].terraform_data.vpc",
+      "source": "lab",
+      "address": "module.net[\"b\"].terraform_data.vpc",
+      "config_address": "module.net.terraform_data.vpc",
+      "module": "module.net[\"b\"]",
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "vpc",
+      "provider": "terraform.io/builtin/terraform",
+      "status": "managed",
+      "attributes": {
+        "id": "e1c59d21-2115-9edf-ead4-8729b1279dbb",
+        "input": null,
+        "output": null,
+        "triggers_replace": null
+      }
+    },
+    {
+      "id": "lab::random_password.db",
+      "source": "lab",
+      "address": "random_password.db",
+      "config_address": "random_password.db",
+      "mode": "managed",
+      "type": "random_password",
+      "name": "db",
+      "provider": "registry.opentofu.org/hashicorp/random",
+      "status": "managed",
+      "attributes": {
+        "bcrypt_hash": "(sensitive)",
+        "id": "none",
+        "keepers": null,
+        "length": 12,
+        "lower": true,
+        "min_lower": 0,
+        "min_numeric": 0,
+        "min_special": 0,
+        "min_upper": 0,
+        "number": true,
+        "numeric": true,
+        "override_special": null,
+        "result": "(sensitive)",
+        "special": true,
+        "upper": true
+      }
+    },
+    {
+      "id": "lab::terraform_data.cfg",
+      "source": "lab",
+      "address": "terraform_data.cfg",
+      "config_address": "terraform_data.cfg",
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "cfg",
+      "provider": "terraform.io/builtin/terraform",
+      "status": "managed",
+      "attributes": {
+        "id": "68d35a6d-df17-1d49-0209-eb8c75ed086b",
+        "input": {
+          "list": [
+            "a",
+            "(sensitive)"
+          ],
+          "password": "(sensitive)",
+          "user": "app"
+        },
+        "output": {
+          "list": [
+            "a",
+            "(sensitive)"
+          ],
+          "password": "(sensitive)",
+          "user": "app"
+        },
+        "triggers_replace": null
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "lab::module.net[\"a\"].terraform_data.subnet[0]",
+      "to": "lab::module.net[\"a\"].terraform_data.vpc",
+      "kind": "depends_on"
+    },
+    {
+      "from": "lab::module.net[\"a\"].terraform_data.subnet[1]",
+      "to": "lab::module.net[\"a\"].terraform_data.vpc",
+      "kind": "depends_on"
+    },
+    {
+      "from": "lab::module.net[\"b\"].terraform_data.subnet[0]",
+      "to": "lab::module.net[\"b\"].terraform_data.vpc",
+      "kind": "depends_on"
+    },
+    {
+      "from": "lab::module.net[\"b\"].terraform_data.subnet[1]",
+      "to": "lab::module.net[\"b\"].terraform_data.vpc",
+      "kind": "depends_on"
+    }
+  ]
+}

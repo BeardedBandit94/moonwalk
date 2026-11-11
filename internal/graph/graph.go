@@ -54,6 +54,9 @@ type Node struct {
 	// empty when unknown, and Region is also empty for global resources.
 	Account string `json:"account,omitempty"`
 	Region  string `json:"region,omitempty"`
+	// AccountInferred is true when Account was not stated by the resource
+	// itself but taken from other resources that share its provider.
+	AccountInferred bool `json:"account_inferred,omitempty"`
 	// Module is the module instance path, or "" for the root module.
 	Module   string `json:"module,omitempty"`
 	Mode     Mode   `json:"mode"`
@@ -61,6 +64,9 @@ type Node struct {
 	Name     string `json:"name"`
 	Provider string `json:"provider,omitempty"`
 	Status   Status `json:"status"`
+	// Attributes holds the resource's attribute values with secrets already
+	// redacted by the adapter. It may be nil.
+	Attributes map[string]any `json:"attributes,omitempty"`
 }
 
 // Edge is a directed relationship between two nodes, by ID.
@@ -145,13 +151,18 @@ func (g *Graph) Edges() []Edge {
 	return out
 }
 
+// SchemaVersion identifies the layout of Document. It increases whenever a
+// field is removed or changes meaning; adding a field does not change it.
+const SchemaVersion = 1
+
 // Document is the stable, serializable form of a graph.
 type Document struct {
-	Nodes []Node `json:"nodes"`
-	Edges []Edge `json:"edges"`
+	SchemaVersion int    `json:"schema_version"`
+	Nodes         []Node `json:"nodes"`
+	Edges         []Edge `json:"edges"`
 }
 
 // Document returns the graph in deterministic order, ready to encode.
 func (g *Graph) Document() Document {
-	return Document{Nodes: g.Nodes(), Edges: g.Edges()}
+	return Document{SchemaVersion: SchemaVersion, Nodes: g.Nodes(), Edges: g.Edges()}
 }

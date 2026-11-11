@@ -1,0 +1,28 @@
+13 resources, 10 dependencies, 2 sources
+
+lab
+  module.net["a"].terraform_data.subnet[0]
+    -> module.net["a"].terraform_data.vpc
+  module.net["a"].terraform_data.subnet[1]
+    -> module.net["a"].terraform_data.vpc
+  module.net["a"].terraform_data.vpc
+  module.net["b"].terraform_data.subnet[0]
+    -> module.net["b"].terraform_data.vpc
+  module.net["b"].terraform_data.subnet[1]
+    -> module.net["b"].terraform_data.vpc
+  module.net["b"].terraform_data.vpc
+  random_password.db
+  terraform_data.cfg
+
+prod
+  aws_vpc.main  (123456789012, us-east-1)
+  data.aws_availability_zones.available  (123456789012)
+  module.net["a.b"].aws_route_table_association.private["x]y"]  (123456789012)
+    -> module.net["a.b"].aws_subnet.private[0]
+    -> module.net["a.b"].aws_subnet.private[1]
+  module.net["a.b"].aws_subnet.private[0]  (123456789012, us-east-1)
+    -> aws_vpc.main
+    -> data.aws_availability_zones.available
+  module.net["a.b"].aws_subnet.private[1]  (123456789012, us-east-1)
+    -> aws_vpc.main
+    -> data.aws_availability_zones.available

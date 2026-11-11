@@ -10,15 +10,24 @@ import (
 	"strings"
 
 	"github.com/BeardedBandit94/moonwalk/internal/graph"
-	"github.com/BeardedBandit94/moonwalk/internal/tfstate"
 )
 
 const usage = `Usage:
-  moonwalk graph [-format text|json] <state-file>...
+  moonwalk graph [-format text|json] [-attributes] <state>...
 
-Reads one or more Terraform or OpenTofu states ('terraform show -json' output
-or raw .tfstate files) and prints them as a single resource graph. Each state
-is a separate source, named after its path. Use "-" to read standard input.
+Reads Terraform or OpenTofu states ('terraform show -json' output or raw
+.tfstate files) and prints them as a single resource graph.
+
+Each <state> is one of:
+  path         a state file, named after its path
+  directory    every .tfstate file below it, hidden directories excluded
+  -            standard input, named "stdin"
+  name=<any of the above>   the same, under a name of your choosing
+
+Options:
+  -format      text (default) or json
+  -attributes  include attribute values in JSON output; values that the
+               state marks as sensitive are replaced with "(sensitive)"
 `
 
 func main() {
@@ -34,47 +43,41 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 	}
 	fs := flag.NewFlagSet("graph", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
-	format := fs.String("format", "text", "output format: text or json")
+	format := fs.String("format", "text", "")
+	attributes := fs.Bool("attributes", false, "")
 	if err := fs.Parse(args[1:]); err != nil {
 		return fmt.Errorf("%w\n\n%s", err, usage)
 	}
 	if fs.NArg() == 0 {
-		return fmt.Errorf("expected at least one state file\n\n%s", usage)
+		return fmt.Errorf("expected at least one state\n\n%s", usage)
 	}
 	if *format != "text" && *format != "json" {
 		return fmt.Errorf("unknown format %q (want text or json)", *format)
 	}
 
+	inputs, err := resolveInputs(fs.Args())
+	if err != nil {
+		return err
+	}
 	g := graph.New()
-	seen := map[string]bool{}
-	for _, path := range fs.Args() {
-		if seen[path] {
-			return fmt.Errorf("state %q given more than once", path)
-		}
-		seen[path] = true
-		if err := loadState(g, path, stdin); err != nil {
+	for _, in := range inputs {
+		if err := in.load(g, stdin); err != nil {
 			return err
 		}
 	}
 
-	if *format == "json" {
-		enc := json.NewEncoder(stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(g.Document())
+	d := g.Document()
+	if *format == "text" {
+		return writeText(stdout, d)
 	}
-	return writeText(stdout, g.Document())
-}
-
-func loadState(g *graph.Graph, path string, stdin io.Reader) error {
-	if path == "-" {
-		return tfstate.Load(g, "stdin", stdin)
+	if !*attributes {
+		for i := range d.Nodes {
+			d.Nodes[i].Attributes = nil
+		}
 	}
-	f, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	return tfstate.Load(g, path, f)
+	enc := json.NewEncoder(stdout)
+	enc.SetIndent("", "  ")
+	return enc.Encode(d)
 }
 
 // writeText prints nodes grouped by source, each followed by its dependencies.

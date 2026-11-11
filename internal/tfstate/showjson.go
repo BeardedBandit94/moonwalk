@@ -10,38 +10,60 @@ import (
 )
 
 // parseShowJSON reads the output of `terraform show -json` for a state.
-func parseShowJSON(data []byte) ([]resource, error) {
+func parseShowJSON(data []byte) (parsed, error) {
 	var st tfjson.State
+	st.UseJSONNumber(true) // Keep numbers exact, as the raw parser does.
 	if err := json.Unmarshal(data, &st); err != nil {
-		return nil, fmt.Errorf("parse show-json state: %w", err)
+		return parsed{}, fmt.Errorf("parse show-json state: %w", err)
 	}
-	if st.Values == nil || st.Values.RootModule == nil {
-		return nil, nil // An empty state has no values.
+	p := parsed{secrets: secretSet{}}
+	if st.Values != nil && st.Values.RootModule != nil { // An empty state has no values.
+		p.walkModule(st.Values.RootModule)
 	}
-	var out []resource
-	walkModule(st.Values.RootModule, &out)
-	return out, nil
+	return p, nil
 }
 
-func walkModule(m *tfjson.StateModule, out *[]resource) {
+func (p *parsed) walkModule(m *tfjson.StateModule) {
 	for _, r := range m.Resources {
 		if r.DeposedKey != "" {
 			continue // A deposed object shares its address with the current one.
 		}
-		*out = append(*out, resource{
+		p.resources = append(p.resources, resource{
 			node: graph.Node{
-				Address:  r.Address,
-				Module:   m.Address,
-				Mode:     graph.Mode(r.Mode),
-				Type:     r.Type,
-				Name:     r.Name,
-				Provider: r.ProviderName,
+				Address:    r.Address,
+				Module:     m.Address,
+				Mode:       graph.Mode(r.Mode),
+				Type:       r.Type,
+				Name:       r.Name,
+				Provider:   r.ProviderName,
+				Attributes: p.redactShowValues(r.AttributeValues, r.SensitiveValues),
 			},
-			attrs:     r.AttributeValues,
-			dependsOn: r.DependsOn,
+			// This format does not say which provider alias was used.
+			providerKey: r.ProviderName,
+			dependsOn:   r.DependsOn,
 		})
 	}
 	for _, child := range m.ChildModules {
-		walkModule(child, out)
+		p.walkModule(child)
 	}
+}
+
+// redactShowValues applies a resource's sensitive_values mask. Attributes
+// are dropped entirely if the mask cannot be read.
+func (p *parsed) redactShowValues(values map[string]any, rawMask json.RawMessage) map[string]any {
+	if len(values) == 0 {
+		return nil
+	}
+	if len(rawMask) == 0 {
+		return values
+	}
+	var mask any
+	if err := json.Unmarshal(rawMask, &mask); err != nil {
+		return nil
+	}
+	redacted, ok := p.secrets.applyMask(values, mask).(map[string]any)
+	if !ok {
+		return nil // The mask covered the whole resource.
+	}
+	return redacted
 }

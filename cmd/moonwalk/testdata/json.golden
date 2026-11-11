@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "nodes": [
+    {
+      "id": "prod::aws_vpc.main",
+      "source": "prod",
+      "address": "aws_vpc.main",
+      "config_address": "aws_vpc.main",
+      "account": "123456789012",
+      "region": "us-east-1",
+      "mode": "managed",
+      "type": "aws_vpc",
+      "name": "main",
+      "provider": "registry.terraform.io/hashicorp/aws",
+      "status": "managed"
+    },
+    {
+      "id": "prod::data.aws_availability_zones.available",
+      "source": "prod",
+      "address": "data.aws_availability_zones.available",
+      "config_address": "data.aws_availability_zones.available",
+      "account": "123456789012",
+      "account_inferred": true,
+      "mode": "data",
+      "type": "aws_availability_zones",
+      "name": "available",
+      "provider": "registry.terraform.io/hashicorp/aws",
+      "status": "managed"
+    },
+    {
+      "id": "prod::module.net[\"a.b\"].aws_route_table_association.private[\"x]y\"]",
+      "source": "prod",
+      "address": "module.net[\"a.b\"].aws_route_table_association.private[\"x]y\"]",
+      "config_address": "module.net.aws_route_table_association.private",
+      "account": "123456789012",
+      "account_inferred": true,
+      "module": "module.net[\"a.b\"]",
+      "mode": "managed",
+      "type": "aws_route_table_association",
+      "name": "private",
+      "provider": "registry.terraform.io/hashicorp/aws",
+      "status": "managed"
+    },
+    {
+      "id": "prod::module.net[\"a.b\"].aws_subnet.private[0]",
+      "source": "prod",
+      "address": "module.net[\"a.b\"].aws_subnet.private[0]",
+      "config_address": "module.net.aws_subnet.private",
+      "account": "123456789012",
+      "region": "us-east-1",
+      "module": "module.net[\"a.b\"]",
+      "mode": "managed",
+      "type": "aws_subnet",
+      "name": "private",
+      "provider": "registry.terraform.io/hashicorp/aws",
+      "status": "managed"
+    },
+    {
+      "id": "prod::module.net[\"a.b\"].aws_subnet.private[1]",
+      "source": "prod",
+      "address": "module.net[\"a.b\"].aws_subnet.private[1]",
+      "config_address": "module.net.aws_subnet.private",
+      "account": "123456789012",
+      "region": "us-east-1",
+      "module": "module.net[\"a.b\"]",
+      "mode": "managed",
+      "type": "aws_subnet",
+      "name": "private",
+      "provider": "registry.terraform.io/hashicorp/aws",
+      "status": "managed"
+    }
+  ],
+  "edges": [
+    {
+      "from": "prod::module.net[\"a.b\"].aws_route_table_association.private[\"x]y\"]",
+      "to": "prod::module.net[\"a.b\"].aws_subnet.private[0]",
+      "kind": "depends_on"
+    },
+    {
+      "from": "prod::module.net[\"a.b\"].aws_route_table_association.private[\"x]y\"]",
+      "to": "prod::module.net[\"a.b\"].aws_subnet.private[1]",
+      "kind": "depends_on"
+    },
+    {
+      "from": "prod::module.net[\"a.b\"].aws_subnet.private[0]",
+      "to": "prod::aws_vpc.main",
+      "kind": "depends_on"
+    },
+    {
+      "from": "prod::module.net[\"a.b\"].aws_subnet.private[0]",
+      "to": "prod::data.aws_availability_zones.available",
+      "kind": "depends_on"
+    },
+    {
+      "from": "prod::module.net[\"a.b\"].aws_subnet.private[1]",
+      "to": "prod::aws_vpc.main",
+      "kind": "depends_on"
+    },
+    {
+      "from": "prod::module.net[\"a.b\"].aws_subnet.private[1]",
+      "to": "prod::data.aws_availability_zones.available",
+      "kind": "depends_on"
+    }
+  ]
+}
