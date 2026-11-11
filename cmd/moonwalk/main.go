@@ -40,7 +40,9 @@ the resources that are written but not applied yet. With -code and no state,
 the graph is built from the configuration alone.
 
 Each <state> is one of:
-  path         a state file, named after its path
+  path         a state file, or the JSON form of a plan ('terraform show
+               -json <planfile>'), which shows the state the plan was made
+               against with its changes marked; named after its path
   directory    every .tfstate file below it, hidden directories excluded
   -            standard input, named "stdin"
   name=<any of the above>   the same, under a name of your choosing
@@ -64,9 +66,10 @@ Options for view:
                (default: source,account,region,module)
   -depth       how many levels to expand (default: as many as fit in 300
                items)
-  -type, -account, -region, -source, -status
+  -type, -account, -region, -source, -status, -change
                show only resources with one of the comma-separated values;
-               -type also takes patterns such as 'aws_iam_*'
+               -type also takes patterns such as 'aws_iam_*', and -change
+               takes create, update, delete, replace or any
   -search      show only resources whose address or type contains the text
   -around      show only the resource with this address and the resources
                directly related to it
@@ -96,7 +99,7 @@ type options struct {
 	depth              int
 	types, accounts    string
 	regions, sources   string
-	statuses           string
+	statuses, changes  string
 	search, around     string
 	glue               bool
 }
@@ -127,6 +130,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		fs.StringVar(&o.regions, "region", "", "")
 		fs.StringVar(&o.sources, "source", "", "")
 		fs.StringVar(&o.statuses, "status", "", "")
+		fs.StringVar(&o.changes, "change", "", "")
 		fs.StringVar(&o.search, "search", "", "")
 		fs.StringVar(&o.around, "around", "", "")
 		fs.BoolVar(&o.glue, "glue", false, "")
@@ -186,6 +190,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		Regions:  list(o.regions),
 		Sources:  list(o.sources),
 		Statuses: list(o.statuses),
+		Changes:  list(o.changes),
 		Search:   o.search,
 	}
 	if o.around != "" {
@@ -282,18 +287,23 @@ func warnUnresolved(stderr io.Writer, code map[string]*tfcode.Config) {
 	}
 }
 
-// snippets returns the lookup the explorer uses to show a resource's block.
+// snippets returns the lookup the explorer uses to show a resource's block
+// and what it refers to.
 func snippets(code map[string]*tfcode.Config) web.CodeLookup {
-	return func(source, configAddress string) (string, bool) {
+	return func(source, configAddress string) (web.CodeInfo, bool) {
 		cfg, ok := code[source]
 		if !ok {
-			return "", false
+			return web.CodeInfo{}, false
 		}
 		blk, ok := cfg.Blocks[configAddress]
 		if !ok {
-			return "", false
+			return web.CodeInfo{}, false
 		}
-		return blk.Text, true
+		info := web.CodeInfo{Text: blk.Text}
+		for _, r := range blk.References {
+			info.References = append(info.References, web.CodeReference{Attribute: r.Attribute, Written: r.Written, To: r.To})
+		}
+		return info, true
 	}
 }
 
@@ -387,7 +397,7 @@ func fingerprint(args, codeDirs []string) (print string, ok bool) {
 				}
 				return nil
 			}
-			if strings.HasSuffix(p, ".tf") || strings.HasSuffix(p, ".tofu") {
+			if tfcode.IsConfigFile(d.Name()) {
 				stamp(p)
 			}
 			return nil
@@ -490,10 +500,8 @@ func writeView(w io.Writer, d view.Document) error {
 	for _, it := range d.Items {
 		indent := strings.Repeat("  ", it.Depth-1)
 		switch {
-		case it.Kind == view.KindResource && it.Status != "":
-			fmt.Fprintf(&b, "%s%s  (%s)\n", indent, it.Label, it.Status)
 		case it.Kind == view.KindResource:
-			fmt.Fprintf(&b, "%s%s\n", indent, it.Label)
+			fmt.Fprintf(&b, "%s%s%s\n", indent, it.Label, marks(string(it.Status), it.Change, it.NotInCode, "  (", ")"))
 		case it.Expanded:
 			fmt.Fprintf(&b, "%s%s  (%s, %s)\n", indent, it.Label, kindName(it.Kind), plural(it.Resources, "resource"))
 		default:
@@ -519,6 +527,28 @@ func writeView(w io.Writer, d view.Document) error {
 	}
 	_, err := io.WriteString(w, b.String())
 	return err
+}
+
+// marks renders what is unusual about a resource: a status other than
+// managed, a change a plan intends, and being absent from the code.
+func marks(status, change string, notInCode bool, open, shut string) string {
+	var parts []string
+	switch {
+	case change == "create":
+		parts = append(parts, "to create") // Says more than "declared" does.
+	case status != "":
+		parts = append(parts, status)
+	}
+	if change != "" && change != "create" {
+		parts = append(parts, "to "+change)
+	}
+	if notInCode {
+		parts = append(parts, "not in code")
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return open + strings.Join(parts, ", ") + shut
 }
 
 func kindName(k view.Kind) string {
@@ -576,9 +606,9 @@ func writeGraph(w io.Writer, d graph.Document) error {
 			n := d.Nodes[i]
 			status := ""
 			if n.Status != graph.StatusManaged {
-				status = "  [" + string(n.Status) + "]"
+				status = string(n.Status)
 			}
-			fmt.Fprintf(&b, "  %s%s%s\n", n.Address, partitionLabel(n), status)
+			fmt.Fprintf(&b, "  %s%s%s\n", n.Address, partitionLabel(n), marks(status, n.Change, n.NotInCode, "  [", "]"))
 			for _, e := range edges[n.ID] {
 				switch e.Kind {
 				case graph.EdgeDependsOn:

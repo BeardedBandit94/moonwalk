@@ -18,6 +18,9 @@ const fixtures = "../../internal/tfstate/testdata/"
 // few resources more.
 const code = "../../internal/tfcode/testdata/network"
 
+// planCode is the configuration the plan fixture was made from.
+const planCode = "../../internal/tfcode/testdata/plan"
+
 func runCLI(t *testing.T, stdin string, args ...string) (string, error) {
 	t.Helper()
 	out, _, err := runCLIWithWarnings(t, stdin, args...)
@@ -69,6 +72,9 @@ func TestGraphGolden(t *testing.T) {
 		{"code-view.golden", []string{"view", "-code", code, "net=" + fixtures + "network.tfstate"}},
 		{"code-declared.golden", []string{"view", "-format", "json", "-status", "declared", "-group-by", "source", "-code", "net=" + code, "net=" + fixtures + "network.tfstate"}},
 		{"code-only.golden", []string{"graph", "-code", "plan=" + code}},
+		{"plan-view.golden", []string{"view", "-group-by", "source", "p=" + fixtures + "plan.json"}},
+		{"plan-with-code.golden", []string{"view", "-code", planCode, "p=" + fixtures + "plan.json"}},
+		{"plan-changes.golden", []string{"graph", "-format", "json", "-direct", "p=" + fixtures + "plan.json"}},
 		{"network-view-filter.golden", []string{"view", "-format", "json", "-type", "aws_iam_*,aws_vpc", "-region", "global", "net=" + fixtures + "network.tfstate"}},
 	}
 	for _, c := range cases {
@@ -258,6 +264,39 @@ func TestExistingPathWithEqualsSign(t *testing.T) {
 	}
 	if !strings.Contains(out, "\n"+path+"\n") {
 		t.Errorf("path was not used as the source name:\n%s", out)
+	}
+}
+
+func TestPlan(t *testing.T) {
+	out, err := runCLI(t, "", "view", "-change", "any", "-group-by", "source", fixtures+"plan.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"6 resources", "3 resources left out by the filter",
+		"terraform_data.create  (to create)", "terraform_data.update  (to update)",
+		"terraform_data.replace  (to replace)", "terraform_data.delete  (to delete)"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+	out, err = runCLI(t, "", "view", "-change", "delete,replace", "-group-by", "source", fixtures+"plan.json")
+	if err != nil || !strings.Contains(out, "2 resources in") {
+		t.Errorf("two kinds of change: %v\n%s", err, out)
+	}
+	// The plan holds a sensitive variable in the clear; it must not come out.
+	for _, args := range [][]string{
+		{"graph", "-format", "json", "-attributes", fixtures + "plan.json"},
+		{"view", "-format", "json", fixtures + "plan.json"},
+	} {
+		if out, err := runCLI(t, "", args...); err != nil || strings.Contains(out, "hunter2") {
+			t.Errorf("%v: err %v, or the secret is in the output", args, err)
+		}
+	}
+	// With the code, a resource the plan deletes because its block is gone
+	// is also marked as missing from the code.
+	out, err = runCLI(t, "", "view", "-group-by", "source", "-code", planCode, fixtures+"plan.json")
+	if err != nil || !strings.Contains(out, "terraform_data.delete  (to delete, not in code)") {
+		t.Errorf("plan with code: %v\n%s", err, out)
 	}
 }
 

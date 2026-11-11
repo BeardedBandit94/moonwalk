@@ -33,6 +33,12 @@ type Item struct {
 	// Status is set for a resource that is anything but managed, such as
 	// one declared in code and not applied yet.
 	Status graph.Status `json:"status,omitempty"`
+	// Change is what a loaded plan intends for a resource: "create",
+	// "update", "delete" or "replace".
+	Change string `json:"change,omitempty"`
+	// NotInCode is true for a resource in state that the loaded code no
+	// longer declares.
+	NotInCode bool `json:"not_in_code,omitempty"`
 }
 
 // Link joins two items that stand for resources in a view: single resources
@@ -143,6 +149,7 @@ func (t *Tree) View(expanded func(*Group) bool) View {
 			v.Items = append(v.Items, Item{
 				ID: id, Kind: KindResource, Label: t.labels[id], Parent: grp.ID,
 				Depth: grp.Depth + 1, Resources: 1, Status: t.statuses[id],
+				Change: t.changes[id], NotInCode: t.notInCode[id],
 			})
 			shownAs[id] = id
 		}

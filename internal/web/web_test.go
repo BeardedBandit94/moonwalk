@@ -275,8 +275,14 @@ func TestResourceCode(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	lookup := func(source, address string) (string, bool) {
-		return "resource \"t\" \"coded\" {}  # " + source + " " + address, true
+	lookup := func(source, address string) (CodeInfo, bool) {
+		return CodeInfo{
+			Text: "resource \"t\" \"coded\" {}  # " + source + " " + address,
+			References: []CodeReference{
+				{Attribute: "x", Written: "local.p", To: "t.plain"},
+				{Attribute: "y", Written: "t.gone.id", To: "t.gone"}, // No such resource: left out.
+			},
+		}, true
 	}
 	ts := httptest.NewServer(New(g, lookup).Handler())
 	t.Cleanup(ts.Close)
@@ -285,6 +291,9 @@ func TestResourceCode(t *testing.T) {
 	getJSON(t, ts, "/api/resource?id=s::t.coded", &r)
 	if r.Node.Code == nil || *r.Node.Code != *loc || r.CodeText != `resource "t" "coded" {}  # s t.coded` {
 		t.Errorf("code %+v, text %q", r.Node.Code, r.CodeText)
+	}
+	if len(r.RefersTo) != 1 || r.RefersTo[0] != (reference{Attribute: "x", Written: "local.p", Address: "t.plain", ID: "s::t.plain", Instances: 1}) {
+		t.Errorf("refers to: %+v", r.RefersTo)
 	}
 	// A resource with no known block is not looked up at all.
 	var plain resourceResponse
@@ -303,6 +312,49 @@ func TestResourceCode(t *testing.T) {
 	}
 	if statuses["t.coded"] != graph.StatusDeclared || statuses["t.plain"] != "" {
 		t.Errorf("item statuses: %v", statuses)
+	}
+}
+
+func TestPlanChanges(t *testing.T) {
+	ts := serveStates(t, map[string]string{"p": "plan.json"})
+	var m metaResponse
+	getJSON(t, ts, "/api/meta", &m)
+	if got := strings.Join(m.Changes, ","); got != "create,delete,replace,update" {
+		t.Errorf("changes: %q", got)
+	}
+	if got := strings.Join(m.Statuses, ","); got != "declared,managed" {
+		t.Errorf("statuses: %q", got)
+	}
+
+	var d view.Document
+	getJSON(t, ts, "/api/view?group_by=source&change=any", &d)
+	changes := map[string]string{}
+	for _, it := range d.Items {
+		if it.Kind == view.KindResource {
+			changes[it.Label] = it.Change
+		}
+	}
+	want := map[string]string{
+		"terraform_data.create": "create", "terraform_data.update": "update", "terraform_data.replace": "replace",
+		"terraform_data.delete": "delete", "module.net.terraform_data.route": "create", "module.net.terraform_data.subnet[2]": "create",
+	}
+	if len(changes) != len(want) {
+		t.Errorf("items: %v", changes)
+	}
+	for label, change := range want {
+		if changes[label] != change {
+			t.Errorf("%s: change %q, want %q", label, changes[label], change)
+		}
+	}
+
+	getJSON(t, ts, "/api/view?group_by=source&change=delete", &d)
+	if got := strings.Join(labels(d, view.KindResource), ","); got != "terraform_data.delete" {
+		t.Errorf("change=delete: %q", got)
+	}
+	// A server with no plan loaded offers no change filter.
+	getJSON(t, serve(t), "/api/meta", &m)
+	if len(m.Changes) != 0 {
+		t.Errorf("changes without a plan: %q", m.Changes)
 	}
 }
 

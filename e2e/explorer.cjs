@@ -56,7 +56,9 @@ async function main() {
   fs.writeFileSync(path.join(dir, 'crowd.tfstate'), crowdedState());
 
   const code = path.resolve(__dirname, '../internal/tfcode/testdata/network');
-  const server = spawn(bin, ['serve', '-addr', `127.0.0.1:${port}`, '-code', `net=${code}`,
+  const planCode = path.resolve(__dirname, '../internal/tfcode/testdata/plan');
+  fs.copyFileSync(path.join(fixtures, 'plan.json'), path.join(dir, 'plan.json'));
+  const server = spawn(bin, ['serve', '-addr', `127.0.0.1:${port}`, '-code', `net=${code}`, '-code', `plan=${planCode}`, `plan=${path.join(dir, 'plan.json')}`,
     `net=${net}`, `lab=${path.join(dir, 'lab.tfstate')}`, `old=${path.join(dir, 'old.tfstate')}`, `crowd=${path.join(dir, 'crowd.tfstate')}`],
   { stdio: ['ignore', 'inherit', 'inherit'] });
   const browser = await chromium.launch();
@@ -134,6 +136,26 @@ async function main() {
     const unmarked = await page.innerText('#panel');
     check('an unmarked state has its attributes withheld', (await page.locator('#panel pre').count()) === 0 && unmarked.includes('show -json'));
     check('no secret reaches the page', !/hunter2|4@Sze931N|8%exVpqbOs|\$2a\$10\$/.test(marked + unmarked + (await page.content())));
+
+    // A plan: what it will change is marked, and can be filtered on.
+    await page.goto(base + '#g=source');
+    await page.reload();
+    await page.waitForSelector('.item');
+    check('a plan offers a filter on its changes', await page.locator('#change').isVisible());
+    await page.selectOption('#change', 'any');
+    await page.waitForFunction(() => document.querySelectorAll('.item.resource').length === 6);
+    const classOf = async (text) => (await item(text).getAttribute('class')) || '';
+    check('a resource the plan creates is marked', (await classOf('terraform_data.create')).includes('change-create'));
+    check('a resource the plan deletes is marked, and as gone from the code',
+      /change-delete/.test(await classOf('terraform_data.delete')) && /not-in-code/.test(await classOf('terraform_data.delete')), await classOf('terraform_data.delete'));
+    await item('terraform_data.create').click();
+    await page.waitForFunction(() => document.querySelector('#panel h2')?.textContent === 'terraform_data.create');
+    const planned = await page.innerText('#panel');
+    check('the panel says what is planned', planned.includes('The plan will create this'));
+    check('the panel says which argument refers to what', planned.includes('Refers to') && /input\s*→\s*module\.net\.terraform_data\.subnet\s*through module\.net\.first/.test(planned), planned);
+    check('the plan\'s variables stay out of the page', !(await page.content()).includes('hunter2'));
+    await page.selectOption('#change', '');
+    await page.keyboard.press('Escape');
 
     // The item budget: opening a fourth crowded block closes the oldest.
     await page.goto(base + '#g=source&q=test_thing');

@@ -109,8 +109,12 @@ type Tree struct {
 	byName map[childKey]*Group
 	labels map[string]string // Node ID to the label shown for it.
 	types  map[string]string // Node ID to resource type.
-	// statuses holds the status of each resource that is not managed.
-	statuses map[string]graph.Status
+	// statuses holds the status of each resource that is not managed,
+	// changes what a plan intends for each resource it touches, and
+	// notInCode the resources that the loaded code no longer declares.
+	statuses  map[string]graph.Status
+	changes   map[string]string
+	notInCode map[string]bool
 	// perDepth[d] counts the groups and resources at depth d.
 	perDepth []int
 	inGroup  map[string]*Group // Node ID to the group it sits in directly.
@@ -123,15 +127,17 @@ type Tree struct {
 // lacks a property, such as a region, skips that level.
 func Build(g *graph.Graph, o Options) *Tree {
 	t := &Tree{
-		g:        g,
-		opts:     o,
-		root:     &Group{},
-		groups:   map[string]*Group{},
-		byName:   map[childKey]*Group{},
-		labels:   map[string]string{},
-		types:    map[string]string{},
-		statuses: map[string]graph.Status{},
-		inGroup:  map[string]*Group{},
+		g:         g,
+		opts:      o,
+		root:      &Group{},
+		groups:    map[string]*Group{},
+		byName:    map[childKey]*Group{},
+		labels:    map[string]string{},
+		types:     map[string]string{},
+		statuses:  map[string]graph.Status{},
+		changes:   map[string]string{},
+		notInCode: map[string]bool{},
+		inGroup:   map[string]*Group{},
 	}
 	dims := o.Dimensions
 	byModule, bySource := slices.Contains(dims, ByModule), slices.Contains(dims, BySource)
@@ -228,6 +234,12 @@ func Build(g *graph.Graph, o Options) *Tree {
 		t.types[n.ID] = n.Type
 		if n.Status != graph.StatusManaged && n.Status != "" {
 			t.statuses[n.ID] = n.Status
+		}
+		if n.Change != "" {
+			t.changes[n.ID] = n.Change
+		}
+		if n.NotInCode {
+			t.notInCode[n.ID] = true
 		}
 	}
 	t.bound(t.root)

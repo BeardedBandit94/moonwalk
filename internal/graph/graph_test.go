@@ -106,6 +106,20 @@ func TestReduceTransitive(t *testing.T) {
 	}
 }
 
+// A node whose code says exactly what it refers to keeps a shortcut that
+// would otherwise look implied.
+func TestReduceTransitiveKeepsEdgesKnownToBeDirect(t *testing.T) {
+	g := build(t, "a>b", "b>c", "a>c", "x>b", "x>c")
+	g.Update("a", func(n *Node) { n.DependenciesDirect = true })
+	if removed := g.ReduceTransitive(EdgeDependsOn); removed != 1 {
+		t.Errorf("removed %d edges, want 1", removed)
+	}
+	got := strings.Join(edgeList(g), " ")
+	if want := "a>b a>c b>c x>b"; got != want {
+		t.Errorf("left %q, want %q", got, want)
+	}
+}
+
 func TestReduceTransitiveIgnoresOtherKinds(t *testing.T) {
 	g := build(t, "a>b", "b>c")
 	if err := g.AddEdge(Edge{From: "a", To: "c", Kind: "other"}); err != nil {

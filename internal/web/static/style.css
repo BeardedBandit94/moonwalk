@@ -9,6 +9,8 @@
   --accent-soft: #e2ebfb;
   --link: #8791a0;
   --danger: #b3261e;
+  --good: #1a7f37;
+  --warn: #9a6700;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -23,6 +25,8 @@
     --accent-soft: #1f2e4d;
     --link: #6d7684;
     --danger: #ff8a80;
+    --good: #56d364;
+    --warn: #e3b341;
   }
 }
 
@@ -115,11 +119,24 @@ main { flex: 1; display: flex; min-height: 0; }
 }
 .item.collapsed { background: var(--accent-soft); border-color: var(--accent); }
 .item.declared { border-style: dashed; font-style: italic; }
+.item.not-in-code { border-style: dotted; }
+/* What a plan intends: a coloured edge, and a struck-out name for a delete. */
+.item.change-create { border-left: 4px solid var(--good); }
+.item.change-update { border-left: 4px solid var(--warn); }
+.item.change-replace { border-left: 4px double var(--warn); }
+.item.change-delete { border-left: 4px solid var(--danger); text-decoration: line-through; }
 .item.collapsed::before { content: "▸ "; color: var(--muted); }
 .item:hover, .title:hover { border-color: var(--accent); color: var(--accent); }
 .item.selected { outline: 2px solid var(--accent); outline-offset: 1px; }
 .item.lit, .item.related { border-color: var(--accent); }
-.dim .item:not(.selected):not(.lit):not(.related) { opacity: .45; }
+/* Faded, not translucent: a lit link must not show through a box. */
+.dim .item:not(.selected):not(.lit):not(.related) {
+  color: color-mix(in srgb, var(--text) 40%, var(--bg));
+  border-color: color-mix(in srgb, var(--line) 55%, var(--bg));
+}
+.dim .item.collapsed:not(.selected):not(.lit):not(.related) {
+  background: color-mix(in srgb, var(--accent-soft) 45%, var(--bg));
+}
 
 #links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
 #links path.link { fill: none; stroke: var(--link); stroke-width: 1.1; opacity: .55; marker-end: url(#arrow); }
@@ -160,6 +177,7 @@ main { flex: 1; display: flex; min-height: 0; }
 #panel ul { list-style: none; margin: 0; padding: 0; }
 #panel li { margin: 2px 0; }
 #panel li.pair { margin: 6px 0; }
+#panel .attr { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
 #panel .ref, #panel .action {
   background: none;
   border: 0;

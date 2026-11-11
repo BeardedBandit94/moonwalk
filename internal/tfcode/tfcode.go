@@ -3,7 +3,8 @@
 // written, and which other blocks its expressions refer to.
 //
 // It reads structure only. Nothing is evaluated, so no variables, providers
-// or credentials are needed.
+// or credentials are needed. Both the native syntax and the JSON syntax are
+// read, and override files are applied on top of the blocks they change.
 package tfcode
 
 import (
@@ -42,6 +43,21 @@ type Block struct {
 	// DependsOn lists the addresses of the blocks this one's expressions
 	// refer to, directly or through locals, variables and module outputs.
 	DependsOn []string
+	// References says where each of those comes from, ordered by attribute.
+	References []Reference
+}
+
+// Reference is one place in a block where another block is referred to.
+type Reference struct {
+	// Attribute is the argument the reference is written in. Inside a
+	// nested block it is prefixed with the block's name, as in
+	// "ingress.security_groups".
+	Attribute string `json:"attribute"`
+	// Written is the reference as it stands in the code, such as
+	// "local.network_id" or "aws_vpc.main.id".
+	Written string `json:"written"`
+	// To is the address of the block it leads to.
+	To string `json:"to"`
 }
 
 // Config is the configuration found under one root directory.
@@ -60,8 +76,8 @@ type module struct {
 	parent *module
 	args   map[string]hcl.Expression // What the caller passes, by variable name.
 
-	blocks  map[string]*Block          // By local address, such as "aws_vpc.main".
-	bodies  map[string]*hclsyntax.Body // Each block's body, for its references.
+	blocks  map[string]*Block      // By local address, such as "aws_vpc.main".
+	exprs   map[string][]namedExpr // Each block's expressions, for its references.
 	locals  map[string]hcl.Expression
 	outputs map[string]hcl.Expression
 	calls   map[string]*module // By call name; nil if unresolved.
@@ -115,125 +131,287 @@ func (l *loader) readModulesManifest() {
 // maxModuleDepth stops a module that calls itself from recursing forever.
 const maxModuleDepth = 20
 
+// namedExpr is an expression and the argument it is written in. Inside a
+// nested block the name is prefixed with the block's, as in
+// "ingress.security_groups".
+type namedExpr struct {
+	attribute string
+	expr      hcl.Expression
+}
+
+// item is one top-level block of a configuration file, in a form that does
+// not depend on which syntax the file is written in.
+type item struct {
+	kind   string // resource, data, locals, output or module.
+	labels []string
+	exprs  []namedExpr
+	// Where it is written. EndLine and text are unknown for the JSON syntax.
+	file          string
+	line, endLine int
+	text          string
+}
+
 func (l *loader) load(dir, path string, parent *module, args map[string]hcl.Expression, depth int) (*module, error) {
 	m := &module{
 		path: path, parent: parent, args: args,
 		blocks:  map[string]*Block{},
-		bodies:  map[string]*hclsyntax.Body{},
+		exprs:   map[string][]namedExpr{},
 		locals:  map[string]hcl.Expression{},
 		outputs: map[string]hcl.Expression{},
 		calls:   map[string]*module{},
 	}
-	files, err := configFiles(dir)
+	primary, overrides, err := configFiles(dir)
 	if err != nil {
 		return nil, err
 	}
-	for _, file := range files {
-		src, err := os.ReadFile(file)
+	// Module calls are loaded once every file is read, since an override
+	// file may change what a call passes or where its source is.
+	callArgs := map[string]map[string]hcl.Expression{}
+	var callOrder []string
+
+	for i, file := range append(primary, overrides...) {
+		override := i >= len(primary)
+		items, err := l.parseFile(file)
 		if err != nil {
 			return nil, err
 		}
-		f, diags := l.parser.ParseHCL(src, file)
-		if diags.HasErrors() {
-			return nil, fmt.Errorf("%s", diags.Error())
-		}
-		body, ok := f.Body.(*hclsyntax.Body)
-		if !ok {
-			continue
-		}
-		rel, err := filepath.Rel(l.root, file)
-		if err != nil {
-			rel = file
-		}
-		for _, b := range body.Blocks {
-			switch {
-			case (b.Type == "resource" || b.Type == "data") && len(b.Labels) == 2:
-				blk := &Block{
-					Module:  path,
-					Mode:    graph.ModeManaged,
-					Type:    b.Labels[0],
-					Name:    b.Labels[1],
-					File:    filepath.ToSlash(rel),
-					Line:    b.Range().Start.Line,
-					EndLine: b.Range().End.Line,
-					Text:    string(b.Range().SliceBytes(src)),
+		for _, it := range items {
+			switch it.kind {
+			case "resource", "data":
+				local := it.labels[0] + "." + it.labels[1]
+				mode := graph.ModeManaged
+				if it.kind == "data" {
+					mode, local = graph.ModeData, "data."+local
 				}
-				local := blk.Type + "." + blk.Name
-				if b.Type == "data" {
-					blk.Mode = graph.ModeData
-					local = "data." + local
-				}
-				blk.Address = join(path, local)
-				m.blocks[local] = blk
-				m.bodies[local] = b.Body
-				l.cfg.Blocks[blk.Address] = blk
-			case b.Type == "locals":
-				for name, attr := range b.Body.Attributes {
-					m.locals[name] = attr.Expr
-				}
-			case b.Type == "output" && len(b.Labels) == 1:
-				if attr, ok := b.Body.Attributes["value"]; ok {
-					m.outputs[b.Labels[0]] = attr.Expr
-				}
-			case b.Type == "module" && len(b.Labels) == 1:
-				name := b.Labels[0]
-				childPath := join(path, "module."+name)
-				childArgs := map[string]hcl.Expression{}
-				for attr, a := range b.Body.Attributes {
-					childArgs[attr] = a.Expr
-				}
-				childDir, found := l.moduleDir(dir, childPath, b.Body)
-				if !found || depth >= maxModuleDepth {
-					m.calls[name] = nil
-					l.cfg.Unresolved = append(l.cfg.Unresolved, childPath)
+				if override {
+					// An override changes arguments of a block written
+					// elsewhere; on its own it declares nothing.
+					if _, ok := m.blocks[local]; ok {
+						m.exprs[local] = mergeExprs(m.exprs[local], it.exprs)
+					}
 					continue
 				}
-				child, err := l.load(childDir, childPath, m, childArgs, depth+1)
-				if err != nil {
-					return nil, err
+				blk := &Block{
+					Address: join(path, local), Module: path, Mode: mode,
+					Type: it.labels[0], Name: it.labels[1],
+					File: it.file, Line: it.line, EndLine: it.endLine, Text: it.text,
 				}
-				m.calls[name] = child
+				m.blocks[local] = blk
+				m.exprs[local] = it.exprs
+				l.cfg.Blocks[blk.Address] = blk
+			case "locals":
+				for _, e := range it.exprs {
+					m.locals[e.attribute] = e.expr
+				}
+			case "output":
+				for _, e := range it.exprs {
+					if e.attribute == "value" {
+						m.outputs[it.labels[0]] = e.expr
+					}
+				}
+			case "module":
+				name := it.labels[0]
+				if _, known := callArgs[name]; !known {
+					if override {
+						continue
+					}
+					callArgs[name] = map[string]hcl.Expression{}
+					callOrder = append(callOrder, name)
+				}
+				for _, e := range it.exprs {
+					callArgs[name][e.attribute] = e.expr
+				}
 			}
 		}
+	}
+
+	for _, name := range callOrder {
+		childPath := join(path, "module."+name)
+		childDir, found := l.moduleDir(dir, childPath, callArgs[name]["source"])
+		if !found || depth >= maxModuleDepth {
+			m.calls[name] = nil
+			l.cfg.Unresolved = append(l.cfg.Unresolved, childPath)
+			continue
+		}
+		child, err := l.load(childDir, childPath, m, callArgs[name], depth+1)
+		if err != nil {
+			return nil, err
+		}
+		m.calls[name] = child
 	}
 	return m, nil
 }
 
+// mergeExprs applies an override: its arguments replace those of the same
+// name, nested blocks included, and the rest stay.
+func mergeExprs(base, override []namedExpr) []namedExpr {
+	top := func(attribute string) string {
+		name, _, _ := strings.Cut(attribute, ".")
+		return name
+	}
+	replaced := map[string]bool{}
+	for _, e := range override {
+		replaced[top(e.attribute)] = true
+	}
+	var out []namedExpr
+	for _, e := range base {
+		if !replaced[top(e.attribute)] {
+			out = append(out, e)
+		}
+	}
+	return append(out, override...)
+}
+
+// parseFile reads one configuration file in either syntax.
+func (l *loader) parseFile(file string) ([]item, error) {
+	src, err := os.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+	rel, err := filepath.Rel(l.root, file)
+	if err != nil {
+		rel = file
+	}
+	rel = filepath.ToSlash(rel)
+
+	if strings.HasSuffix(file, ".json") {
+		f, diags := l.parser.ParseJSON(src, file)
+		if diags.HasErrors() {
+			return nil, fmt.Errorf("%s", diags.Error())
+		}
+		// Anything else at the top level (terraform, provider, variable)
+		// is of no interest here.
+		content, _, diags := f.Body.PartialContent(&hcl.BodySchema{Blocks: []hcl.BlockHeaderSchema{
+			{Type: "resource", LabelNames: []string{"type", "name"}},
+			{Type: "data", LabelNames: []string{"type", "name"}},
+			{Type: "module", LabelNames: []string{"name"}},
+			{Type: "output", LabelNames: []string{"name"}},
+			{Type: "locals"},
+		}})
+		if diags.HasErrors() {
+			return nil, fmt.Errorf("%s", diags.Error())
+		}
+		var items []item
+		for _, b := range content.Blocks {
+			// In JSON a nested block is an argument holding an object, and
+			// an expression reports the references anywhere inside it.
+			attrs, _ := b.Body.JustAttributes()
+			it := item{kind: b.Type, labels: b.Labels, file: rel, line: b.DefRange.Start.Line, endLine: b.DefRange.Start.Line}
+			for _, name := range sortedNames(attrs) {
+				it.exprs = append(it.exprs, namedExpr{name, attrs[name].Expr})
+			}
+			items = append(items, it)
+		}
+		return items, nil
+	}
+
+	f, diags := l.parser.ParseHCL(src, file)
+	if diags.HasErrors() {
+		return nil, fmt.Errorf("%s", diags.Error())
+	}
+	body, ok := f.Body.(*hclsyntax.Body)
+	if !ok {
+		return nil, nil
+	}
+	var items []item
+	for _, b := range body.Blocks {
+		it := item{
+			kind: b.Type, labels: b.Labels, file: rel,
+			line: b.Range().Start.Line, endLine: b.Range().End.Line,
+			text: string(b.Range().SliceBytes(src)),
+		}
+		switch {
+		case (b.Type == "resource" || b.Type == "data") && len(b.Labels) == 2:
+			collect(b.Body, "", &it.exprs)
+		case b.Type == "locals", b.Type == "module" && len(b.Labels) == 1, b.Type == "output" && len(b.Labels) == 1:
+			for _, name := range sortedNames(b.Body.Attributes) {
+				it.exprs = append(it.exprs, namedExpr{name, b.Body.Attributes[name].Expr})
+			}
+		default:
+			continue
+		}
+		items = append(items, it)
+	}
+	return items, nil
+}
+
+func sortedNames[V any](m map[string]V) []string {
+	names := make([]string, 0, len(m))
+	for name := range m {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
+// collect gathers every expression in a block body with the name of the
+// argument it is written in. Nested blocks prefix their name; a dynamic
+// block counts as the block it generates.
+func collect(body *hclsyntax.Body, prefix string, into *[]namedExpr) {
+	for _, name := range sortedNames(body.Attributes) {
+		*into = append(*into, namedExpr{prefix + name, body.Attributes[name].Expr})
+	}
+	for _, b := range body.Blocks {
+		switch {
+		case b.Type == "dynamic" && len(b.Labels) == 1:
+			collect(b.Body, prefix+b.Labels[0]+".", into)
+		case b.Type == "content":
+			collect(b.Body, prefix, into) // The body of a dynamic block.
+		default:
+			collect(b.Body, prefix+b.Type+".", into)
+		}
+	}
+}
+
 // moduleDir finds the directory of a module call: the manifest's entry if
 // `terraform init` wrote one, else a source given as a relative path.
-func (l *loader) moduleDir(callerDir, childPath string, body *hclsyntax.Body) (string, bool) {
+func (l *loader) moduleDir(callerDir, childPath string, source hcl.Expression) (string, bool) {
 	key := strings.ReplaceAll(strings.TrimPrefix(childPath, "module."), ".module.", ".")
 	if dir, ok := l.manifest[key]; ok {
 		if info, err := os.Stat(dir); err == nil && info.IsDir() {
 			return dir, true
 		}
 	}
-	attr, ok := body.Attributes["source"]
-	if !ok {
+	if source == nil {
 		return "", false
 	}
-	v, diags := attr.Expr.Value(nil) // A literal string needs no context.
+	v, diags := source.Value(nil) // A literal string needs no context.
 	if diags.HasErrors() || !v.IsKnown() || v.IsNull() || !v.Type().Equals(ctyString) {
 		return "", false
 	}
-	source := v.AsString()
-	if !strings.HasPrefix(source, "./") && !strings.HasPrefix(source, "../") {
+	path := v.AsString()
+	if !strings.HasPrefix(path, "./") && !strings.HasPrefix(path, "../") {
 		return "", false
 	}
-	dir := filepath.Join(callerDir, filepath.FromSlash(source))
+	dir := filepath.Join(callerDir, filepath.FromSlash(path))
 	if info, err := os.Stat(dir); err != nil || !info.IsDir() {
 		return "", false
 	}
 	return dir, true
 }
 
-// configFiles lists the configuration files of one module directory, in
-// order. Where both x.tofu and x.tf exist, OpenTofu reads only the former,
-// and so does this. Override files and the JSON syntax are not read.
-func configFiles(dir string) ([]string, error) {
+// configSuffixes are the endings of configuration files: the native and
+// JSON syntaxes, each as Terraform and as OpenTofu name them.
+var configSuffixes = []string{".tofu.json", ".tf.json", ".tofu", ".tf"}
+
+// IsConfigFile reports whether a file name is that of a configuration file.
+func IsConfigFile(name string) bool {
+	for _, suffix := range configSuffixes {
+		if strings.HasSuffix(name, suffix) {
+			return true
+		}
+	}
+	return false
+}
+
+// configFiles lists the configuration files of one module directory, each
+// group in order: the ordinary ones, then the override files, which are
+// applied on top. Where both x.tofu and x.tf exist, OpenTofu reads only
+// the former, and so does this.
+func configFiles(dir string) (primary, overrides []string, err error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	names := map[string]bool{}
 	for _, e := range entries {
@@ -241,27 +419,33 @@ func configFiles(dir string) ([]string, error) {
 			names[e.Name()] = true
 		}
 	}
-	var files []string
 	for name := range names {
-		base, ok := strings.CutSuffix(name, ".tf")
-		isTofu := false
-		if !ok {
-			base, isTofu = strings.CutSuffix(name, ".tofu")
-			ok = isTofu
-		}
-		if !ok || strings.HasPrefix(name, ".") || base == "override" || strings.HasSuffix(base, "_override") {
+		if strings.HasPrefix(name, ".") {
 			continue
 		}
-		if !isTofu && names[base+".tofu"] {
-			continue
+		for _, suffix := range configSuffixes {
+			base, ok := strings.CutSuffix(name, suffix)
+			if !ok {
+				continue
+			}
+			tofuTwin := base + strings.Replace(suffix, ".tf", ".tofu", 1)
+			if !strings.HasPrefix(suffix, ".tofu") && names[tofuTwin] {
+				break
+			}
+			if base == "override" || strings.HasSuffix(base, "_override") {
+				overrides = append(overrides, filepath.Join(dir, name))
+			} else {
+				primary = append(primary, filepath.Join(dir, name))
+			}
+			break
 		}
-		files = append(files, filepath.Join(dir, name))
 	}
-	sort.Strings(files)
-	if len(files) == 0 {
-		return nil, fmt.Errorf("no .tf or .tofu files in %s", dir)
+	sort.Strings(primary)
+	sort.Strings(overrides)
+	if len(primary) == 0 {
+		return nil, nil, fmt.Errorf("no configuration files (.tf, .tofu or their .json forms) in %s", dir)
 	}
-	return files, nil
+	return primary, overrides, nil
 }
 
 func join(path, local string) string {
@@ -271,19 +455,43 @@ func join(path, local string) string {
 	return path + "." + local
 }
 
-// resolve fills in DependsOn for every block of m and of the modules below.
+// resolve fills in DependsOn and References for every block of m and of
+// the modules below.
 func (l *loader) resolve(m *module) {
 	for local, blk := range m.blocks {
-		found := map[string]bool{}
-		for _, t := range traversals(m.bodies[local]) {
-			m.follow(t, found, map[hcl.Expression]bool{})
+		all := map[string]bool{}
+		seenRef := map[Reference]bool{}
+		for _, e := range m.exprs[local] {
+			for _, t := range e.expr.Variables() {
+				found := map[string]bool{}
+				m.follow(t, found, map[hcl.Expression]bool{})
+				written := l.written(t)
+				for addr := range found {
+					if addr == blk.Address {
+						continue // A block may mention itself.
+					}
+					all[addr] = true
+					if ref := (Reference{Attribute: e.attribute, Written: written, To: addr}); !seenRef[ref] {
+						seenRef[ref] = true
+						blk.References = append(blk.References, ref)
+					}
+				}
+			}
 		}
-		delete(found, blk.Address) // A block may refer to itself through self-like idioms.
-		blk.DependsOn = make([]string, 0, len(found))
-		for addr := range found {
+		blk.DependsOn = make([]string, 0, len(all))
+		for addr := range all {
 			blk.DependsOn = append(blk.DependsOn, addr)
 		}
 		slices.Sort(blk.DependsOn)
+		slices.SortFunc(blk.References, func(a, b Reference) int {
+			if c := strings.Compare(a.Attribute, b.Attribute); c != 0 {
+				return c
+			}
+			if c := strings.Compare(a.To, b.To); c != 0 {
+				return c
+			}
+			return strings.Compare(a.Written, b.Written)
+		})
 	}
 	for _, child := range m.calls {
 		if child != nil {
@@ -292,17 +500,14 @@ func (l *loader) resolve(m *module) {
 	}
 }
 
-// traversals returns every reference in a block body, nested and dynamic
-// blocks included.
-func traversals(body *hclsyntax.Body) []hcl.Traversal {
-	var out []hcl.Traversal
-	for _, attr := range body.Attributes {
-		out = append(out, attr.Expr.Variables()...)
+// written returns a reference as it stands in its file. The JSON syntax
+// gives no exact position, so there the reference is spelled out again.
+func (l *loader) written(t hcl.Traversal) string {
+	rng := t.SourceRange()
+	if f := l.parser.Files()[rng.Filename]; f != nil && !strings.HasSuffix(rng.Filename, ".json") && rng.CanSliceBytes(f.Bytes) {
+		return string(rng.SliceBytes(f.Bytes))
 	}
-	for _, b := range body.Blocks {
-		out = append(out, traversals(b.Body)...)
-	}
-	return out
+	return strings.Join(attributeNames(t), ".")
 }
 
 // follow adds to found the blocks that a reference written in module m

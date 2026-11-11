@@ -37,6 +37,7 @@ net  (source, 14 resources)
           -> aws_vpc.main
       aws_security_group.app  (declared)
           -> aws_security_group.lb
+          -> aws_vpc.main
       aws_security_group.lb  (declared)
           -> aws_vpc.main
       aws_vpc.main

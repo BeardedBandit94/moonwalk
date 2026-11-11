@@ -209,14 +209,126 @@ module "inner" { source = "./inner" }`,
 	}
 }
 
+// An override file changes arguments of blocks written elsewhere. What it
+// sets replaces the argument of the same name; the rest of the block stays.
+func TestOverrideFiles(t *testing.T) {
+	dir := t.TempDir()
+	write(t, dir, map[string]string{
+		"main.tf": `
+locals {
+  target = t.a.id
+}
+resource "t" "a" {}
+resource "t" "b" {}
+resource "t" "c" {}
+resource "t" "user" {
+  first  = local.target
+  second = t.b.id
+  nested {
+    inner = t.b.id
+  }
+}
+module "kid" {
+  source = "./kid"
+  input  = t.a.id
+}
+`,
+		"override.tf": `
+locals {
+  target = t.c.id       # Now leads to c instead of a.
+}
+resource "t" "user" {
+  second = "a constant"  # Drops the reference to b in this argument.
+}
+resource "t" "only_in_override" {}
+`,
+		"kid_override.tf.json": `{"module": {"kid": {"input": "${t.b.id}"}}}`,
+		"kid/main.tf":          "variable \"input\" {}\nresource \"k\" \"x\" {\n  v = var.input\n}\n",
+	})
+	c, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, declared := c.Blocks["t.only_in_override"]; declared {
+		t.Error("an override file declared a block on its own")
+	}
+	user := c.Blocks["t.user"]
+	want := []Reference{
+		{Attribute: "first", Written: "local.target", To: "t.c"},
+		{Attribute: "nested.inner", Written: "t.b.id", To: "t.b"},
+	}
+	if !reflect.DeepEqual(user.References, want) || user.File != "main.tf" {
+		t.Errorf("t.user in %s:\n got %+v\nwant %+v", user.File, user.References, want)
+	}
+	// The module call's argument was overridden, from a JSON file.
+	if got := c.Blocks["module.kid.k.x"].DependsOn; !reflect.DeepEqual(got, []string{"t.b"}) {
+		t.Errorf("module.kid.k.x depends on %q, want t.b", got)
+	}
+}
+
+// The JSON syntax, which generators such as CDK for Terraform write.
+func TestJSONSyntax(t *testing.T) {
+	dir := t.TempDir()
+	write(t, dir, map[string]string{
+		"main.tf.json": `{
+  "terraform": {"required_version": ">= 1.5"},
+  "variable": {"name": {"default": "x"}},
+  "locals": {"net": "${aws_vpc.main.id}"},
+  "resource": {
+    "aws_vpc": {"main": {"cidr_block": "10.0.0.0/16"}},
+    "aws_subnet": {
+      "a": {"vpc_id": "${local.net}", "tags": {"Name": "${var.name}"}},
+      "b": {"vpc_id": "${aws_vpc.main.id}", "timeouts": {"create": "${data.t_wait.d.value}"}}
+    }
+  },
+  "data": {"t_wait": {"d": {}}},
+  "module": {"logs": {"source": "./logs", "bucket": "${aws_subnet.a.id}"}},
+  "output": {"subnet": {"value": "${aws_subnet.a.id}"}}
+}`,
+		"logs/main.tf.json": `{"variable": {"bucket": {}}, "resource": {"t_log": {"l": {"to": "${var.bucket}"}}}}`,
+		// Both syntaxes can sit in one module.
+		"extra.tf": `resource "aws_eip" "ip" { subnet = aws_subnet.b.id }`,
+	})
+	c, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"aws_eip.ip", "aws_subnet.a", "aws_subnet.b", "aws_vpc.main", "data.t_wait.d", "module.logs.t_log.l"}
+	if got := addresses(c); !reflect.DeepEqual(got, want) {
+		t.Fatalf("blocks %q, want %q", got, want)
+	}
+	deps := map[string][]string{
+		"aws_vpc.main":        {},
+		"aws_subnet.a":        {"aws_vpc.main"},                  // Through a local.
+		"aws_subnet.b":        {"aws_vpc.main", "data.t_wait.d"}, // The second inside a nested object.
+		"module.logs.t_log.l": {"aws_subnet.a"},                  // Through a variable.
+		"aws_eip.ip":          {"aws_subnet.b"},
+	}
+	for addr, want := range deps {
+		if got := c.Blocks[addr].DependsOn; !reflect.DeepEqual(got, want) {
+			t.Errorf("%s depends on %q, want %q", addr, got, want)
+		}
+	}
+	a := c.Blocks["aws_subnet.a"]
+	if a.File != "main.tf.json" || a.Line < 1 || a.Type != "aws_subnet" {
+		t.Errorf("location: %+v", a)
+	}
+	if want := []Reference{{Attribute: "vpc_id", Written: "local.net", To: "aws_vpc.main"}}; !reflect.DeepEqual(a.References, want) {
+		t.Errorf("references: %+v", a.References)
+	}
+}
+
 func TestWhichFilesAreRead(t *testing.T) {
 	dir := t.TempDir()
 	write(t, dir, map[string]string{
 		"both.tf":          `resource "t" "from_tf" {}`,
 		"both.tofu":        `resource "t" "from_tofu" {}`, // OpenTofu reads this one instead.
 		"plain.tf":         `resource "t" "plain" {}`,
+		"twin.tf.json":     `{"resource": {"t": {"json_from_tf": {}}}}`,
+		"twin.tofu.json":   `{"resource": {"t": {"json_from_tofu": {}}}}`,
 		"override.tf":      `resource "t" "plain" { x = 1 }`,
 		"more_override.tf": `resource "t" "plain" { x = 2 }`,
+		"only.json":        `{"resource": {"t": {"plain_json": {}}}}`, // Not a configuration file name.
 		"notes.txt":        `resource "t" "not_code" {}`,
 		"vars.tfvars":      `x = 1`,
 		".hidden.tf":       `resource "t" "hidden" {}`,
@@ -226,7 +338,7 @@ func TestWhichFilesAreRead(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, want := addresses(c), []string{"t.from_tofu", "t.plain"}; !reflect.DeepEqual(got, want) {
+	if got, want := addresses(c), []string{"t.from_tofu", "t.json_from_tofu", "t.plain"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("blocks %q, want %q", got, want)
 	}
 }
@@ -333,8 +445,28 @@ func TestApply(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res != (Result{Linked: 11, Declared: 6}) {
+	if res != (Result{Linked: 11, Declared: 6, Indirect: 4}) {
 		t.Errorf("result: %+v", res)
+	}
+	// State records the network as a dependency of everything in it. The
+	// code shows these four reach it only through a subnet or route table.
+	for _, gone := range []string{
+		"aws_instance.app > aws_vpc.main",
+		"aws_lb.web > aws_vpc.main",
+		"aws_route_table_association.private[0] > aws_vpc.main",
+		"aws_route_table_association.private[1] > aws_vpc.main",
+	} {
+		from, to, _ := strings.Cut(gone, " > ")
+		if !before["net::"+from+" > net::"+to] {
+			t.Errorf("fixture no longer records %s", gone)
+		}
+		if g.HasEdge(graph.Edge{From: "net::" + from, To: "net::" + to, Kind: graph.EdgeDependsOn}) {
+			t.Errorf("%s is indirect in the code but was kept", gone)
+		}
+	}
+	// The subnets do refer to the network themselves.
+	if !g.HasEdge(graph.Edge{From: "net::aws_subnet.private[0]", To: "net::aws_vpc.main", Kind: graph.EdgeDependsOn}) {
+		t.Error("a direct dependency was removed")
 	}
 
 	// Both instances of a counted block point at the one block.
@@ -378,6 +510,127 @@ func TestApply(t *testing.T) {
 	}
 	if !reflect.DeepEqual(added, want) {
 		t.Errorf("edges added:\n got %s\nwant %s", strings.Join(added, "\n     "), strings.Join(want, "\n     "))
+	}
+}
+
+func loadState(t *testing.T, g *graph.Graph, source, state string) {
+	t.Helper()
+	if err := tfstate.Load(g, source, strings.NewReader(state)); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestApplySeparatesDirectFromIndirect(t *testing.T) {
+	dir := t.TempDir()
+	write(t, dir, map[string]string{"main.tf": `
+resource "t" "base" {}
+resource "t" "mid" {
+  x = t.base.id
+}
+resource "t" "top" {
+  x = t.mid.id
+  y = t.base.id   # A shortcut that is really written.
+}
+resource "t" "far" {
+  x = t.mid.id
+}
+resource "t" "changed" {}
+`})
+	c, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// State records every dependency, direct or not. "changed" depended on
+	// base when it was applied; the code has since dropped the reference.
+	g := graph.New()
+	loadState(t, g, "s", `{"version":4,"terraform_version":"1.9.5","resources":[
+	  {"mode":"managed","type":"t","name":"base","provider":"p","instances":[{}]},
+	  {"mode":"managed","type":"t","name":"mid","provider":"p","instances":[{"dependencies":["t.base"]}]},
+	  {"mode":"managed","type":"t","name":"top","provider":"p","instances":[{"dependencies":["t.base","t.mid"]}]},
+	  {"mode":"managed","type":"t","name":"far","provider":"p","instances":[{"dependencies":["t.base","t.mid"]}]},
+	  {"mode":"managed","type":"t","name":"changed","provider":"p","instances":[{"dependencies":["t.base"]}]},
+	  {"mode":"managed","type":"t","name":"removed","provider":"p","instances":[{"dependencies":["t.base"]}]}]}`)
+	res, err := c.Apply(g, "s")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Indirect != 1 || res.NotInCode != 1 {
+		t.Errorf("result: %+v", res)
+	}
+	// Reducing afterwards must not undo what the code settled.
+	g.ReduceTransitive(graph.EdgeDependsOn)
+	var got []string
+	for _, e := range g.Edges() {
+		got = append(got, strings.ReplaceAll(e.From+" > "+e.To, "s::", ""))
+	}
+	want := []string{
+		"t.changed > t.base", // Not explained by the code, so kept.
+		"t.far > t.mid",      // Its dependency on base was indirect.
+		"t.mid > t.base",
+		"t.removed > t.base",
+		"t.top > t.base", // Written in the code, so kept although mid also leads there.
+		"t.top > t.mid",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("edges:\n got %q\nwant %q", got, want)
+	}
+
+	removed, _ := g.Node("s::t.removed")
+	base, _ := g.Node("s::t.base")
+	if !removed.NotInCode || base.NotInCode || removed.Code != nil {
+		t.Errorf("not in code: removed %v, base %v", removed.NotInCode, base.NotInCode)
+	}
+}
+
+// Nothing can be said about a resource whose module's code was not found.
+func TestApplyDoesNotFlagResourcesOfUnresolvedModules(t *testing.T) {
+	dir := t.TempDir()
+	write(t, dir, map[string]string{"main.tf": `module "vpc" { source = "example/vpc/aws" }`})
+	c, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := graph.New()
+	loadState(t, g, "s", `{"version":4,"terraform_version":"1.9.5","resources":[
+	  {"module":"module.vpc","mode":"managed","type":"t","name":"inside","provider":"p","instances":[{}]},
+	  {"mode":"managed","type":"t","name":"outside","provider":"p","instances":[{}]},
+	  {"mode":"data","type":"t","name":"read","provider":"p","instances":[{}]}]}`)
+	if _, err := c.Apply(g, "s"); err != nil {
+		t.Fatal(err)
+	}
+	for id, want := range map[string]bool{"s::module.vpc.t.inside": false, "s::t.outside": true, "s::data.t.read": false} {
+		if n, _ := g.Node(id); n.NotInCode != want {
+			t.Errorf("%s: not in code = %v, want %v", id, n.NotInCode, want)
+		}
+	}
+}
+
+func TestReferencesNameTheirAttribute(t *testing.T) {
+	c := network(t)
+	cases := map[string][]Reference{
+		"aws_route_table.private": {{Attribute: "vpc_id", Written: "local.network_id", To: "aws_vpc.main"}},
+		"aws_security_group.app": {
+			// Inside a dynamic block, named for the block it generates.
+			{Attribute: "ingress.security_groups", Written: "aws_security_group.lb.id", To: "aws_security_group.lb"},
+			{Attribute: "vpc_id", Written: "local.network_id", To: "aws_vpc.main"},
+		},
+		"aws_subnet.private": {
+			{Attribute: "cidr_block", Written: "aws_vpc.main.cidr_block", To: "aws_vpc.main"},
+			{Attribute: "vpc_id", Written: "aws_vpc.main.id", To: "aws_vpc.main"},
+		},
+		"module.logs.aws_flow_log.vpc": {
+			{Attribute: "log_destination", Written: "aws_cloudwatch_log_group.flow.arn", To: "module.logs.aws_cloudwatch_log_group.flow"},
+			{Attribute: "vpc_id", Written: "var.vpc_id", To: "aws_vpc.main"},
+		},
+		"aws_cloudwatch_log_metric_filter.errors": {
+			{Attribute: "depends_on", Written: "aws_lb.web", To: "aws_lb.web"},
+			{Attribute: "log_group_name", Written: "module.logs.group_name", To: "module.logs.aws_cloudwatch_log_group.flow"},
+		},
+	}
+	for addr, want := range cases {
+		if got := c.Blocks[addr].References; !reflect.DeepEqual(got, want) {
+			t.Errorf("%s:\n got %+v\nwant %+v", addr, got, want)
+		}
 	}
 }
 
