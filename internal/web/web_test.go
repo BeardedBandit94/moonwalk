@@ -264,6 +264,98 @@ func TestResourceAttributesOfUnmarkedStatesAreWithheld(t *testing.T) {
 	}
 }
 
+func TestMetaListsFilterValues(t *testing.T) {
+	var m metaResponse
+	getJSON(t, serve(t), "/api/meta", &m)
+	if got := strings.Join(m.Accounts, ","); got != "123456789012" {
+		t.Errorf("accounts: %q", got)
+	}
+	if got := strings.Join(m.Regions, ","); got != "global,us-east-1" {
+		t.Errorf("regions: %q", got)
+	}
+	if got := strings.Join(m.Statuses, ","); got != "managed" {
+		t.Errorf("statuses: %q", got)
+	}
+}
+
+func TestLink(t *testing.T) {
+	ts := serve(t)
+	pairs := func(r linkResponse) string {
+		var out []string
+		for _, p := range r.Pairs {
+			line := p.From.Address + ">" + p.To.Address
+			if p.Via != nil {
+				line += " by " + p.Via.Address
+			}
+			out = append(out, line)
+		}
+		return strings.Join(out, ",")
+	}
+	q := func(from, to, more string) string {
+		return "/api/link?group_by=source,region&from=" + url.QueryEscape(from) + "&to=" + url.QueryEscape(to) + more
+	}
+
+	// Between two collapsed groups: every dependency that crosses.
+	var r linkResponse
+	getJSON(t, ts, q("source:net/region:us-east-1/block:aws_subnet.private", "net::aws_vpc.main", ""), &r)
+	if r.Total != 2 || pairs(r) != "aws_subnet.private[0]>aws_vpc.main,aws_subnet.private[1]>aws_vpc.main" {
+		t.Errorf("subnets to network: %d, %s", r.Total, pairs(r))
+	}
+
+	// A glue link is found from either end, and names its glue.
+	want := "aws_route_table.private>aws_subnet.private[0] by aws_route_table_association.private[0]," +
+		"aws_route_table.private>aws_subnet.private[1] by aws_route_table_association.private[1]"
+	getJSON(t, ts, q("net::aws_route_table.private", "source:net/region:us-east-1/block:aws_subnet.private", ""), &r)
+	if pairs(r) != want {
+		t.Errorf("route table to subnets: %s", pairs(r))
+	}
+	getJSON(t, ts, q("source:net/region:us-east-1/block:aws_subnet.private", "net::aws_route_table.private", ""), &r)
+	if pairs(r) != want {
+		t.Errorf("subnets to route table: %s", pairs(r))
+	}
+	// With glue shown as resources, the link it stood for is not listed.
+	getJSON(t, ts, q("net::aws_route_table.private", "source:net/region:us-east-1/block:aws_subnet.private", "&glue=1"), &r)
+	if r.Total != 0 {
+		t.Errorf("with glue shown: %s", pairs(r))
+	}
+
+	if status, _ := get(t, ts, q("net::aws_vpc.main", "nowhere", "")); status != http.StatusNotFound {
+		t.Errorf("unknown item: status %d", status)
+	}
+}
+
+// Replacing the graph changes the generation, which is how the page learns
+// that a state file changed.
+func TestReplace(t *testing.T) {
+	g := graph.New()
+	s := New(g)
+	ts := httptest.NewServer(s.Handler())
+	t.Cleanup(ts.Close)
+
+	var m metaResponse
+	getJSON(t, ts, "/api/meta", &m)
+	if m.Generation != 1 || m.Resources != 0 {
+		t.Fatalf("before: %+v", m)
+	}
+	fresh := graph.New()
+	if err := fresh.AddNode(graph.Node{ID: "s::a", Source: "s", Address: "a"}); err != nil {
+		t.Fatal(err)
+	}
+	s.Replace(fresh)
+	res, err := http.Get(ts.URL + "/api/view")
+	if err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+	if got := res.Header.Get("X-Moonwalk-Generation"); got != "2" {
+		t.Errorf("generation header: %q", got)
+	}
+	getJSON(t, ts, "/api/meta", &m)
+	if m.Generation != 2 || m.Resources != 1 {
+		t.Errorf("after: %+v", m)
+	}
+}
+
 func TestFrontEndIsServed(t *testing.T) {
 	ts := serve(t)
 	for path, want := range map[string]string{

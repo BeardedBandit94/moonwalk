@@ -18,11 +18,17 @@ go run ./cmd/moonwalk serve terraform.tfstate
 ```
 
 It starts on the same collapsed view that `view` prints, as nested boxes
-with the dependencies drawn between them. Click a group to open or close it
-and a resource to see its details: where it sits, what it depends on, what
-depends on it, and its attributes with secrets redacted. The grouping, a
-search and a type filter are in the bar at the top, and the address bar
-always holds a link back to what is on screen.
+with the dependencies drawn between them.
+
+- Click a group to open or close it. If opening one would put more than 300
+  items on screen, the groups opened longest ago are closed to make room.
+- Click a resource to see its details: where it sits, what it depends on,
+  what depends on it, and its attributes with secrets redacted.
+- Click a link to list the dependencies it stands for.
+- The bar at the top holds the grouping, a search, and filters by type,
+  account, region and status.
+- The address bar always holds a link back to what is on screen.
+- When a state file changes on disk, the explorer loads it again.
 
 The explorer listens on `127.0.0.1:7878` and answers only requests
 addressed to this machine. `-addr` changes that; since the page shows
@@ -182,6 +188,7 @@ Both commands take `-format json`, and the output carries a
 | `internal/relate` | Relationships inferred from attributes: containment, glue |
 | `internal/view` | Grouping of a graph, filters, and the collapsed views of it |
 | `internal/web` | The explorer: a JSON API over the graph and the browser front end |
+| `e2e` | A browser test of the explorer; not part of the build |
 | `internal/tfaddr` | Parsing of Terraform resource addresses |
 
 New inputs (HCL, live discovery) are added as further adapters that produce a
@@ -191,6 +198,20 @@ New inputs (HCL, live discovery) are added as further adapters that produce a
 
 ```bash
 go test ./...
+```
+
+The explorer has a browser test, which needs Node and Playwright:
+
+```bash
+go build -o moonwalk ./cmd/moonwalk
+```
+
+```bash
+(cd e2e && npm install && npx playwright install chromium)
+```
+
+```bash
+MOONWALK_BIN=./moonwalk node e2e/explorer.cjs
 ```
 
 Golden files for the command-line tests are rewritten with:

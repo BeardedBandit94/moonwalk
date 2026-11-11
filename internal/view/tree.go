@@ -419,6 +419,28 @@ func (t *Tree) GroupOf(nodeID string) string {
 	return ""
 }
 
+// NodesUnder returns the IDs of the resources an item of a view stands for:
+// every resource inside a group, or the resource itself. It returns nil for
+// an ID the tree does not show.
+func (t *Tree) NodesUnder(itemID string) []string {
+	if grp, ok := t.groups[itemID]; ok {
+		var ids []string
+		var walk func(*Group)
+		walk = func(g *Group) {
+			ids = append(ids, g.Nodes...)
+			for _, c := range g.Groups {
+				walk(c)
+			}
+		}
+		walk(grp)
+		return ids
+	}
+	if t.Shows(itemID) {
+		return []string{itemID}
+	}
+	return nil
+}
+
 // Shows reports whether the tree shows the resource.
 func (t *Tree) Shows(nodeID string) bool {
 	_, ok := t.inGroup[nodeID]

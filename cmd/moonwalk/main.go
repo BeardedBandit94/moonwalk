@@ -137,23 +137,14 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		}
 	}
 
-	inputs, err := resolveInputs(fs.Args())
+	g, err := loadGraph(fs.Args(), stdin)
 	if err != nil {
 		return err
 	}
-	g := graph.New()
-	for _, in := range inputs {
-		if err := in.load(g, stdin); err != nil {
-			return err
-		}
-	}
-	// Work out containment, drop dependencies on instances that are
-	// evidently not meant, and find the glue.
-	relate.Enrich(g)
 
 	if command == "serve" {
 		warnWithheld(stderr, g.Document())
-		return serve(g, o.addr, stdout)
+		return serve(g, fs.Args(), o.addr, stdout, stderr)
 	}
 	if command == "graph" {
 		if o.direct {
@@ -217,8 +208,26 @@ func warnWithheld(stderr io.Writer, d graph.Document) {
 	}
 }
 
-// serve runs the explorer until the process is stopped.
-func serve(g *graph.Graph, addr string, stdout io.Writer) error {
+// loadGraph reads the states the arguments name into one graph and works
+// out containment and glue.
+func loadGraph(args []string, stdin io.Reader) (*graph.Graph, error) {
+	inputs, err := resolveInputs(args)
+	if err != nil {
+		return nil, err
+	}
+	g := graph.New()
+	for _, in := range inputs {
+		if err := in.load(g, stdin); err != nil {
+			return nil, err
+		}
+	}
+	relate.Enrich(g)
+	return g, nil
+}
+
+// serve runs the explorer until the process is stopped, loading the states
+// again whenever one of their files changes.
+func serve(g *graph.Graph, args []string, addr string, stdout, stderr io.Writer) error {
 	// Views count what is there; indirect dependencies would inflate them.
 	g.ReduceTransitive(graph.EdgeDependsOn)
 	ln, err := net.Listen("tcp", addr)
@@ -237,7 +246,60 @@ func serve(g *graph.Graph, addr string, stdout io.Writer) error {
 	}
 	nodes, _ := g.Len()
 	fmt.Fprintf(stdout, "Serving %s at http://%s/ (Ctrl-C to stop)\n", plural(nodes, "resource"), net.JoinHostPort(host, port))
+
+	go watch(args, 2*time.Second, func() {
+		// Standard input was read once and cannot be read again; watch
+		// never calls back when it is among the states.
+		fresh, err := loadGraph(args, nil)
+		if err != nil {
+			fmt.Fprintf(stderr, "moonwalk: a state changed but could not be loaded, so the explorer still shows the last good one: %v\n", err)
+			return
+		}
+		fresh.ReduceTransitive(graph.EdgeDependsOn)
+		srv.Replace(fresh)
+		n, _ := fresh.Len()
+		fmt.Fprintf(stdout, "Reloaded: %s\n", plural(n, "resource"))
+	})
 	return (&http.Server{Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second}).Serve(ln)
+}
+
+// watch calls changed each time the files behind the arguments change, and
+// never returns. It does nothing if they include standard input.
+func watch(args []string, every time.Duration, changed func()) {
+	last, ok := fingerprint(args)
+	if !ok {
+		return
+	}
+	for range time.Tick(every) {
+		now, _ := fingerprint(args)
+		if now != last {
+			last = now
+			changed()
+		}
+	}
+}
+
+// fingerprint summarizes the files the arguments name: which there are,
+// and each one's size and modification time. ok is false if the arguments
+// include standard input, which cannot be watched.
+func fingerprint(args []string) (print string, ok bool) {
+	inputs, err := resolveInputs(args)
+	if err != nil {
+		return "unreadable: " + err.Error(), true
+	}
+	var b strings.Builder
+	for _, in := range inputs {
+		if in.path == "-" {
+			return "", false
+		}
+		info, err := os.Stat(in.path)
+		if err != nil {
+			fmt.Fprintf(&b, "%s: %v\n", in.path, err)
+			continue
+		}
+		fmt.Fprintf(&b, "%s %d %d\n", in.path, info.Size(), info.ModTime().UnixNano())
+	}
+	return b.String(), true
 }
 
 // list splits a comma-separated flag value; an empty value gives no list.
