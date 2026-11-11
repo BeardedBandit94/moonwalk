@@ -17,9 +17,10 @@ type rawState struct {
 		Name      string `json:"name"`
 		Provider  string `json:"provider"`
 		Instances []struct {
-			IndexKey     any      `json:"index_key"`
-			Deposed      string   `json:"deposed"`
-			Dependencies []string `json:"dependencies"`
+			IndexKey     any            `json:"index_key"`
+			Deposed      string         `json:"deposed"`
+			Attributes   map[string]any `json:"attributes"`
+			Dependencies []string       `json:"dependencies"`
 		} `json:"instances"`
 	} `json:"resources"`
 }
@@ -28,7 +29,7 @@ type rawState struct {
 func parseRaw(data []byte) ([]resource, error) {
 	var st rawState
 	if err := json.Unmarshal(data, &st); err != nil {
-		return nil, fmt.Errorf("tfstate: parse state file: %w", err)
+		return nil, fmt.Errorf("parse state file: %w", err)
 	}
 	var out []resource
 	for _, r := range st.Resources {
@@ -45,19 +46,18 @@ func parseRaw(data []byte) ([]resource, error) {
 			}
 			key, err := indexSuffix(inst.IndexKey)
 			if err != nil {
-				return nil, fmt.Errorf("tfstate: %s: %w", base, err)
+				return nil, fmt.Errorf("%s: %w", base, err)
 			}
 			out = append(out, resource{
 				node: graph.Node{
-					ID:            base + key,
-					ConfigAddress: configAddress(base),
-					Module:        r.Module,
-					Mode:          graph.Mode(r.Mode),
-					Type:          r.Type,
-					Name:          r.Name,
-					Provider:      providerSource(r.Provider),
-					Status:        graph.StatusManaged,
+					Address:  base + key,
+					Module:   r.Module,
+					Mode:     graph.Mode(r.Mode),
+					Type:     r.Type,
+					Name:     r.Name,
+					Provider: providerSource(r.Provider),
 				},
+				attrs:     inst.Attributes,
 				dependsOn: inst.Dependencies,
 			})
 		}

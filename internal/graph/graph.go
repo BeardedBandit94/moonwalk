@@ -37,12 +37,23 @@ const EdgeDependsOn EdgeKind = "depends_on"
 
 // Node is one resource instance.
 type Node struct {
-	// ID is unique within a graph. For Terraform it is the instance address,
-	// for example `module.net.aws_subnet.private["a"]`.
+	// ID is unique within a graph. Adapters build it from Source and Address
+	// so that the same address in two states stays distinct.
 	ID string `json:"id"`
-	// ConfigAddress is ID with instance keys removed. All instances created
-	// by one resource block share it.
+	// Source names the input the node came from, such as a state file. It is
+	// the first partition: nodes from one source were loaded together.
+	Source string `json:"source"`
+	// Address is the instance address within Source, for example
+	// `module.net.aws_subnet.private["a"]`.
+	Address string `json:"address"`
+	// ConfigAddress is Address with instance keys removed. All instances
+	// created by one resource block share it.
 	ConfigAddress string `json:"config_address"`
+	// Account is the cloud account, subscription or project that owns the
+	// resource, and Region is where it lives. Both are best effort: they are
+	// empty when unknown, and Region is also empty for global resources.
+	Account string `json:"account,omitempty"`
+	Region  string `json:"region,omitempty"`
 	// Module is the module instance path, or "" for the root module.
 	Module   string `json:"module,omitempty"`
 	Mode     Mode   `json:"mode"`

@@ -13,7 +13,7 @@ import (
 func parseShowJSON(data []byte) ([]resource, error) {
 	var st tfjson.State
 	if err := json.Unmarshal(data, &st); err != nil {
-		return nil, fmt.Errorf("tfstate: parse show-json state: %w", err)
+		return nil, fmt.Errorf("parse show-json state: %w", err)
 	}
 	if st.Values == nil || st.Values.RootModule == nil {
 		return nil, nil // An empty state has no values.
@@ -30,15 +30,14 @@ func walkModule(m *tfjson.StateModule, out *[]resource) {
 		}
 		*out = append(*out, resource{
 			node: graph.Node{
-				ID:            r.Address,
-				ConfigAddress: configAddress(r.Address),
-				Module:        m.Address,
-				Mode:          graph.Mode(r.Mode),
-				Type:          r.Type,
-				Name:          r.Name,
-				Provider:      r.ProviderName,
-				Status:        graph.StatusManaged,
+				Address:  r.Address,
+				Module:   m.Address,
+				Mode:     graph.Mode(r.Mode),
+				Type:     r.Type,
+				Name:     r.Name,
+				Provider: r.ProviderName,
 			},
+			attrs:     r.AttributeValues,
 			dependsOn: r.DependsOn,
 		})
 	}

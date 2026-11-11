@@ -19,7 +19,19 @@ terraform show -json | go run ./cmd/moonwalk graph -format json -
 Both raw version 4 state files and `terraform show -json` / `tofu show -json`
 output are accepted, and produce the same graph.
 
-Attribute values are not loaded yet. State stores secrets in plain text, so
+Several states load into one graph, each as its own source:
+
+```bash
+go run ./cmd/moonwalk graph network.tfstate app.tfstate
+```
+
+Every node records its source and, where it can be worked out, its account
+and region. These come from resource attributes for the AWS, Azure and Google
+providers (ARN, subscription ID, project and so on) and are left empty when
+unknown. Dependencies between resources in different states are not detected
+yet.
+
+Other attribute values are not loaded. State stores secrets in plain text, so
 they stay out of the graph until redaction exists.
 
 ## Layout

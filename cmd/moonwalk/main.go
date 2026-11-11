@@ -7,16 +7,18 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/BeardedBandit94/moonwalk/internal/graph"
 	"github.com/BeardedBandit94/moonwalk/internal/tfstate"
 )
 
 const usage = `Usage:
-  moonwalk graph [-format text|json] <state-file>
+  moonwalk graph [-format text|json] <state-file>...
 
-Reads a Terraform or OpenTofu state ('terraform show -json' output or a raw
-.tfstate file) and prints its resource graph. Use "-" to read standard input.
+Reads one or more Terraform or OpenTofu states ('terraform show -json' output
+or raw .tfstate files) and prints them as a single resource graph. Each state
+is a separate source, named after its path. Use "-" to read standard input.
 `
 
 func main() {
@@ -36,53 +38,89 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 	if err := fs.Parse(args[1:]); err != nil {
 		return fmt.Errorf("%w\n\n%s", err, usage)
 	}
-	if fs.NArg() != 1 {
-		return fmt.Errorf("expected exactly one state file\n\n%s", usage)
+	if fs.NArg() == 0 {
+		return fmt.Errorf("expected at least one state file\n\n%s", usage)
+	}
+	if *format != "text" && *format != "json" {
+		return fmt.Errorf("unknown format %q (want text or json)", *format)
 	}
 
-	in := stdin
-	if path := fs.Arg(0); path != "-" {
-		f, err := os.Open(path)
-		if err != nil {
+	g := graph.New()
+	seen := map[string]bool{}
+	for _, path := range fs.Args() {
+		if seen[path] {
+			return fmt.Errorf("state %q given more than once", path)
+		}
+		seen[path] = true
+		if err := loadState(g, path, stdin); err != nil {
 			return err
 		}
-		defer f.Close()
-		in = f
-	}
-	g, err := tfstate.Load(in)
-	if err != nil {
-		return err
 	}
 
-	switch *format {
-	case "json":
+	if *format == "json" {
 		enc := json.NewEncoder(stdout)
 		enc.SetIndent("", "  ")
 		return enc.Encode(g.Document())
-	case "text":
-		return writeText(stdout, g.Document())
-	default:
-		return fmt.Errorf("unknown format %q (want text or json)", *format)
 	}
+	return writeText(stdout, g.Document())
 }
 
+func loadState(g *graph.Graph, path string, stdin io.Reader) error {
+	if path == "-" {
+		return tfstate.Load(g, "stdin", stdin)
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return tfstate.Load(g, path, f)
+}
+
+// writeText prints nodes grouped by source, each followed by its dependencies.
 func writeText(w io.Writer, d graph.Document) error {
+	byID := map[string]graph.Node{}
+	var sources []string // In order of first appearance; nodes are sorted by ID.
+	for _, n := range d.Nodes {
+		byID[n.ID] = n
+		if len(sources) == 0 || sources[len(sources)-1] != n.Source {
+			sources = append(sources, n.Source)
+		}
+	}
 	deps := map[string][]string{}
 	for _, e := range d.Edges {
 		deps[e.From] = append(deps[e.From], e.To)
 	}
-	if _, err := fmt.Fprintf(w, "%d resources, %d dependencies\n", len(d.Nodes), len(d.Edges)); err != nil {
-		return err
-	}
-	for _, n := range d.Nodes {
-		if _, err := fmt.Fprintf(w, "\n%s\n", n.ID); err != nil {
-			return err
-		}
-		for _, to := range deps[n.ID] {
-			if _, err := fmt.Fprintf(w, "  -> %s\n", to); err != nil {
-				return err
+
+	var b strings.Builder
+	fmt.Fprintf(&b, "%d resources, %d dependencies, %d sources\n", len(d.Nodes), len(d.Edges), len(sources))
+	i := 0
+	for _, source := range sources {
+		fmt.Fprintf(&b, "\n%s\n", source)
+		for ; i < len(d.Nodes) && d.Nodes[i].Source == source; i++ {
+			n := d.Nodes[i]
+			fmt.Fprintf(&b, "  %s%s\n", n.Address, partitionLabel(n))
+			for _, id := range deps[n.ID] {
+				to := byID[id]
+				name := to.Address
+				if to.Source != n.Source {
+					name = to.ID
+				}
+				fmt.Fprintf(&b, "    -> %s\n", name)
 			}
 		}
 	}
-	return nil
+	_, err := io.WriteString(w, b.String())
+	return err
+}
+
+// partitionLabel renders a node's account and region, when known.
+func partitionLabel(n graph.Node) string {
+	switch {
+	case n.Account != "" && n.Region != "":
+		return "  (" + n.Account + ", " + n.Region + ")"
+	case n.Account != "" || n.Region != "":
+		return "  (" + n.Account + n.Region + ")"
+	}
+	return ""
 }
