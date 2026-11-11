@@ -15,6 +15,9 @@ type rawState struct {
 	TerraformVersion string          `json:"terraform_version"`
 	FormatVersion    string          `json:"format_version"` // Set by show-json output.
 	EncryptedData    json.RawMessage `json:"encrypted_data"` // Set by OpenTofu state encryption.
+	// Set by the JSON form of a plan, which also has a format_version.
+	ResourceChanges json.RawMessage `json:"resource_changes"`
+	PlannedValues   json.RawMessage `json:"planned_values"`
 
 	Resources []struct {
 		Module    string `json:"module"`

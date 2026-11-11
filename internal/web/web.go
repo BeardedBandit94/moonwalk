@@ -27,9 +27,22 @@ var static embed.FS
 // A network can contain thousands; the response says how many there are.
 const maxRelated = 200
 
-// CodeLookup returns the text of the block that declares a resource, given
-// the resource's source and config address.
-type CodeLookup func(source, configAddress string) (text string, ok bool)
+// CodeInfo is what the configuration says about one resource block.
+type CodeInfo struct {
+	Text       string // The block as written.
+	References []CodeReference
+}
+
+// CodeReference is one place in a block where another block is referred to.
+type CodeReference struct {
+	Attribute string // The argument it is written in.
+	Written   string // The reference as it stands in the code.
+	To        string // The config address of the block it leads to.
+}
+
+// CodeLookup returns what the configuration says about the block that
+// declares a resource, given the resource's source and config address.
+type CodeLookup func(source, configAddress string) (CodeInfo, bool)
 
 // snapshot is one loaded graph and what was worked out from it. It is never
 // changed once built; reloading makes a new one.
@@ -39,6 +52,8 @@ type snapshot struct {
 	// holds, for a glue resource, the link that stands for it.
 	out, in, via map[string][]graph.Edge
 	code         CodeLookup // May be nil.
+	// byBlock lists each block's resources: source, then config address.
+	byBlock map[[2]string][]string
 	// generation counts the graphs this server has been given, so that the
 	// page can tell when what it shows is out of date.
 	generation int
@@ -56,6 +71,11 @@ func newSnapshot(g *graph.Graph, code CodeLookup, generation int) *snapshot {
 		via:        map[string][]graph.Edge{},
 		generation: generation,
 		trees:      map[string]*view.Tree{},
+		byBlock:    map[[2]string][]string{},
+	}
+	for _, n := range g.Nodes() { // Sorted, so each list starts with the first instance.
+		key := [2]string{n.Source, n.ConfigAddress}
+		s.byBlock[key] = append(s.byBlock[key], n.ID)
 	}
 	for _, e := range g.Edges() { // Sorted, so the lists come out in a stable order.
 		s.out[e.From] = append(s.out[e.From], e)
@@ -152,9 +172,11 @@ type metaResponse struct {
 	Resources  int      `json:"resources"`
 	Sources    []string `json:"sources"`
 	// Accounts, Regions and Statuses list the values present, for filters.
-	Accounts       []string         `json:"accounts"`
-	Regions        []string         `json:"regions"`
-	Statuses       []string         `json:"statuses"`
+	Accounts []string `json:"accounts"`
+	Regions  []string `json:"regions"`
+	Statuses []string `json:"statuses"`
+	// Changes lists what a loaded plan intends, if one was loaded.
+	Changes        []string         `json:"changes"`
 	Dimensions     []view.Dimension `json:"dimensions"`
 	DefaultGroupBy []view.Dimension `json:"default_group_by"`
 	Budget         int              `json:"budget"`
@@ -162,6 +184,7 @@ type metaResponse struct {
 
 func (s *snapshot) meta(w http.ResponseWriter, _ *http.Request) {
 	sources, accounts, regions, statuses := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+	changes := map[string]bool{}
 	resources := 0
 	for n := range s.g.AllNodes() {
 		resources++
@@ -169,6 +192,7 @@ func (s *snapshot) meta(w http.ResponseWriter, _ *http.Request) {
 		accounts[n.Account] = true
 		regions[n.Region] = true
 		statuses[string(n.Status)] = true
+		changes[n.Change] = true
 	}
 	writeJSON(w, metaResponse{
 		Generation:     s.generation,
@@ -177,6 +201,7 @@ func (s *snapshot) meta(w http.ResponseWriter, _ *http.Request) {
 		Accounts:       sortedKeys(accounts),
 		Regions:        sortedKeys(regions),
 		Statuses:       sortedKeys(statuses),
+		Changes:        sortedKeys(changes),
 		Dimensions:     view.AllDimensions(),
 		DefaultGroupBy: view.DefaultDimensions,
 		Budget:         view.Budget,
@@ -214,6 +239,7 @@ func (s *snapshot) tree(q url.Values) (*view.Tree, error) {
 			Regions:  list(q.Get("region")),
 			Sources:  list(q.Get("source")),
 			Statuses: list(q.Get("status")),
+			Changes:  list(q.Get("change")),
 			Search:   q.Get("search"),
 			Around:   q.Get("around"),
 		},
@@ -288,6 +314,18 @@ type ref struct {
 	Via *ref `json:"via,omitempty"`
 }
 
+// reference is one place in a resource's code where it refers to another
+// block.
+type reference struct {
+	Attribute string `json:"attribute"`
+	Written   string `json:"written"`
+	// Address is the block referred to, ID its first resource, and
+	// Instances how many resources the block has.
+	Address   string `json:"address"`
+	ID        string `json:"id"`
+	Instances int    `json:"instances"`
+}
+
 // related is a capped list of refs with the uncapped count.
 type related struct {
 	Total int   `json:"total"`
@@ -302,8 +340,10 @@ type resourceResponse struct {
 	Group string `json:"group"`
 	Shown bool   `json:"shown"`
 	// CodeText is the block that declares the resource, as written, when
-	// the configuration was loaded and has it.
-	CodeText string `json:"code_text,omitempty"`
+	// the configuration was loaded and has it. RefersTo lists where in it
+	// other resources are referred to.
+	CodeText string      `json:"code_text,omitempty"`
+	RefersTo []reference `json:"refers_to,omitempty"`
 
 	DependsOn    related `json:"depends_on"`
 	DependedOnBy related `json:"depended_on_by"`
@@ -332,7 +372,17 @@ func (s *snapshot) resource(w http.ResponseWriter, r *http.Request) {
 	}
 	resp := resourceResponse{Node: n, Group: t.GroupOf(id), Shown: t.Shows(id)}
 	if s.code != nil && n.Code != nil {
-		resp.CodeText, _ = s.code(n.Source, n.ConfigAddress)
+		info, _ := s.code(n.Source, n.ConfigAddress)
+		resp.CodeText = info.Text
+		for _, r := range info.References {
+			ids := s.byBlock[[2]string{n.Source, r.To}]
+			if len(ids) == 0 {
+				continue
+			}
+			resp.RefersTo = append(resp.RefersTo, reference{
+				Attribute: r.Attribute, Written: r.Written, Address: r.To, ID: ids[0], Instances: len(ids),
+			})
+		}
 	}
 	add := func(to *related, id, via string) {
 		to.Total++

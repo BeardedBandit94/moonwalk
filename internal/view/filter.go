@@ -13,6 +13,10 @@ import (
 type Filter struct {
 	// Each of these matches a resource whose value is any of those listed.
 	Sources, Accounts, Regions, Statuses []string
+	// Changes matches a resource for which a loaded plan intends one of
+	// the changes listed: "create", "update", "delete" or "replace". The
+	// value "any" matches every resource the plan changes.
+	Changes []string
 	// Types may also hold patterns such as "aws_iam_*".
 	Types []string
 	// Search matches a resource whose address or type contains it,
@@ -47,6 +51,7 @@ func (f Filter) matcher(g *graph.Graph) func(graph.Node) bool {
 			len(f.Accounts) > 0 && !slices.Contains(f.Accounts, n.Account),
 			len(f.Regions) > 0 && !slices.Contains(f.Regions, n.Region),
 			len(f.Statuses) > 0 && !slices.Contains(f.Statuses, string(n.Status)),
+			len(f.Changes) > 0 && !slices.Contains(f.Changes, n.Change) && !(n.Change != "" && slices.Contains(f.Changes, "any")),
 			len(f.Types) > 0 && !matchesAny(f.Types, n.Type),
 			search != "" && !strings.Contains(strings.ToLower(n.Address), search) &&
 				!strings.Contains(strings.ToLower(n.Type), search):

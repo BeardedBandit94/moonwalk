@@ -24,11 +24,12 @@ const state = {
   account: '',
   region: '',
   status: '',
+  change: '',
   glue: false,
   around: '', // Node ID to restrict the view to, with its neighbours.
 };
 
-let meta = { budget: 300, generation: 0, accounts: [], regions: [], statuses: [] };
+let meta = { budget: 300, generation: 0, accounts: [], regions: [], statuses: [], changes: [] };
 let opened = []; // Group IDs in the order they were opened, oldest first.
 let doc = { items: [], links: [] }; // The view last received.
 let elements = new Map(); // Item ID to its element.
@@ -48,6 +49,7 @@ function readHash() {
   state.account = p.get('a') || '';
   state.region = p.get('r') || '';
   state.status = p.get('st') || '';
+  state.change = p.get('c') || '';
   state.glue = p.get('glue') === '1';
   state.around = p.get('around') || '';
 }
@@ -62,6 +64,7 @@ function writeHash() {
   if (state.account) p.set('a', state.account);
   if (state.region) p.set('r', state.region);
   if (state.status) p.set('st', state.status);
+  if (state.change) p.set('c', state.change);
   if (state.glue) p.set('glue', '1');
   if (state.around) p.set('around', state.around);
   const hash = p.toString();
@@ -88,6 +91,7 @@ function filterParams() {
   if (state.account) p.set('account', state.account);
   if (state.region) p.set('region', state.region);
   if (state.status) p.set('status', state.status);
+  if (state.change) p.set('change', state.change);
   if (state.glue) p.set('glue', '1');
   if (state.around) p.set('around', state.around);
   return p;
@@ -126,16 +130,20 @@ async function loadMeta() {
   fillFilter('account', 'All accounts', meta.accounts);
   fillFilter('region', 'All regions', meta.regions);
   fillFilter('status', 'Any status', meta.statuses);
+  // Only a plan has changes; with one loaded, offer each kind and all of them.
+  const changes = meta.changes || [];
+  fillFilter('change', 'Planned or not', changes.length ? ['any', ...changes] : [], { any: 'Changed by the plan' }, 1);
   syncControls();
 }
 
-// Offers the values present, plus the one in use even if it is gone.
-function fillFilter(id, all, values) {
+// Offers the values present, plus the one in use even if it is gone. The
+// menu is hidden while it would offer fewer than atLeast values.
+function fillFilter(id, all, values, labels = {}, atLeast = 2) {
   const menu = $(id);
   const options = [new Option(all, '')];
-  for (const v of new Set([...values, state[id]].filter(Boolean))) options.push(new Option(v, v));
+  for (const v of new Set([...values, state[id]].filter(Boolean))) options.push(new Option(labels[v] || v, v));
   menu.replaceChildren(...options);
-  menu.hidden = values.length < 2 && !state[id];
+  menu.hidden = values.length < atLeast && !state[id];
 }
 
 // load fetches the view the state describes and draws it. justOpened names
@@ -200,6 +208,15 @@ function makeRoom(justOpened) {
   return closed > 0;
 }
 
+// What a plan intends for a resource.
+const CHANGE_NOTES = {
+  create: 'The plan will create this.',
+  update: 'The plan will update this in place.',
+  delete: 'The plan will delete this.',
+  replace: 'The plan will delete this and create it again.',
+};
+const NOT_IN_CODE_NOTE = 'In the state, but the code no longer declares it: removed from the code and not destroyed yet, or the code is out of date.';
+
 // ---- Drawing the view ---------------------------------------------------
 
 function el(tag, className, text) {
@@ -238,10 +255,20 @@ function render() {
       holders.set(item.id, children);
     } else if (item.kind === 'resource') {
       node = el('button', 'item resource', item.label);
+      const notes = [];
       if (item.status) {
         node.classList.add(item.status);
-        node.title = STATUS_NOTES[item.status] || item.status;
+        notes.push(STATUS_NOTES[item.status] || item.status);
       }
+      if (item.change) {
+        node.classList.add('change-' + item.change);
+        notes.push(CHANGE_NOTES[item.change] || item.change);
+      }
+      if (item.not_in_code) {
+        node.classList.add('not-in-code');
+        notes.push(NOT_IN_CODE_NOTE);
+      }
+      if (notes.length) node.title = notes.join(' ');
       node.addEventListener('click', () => select(item.id));
     } else {
       node = el('button', 'item collapsed', item.label);
@@ -480,11 +507,14 @@ async function showResource(id) {
   fact('Region', n.region && n.region + (n.region_inferred ? ' (inferred)' : ''));
   fact('Status', n.status);
   fact('Kind', n.mode === 'data' ? 'data source' : n.glue ? 'managed, glue' : 'managed');
+  fact('Planned', n.change);
   fact('Provider', n.provider);
   fact('Module', n.module);
   panel.append(facts);
 
-  if (STATUS_NOTES[n.status]) panel.append(el('p', 'note', STATUS_NOTES[n.status]));
+  if (CHANGE_NOTES[n.change]) panel.append(el('p', 'note', CHANGE_NOTES[n.change]));
+  else if (STATUS_NOTES[n.status]) panel.append(el('p', 'note', STATUS_NOTES[n.status]));
+  if (n.not_in_code) panel.append(el('p', 'note', NOT_IN_CODE_NOTE));
   if (!r.shown) {
     panel.append(el('p', 'note', n.glue && !state.glue
       ? 'Not drawn: this glue resource is folded into a link between what it joins.'
@@ -506,6 +536,23 @@ async function showResource(id) {
   if (n.code) {
     panel.append(el('h3', '', 'Declared in'), el('p', 'where', `${n.code.file}, line ${n.code.line}`));
     if (r.code_text) panel.append(el('pre', 'code', r.code_text));
+  }
+  if (r.refers_to?.length) {
+    panel.append(el('h3', '', `Refers to (${r.refers_to.length})`));
+    const ul = el('ul');
+    for (const ref of r.refers_to) {
+      const li = el('li', 'pair');
+      const target = el('button', 'ref', ref.address);
+      target.title = ref.instances > 1 ? `${ref.instances} instances; shows the first` : '';
+      target.addEventListener('click', () => reveal(ref.id));
+      li.append(el('span', 'attr', ref.attribute), el('span', 'more', ' → '), target);
+      // Say how it is written when that is not simply the target's name.
+      if (!ref.written.startsWith(ref.address.replace(/^(module\.[^.]+\.)+/, ''))) {
+        li.append(el('span', 'more', ` through ${ref.written}`));
+      }
+      ul.append(li);
+    }
+    panel.append(ul);
   }
   if (n.attributes_withheld) {
     panel.append(el('h3', '', 'Attributes'), el('p', 'note',
@@ -615,7 +662,7 @@ function syncControls() {
   menu.value = state.groupBy;
   $('search').value = state.search;
   $('type').value = state.type;
-  for (const id of ['account', 'region', 'status']) $(id).value = state[id];
+  for (const id of ['account', 'region', 'status', 'change']) $(id).value = state[id];
   $('glue').checked = state.glue;
 }
 
@@ -635,7 +682,7 @@ async function start() {
   $('search').addEventListener('input', debounce((e) => refilter(() => { state.search = e.target.value.trim(); }), 250));
   $('type').addEventListener('input', debounce((e) => refilter(() => { state.type = e.target.value.trim(); }), 250));
   $('glue').addEventListener('change', (e) => refilter(() => { state.glue = e.target.checked; }));
-  for (const id of ['account', 'region', 'status']) {
+  for (const id of ['account', 'region', 'status', 'change']) {
     $(id).addEventListener('change', (e) => refilter(() => { state[id] = e.target.value; }));
   }
 

@@ -99,16 +99,49 @@ go run ./cmd/moonwalk serve -code ./infra terraform.tfstate
   with the status `declared`, drawn with a dashed border, with dependencies
   worked out from its expressions: through locals, variables and module
   outputs. `-status declared` shows only those.
+- A resource that is in the state but no longer in the code is marked
+  `not in code`.
+- The explorer lists which argument of a resource refers to which other
+  resource, and through what: `vpc_id → aws_vpc.main through
+  local.network_id`.
+- State records indirect dependencies next to direct ones. With the code,
+  moonwalk drops the ones a resource reaches only through something else
+  it refers to, and keeps any that the code does not explain.
 - With `-code` and no state, the graph is built from the code alone.
 - With several states, name the one the code belongs to:
   `-code network=./infra/network`.
 
 The code is read for its structure only; nothing is evaluated, so no
 variables, providers or credentials are needed. `.tf` and `.tofu` files are
-read. Modules are followed when their source is a relative path, or when
-`terraform init` has fetched them into `.terraform/modules`; moonwalk says
-which it could not find. Override files and the JSON syntax are not read
-yet.
+read, in the native syntax and the JSON one (`.tf.json`), and override files
+are applied. Modules are followed when their source is a relative path, or
+when `terraform init` has fetched them into `.terraform/modules`; moonwalk
+says which it could not find.
+
+### Plans
+
+Give moonwalk the JSON form of a plan in place of a state:
+
+```bash
+terraform plan -out plan.bin
+```
+
+```bash
+terraform show -json plan.bin > plan.json
+```
+
+```bash
+go run ./cmd/moonwalk serve plan.json
+```
+
+It shows the state the plan was made against, with each resource marked by
+what the plan will do to it: create, update, delete or replace. Resources to
+be created are added, with their dependencies. `-change` filters on this:
+`-change any` shows everything the plan touches, `-change delete,replace`
+what it will destroy.
+
+A plan file holds variables and planned values in the clear, secrets
+included. moonwalk reads neither.
 
 ### What moonwalk works out
 
@@ -146,7 +179,8 @@ State lists indirect dependencies next to direct ones; `-direct` leaves out
 those that others already imply. `view` always does.
 
 Both raw version 4 state files and `terraform show -json` / `tofu show -json`
-output are accepted, and produce the same graph.
+output are accepted, and produce the same graph. So is the JSON form of a
+plan; see below.
 
 ### Several states
 

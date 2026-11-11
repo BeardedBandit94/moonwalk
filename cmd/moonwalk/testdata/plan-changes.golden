@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "nodes": [
+    {
+      "id": "p::module.net.terraform_data.route",
+      "source": "p",
+      "address": "module.net.terraform_data.route",
+      "config_address": "module.net.terraform_data.route",
+      "module": "module.net",
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "route",
+      "provider": "terraform.io/builtin/terraform",
+      "status": "declared",
+      "dependencies_direct": true,
+      "change": "create"
+    },
+    {
+      "id": "p::module.net.terraform_data.subnet[0]",
+      "source": "p",
+      "address": "module.net.terraform_data.subnet[0]",
+      "config_address": "module.net.terraform_data.subnet",
+      "module": "module.net",
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "subnet",
+      "provider": "terraform.io/builtin/terraform",
+      "status": "managed"
+    },
+    {
+      "id": "p::module.net.terraform_data.subnet[1]",
+      "source": "p",
+      "address": "module.net.terraform_data.subnet[1]",
+      "config_address": "module.net.terraform_data.subnet",
+      "module": "module.net",
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "subnet",
+      "provider": "terraform.io/builtin/terraform",
+      "status": "managed"
+    },
+    {
+      "id": "p::module.net.terraform_data.subnet[2]",
+      "source": "p",
+      "address": "module.net.terraform_data.subnet[2]",
+      "config_address": "module.net.terraform_data.subnet",
+      "module": "module.net",
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "subnet",
+      "provider": "terraform.io/builtin/terraform",
+      "status": "declared",
+      "dependencies_direct": true,
+      "change": "create"
+    },
+    {
+      "id": "p::terraform_data.create",
+      "source": "p",
+      "address": "terraform_data.create",
+      "config_address": "terraform_data.create",
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "create",
+      "provider": "terraform.io/builtin/terraform",
+      "status": "declared",
+      "dependencies_direct": true,
+      "change": "create"
+    },
+    {
+      "id": "p::terraform_data.delete",
+      "source": "p",
+      "address": "terraform_data.delete",
+      "config_address": "terraform_data.delete",
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "delete",
+      "provider": "terraform.io/builtin/terraform",
+      "status": "managed",
+      "change": "delete"
+    },
+    {
+      "id": "p::terraform_data.keep",
+      "source": "p",
+      "address": "terraform_data.keep",
+      "config_address": "terraform_data.keep",
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "keep",
+      "provider": "terraform.io/builtin/terraform",
+      "status": "managed"
+    },
+    {
+      "id": "p::terraform_data.replace",
+      "source": "p",
+      "address": "terraform_data.replace",
+      "config_address": "terraform_data.replace",
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "replace",
+      "provider": "terraform.io/builtin/terraform",
+      "status": "managed",
+      "change": "replace"
+    },
+    {
+      "id": "p::terraform_data.update",
+      "source": "p",
+      "address": "terraform_data.update",
+      "config_address": "terraform_data.update",
+      "mode": "managed",
+      "type": "terraform_data",
+      "name": "update",
+      "provider": "terraform.io/builtin/terraform",
+      "status": "managed",
+      "change": "update"
+    }
+  ],
+  "edges": [
+    {
+      "from": "p::module.net.terraform_data.route",
+      "to": "p::module.net.terraform_data.subnet[0]",
+      "kind": "depends_on"
+    },
+    {
+      "from": "p::module.net.terraform_data.route",
+      "to": "p::module.net.terraform_data.subnet[1]",
+      "kind": "depends_on"
+    },
+    {
+      "from": "p::module.net.terraform_data.route",
+      "to": "p::module.net.terraform_data.subnet[2]",
+      "kind": "depends_on"
+    },
+    {
+      "from": "p::module.net.terraform_data.subnet[0]",
+      "to": "p::terraform_data.keep",
+      "kind": "depends_on"
+    },
+    {
+      "from": "p::module.net.terraform_data.subnet[1]",
+      "to": "p::terraform_data.keep",
+      "kind": "depends_on"
+    },
+    {
+      "from": "p::module.net.terraform_data.subnet[2]",
+      "to": "p::terraform_data.keep",
+      "kind": "depends_on"
+    },
+    {
+      "from": "p::terraform_data.create",
+      "to": "p::module.net.terraform_data.subnet[0]",
+      "kind": "depends_on"
+    },
+    {
+      "from": "p::terraform_data.create",
+      "to": "p::module.net.terraform_data.subnet[1]",
+      "kind": "depends_on"
+    },
+    {
+      "from": "p::terraform_data.create",
+      "to": "p::module.net.terraform_data.subnet[2]",
+      "kind": "depends_on"
+    },
+    {
+      "from": "p::terraform_data.create",
+      "to": "p::terraform_data.keep",
+      "kind": "depends_on"
+    },
+    {
+      "from": "p::terraform_data.create",
+      "to": "p::terraform_data.update",
+      "kind": "depends_on"
+    },
+    {
+      "from": "p::terraform_data.delete",
+      "to": "p::terraform_data.keep",
+      "kind": "depends_on"
+    }
+  ]
+}

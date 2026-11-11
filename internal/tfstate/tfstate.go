@@ -1,11 +1,13 @@
 // Package tfstate turns Terraform and OpenTofu state into a graph.
 //
-// Two encodings are accepted and detected automatically:
+// Three encodings are accepted and detected automatically:
 //
 //   - the output of `terraform show -json` / `tofu show -json`, the
 //     documented, stable format;
 //   - a raw version 4 state file (`terraform.tfstate`), which is what remote
-//     backends actually store.
+//     backends actually store;
+//   - the output of `terraform show -json <planfile>`: the state a plan
+//     was made against, with the changes it intends marked on it.
 //
 // State holds secrets in plain text. Attribute values are redacted before
 // they reach the graph; see redact.go for the rules. Older versions of
@@ -57,6 +59,8 @@ func Load(g *graph.Graph, source string, r io.Reader) error {
 	switch {
 	case len(st.EncryptedData) > 0:
 		err = fmt.Errorf("state is encrypted; decrypt it by piping `tofu show -json` into moonwalk instead")
+	case len(st.ResourceChanges) > 0 || len(st.PlannedValues) > 0:
+		p, err = parsePlan(data)
 	case st.FormatVersion != "":
 		p, err = parseShowJSON(data)
 	case st.Version != nil && *st.Version == 4:
@@ -118,6 +122,8 @@ type resource struct {
 	providerKey string
 	// dependsOn holds config addresses (no instance keys), as state records them.
 	dependsOn []string
+	// declared marks a resource that a plan will create: it is in no state yet.
+	declared bool
 }
 
 func add(g *graph.Graph, source string, p parsed) error {
@@ -139,6 +145,12 @@ func add(g *graph.Graph, source string, p parsed) error {
 		n.ID = NodeID(source, n.Address)
 		n.ConfigAddress = tfaddr.ConfigAddress(n.Address)
 		n.Status = graph.StatusManaged
+		if rs[i].declared {
+			n.Status = graph.StatusDeclared
+			// Its dependencies come from the plan's configuration, which
+			// lists only what it refers to itself.
+			n.DependenciesDirect = true
+		}
 		n.AttributesWithheld = p.withheld && len(n.Attributes) > 0
 		p.secrets.scrub(n.Attributes)
 		n.Account, n.Region = partition(n.Provider, n.Type, n.Attributes)

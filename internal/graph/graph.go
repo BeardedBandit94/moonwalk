@@ -101,6 +101,17 @@ type Node struct {
 	// Code is where the resource's block is declared, if the configuration
 	// was loaded and has it.
 	Code *CodeLocation `json:"code,omitempty"`
+	// NotInCode is true for a resource that is in state while the loaded
+	// configuration no longer declares it: removed from the code and not
+	// destroyed yet, or the code is out of date.
+	NotInCode bool `json:"not_in_code,omitempty"`
+	// DependenciesDirect is true when the resource's dependency edges are
+	// known, from its code, to be exactly the ones it refers to itself.
+	// ReduceTransitive leaves them alone.
+	DependenciesDirect bool `json:"dependencies_direct,omitempty"`
+	// Change is what a loaded plan intends for the resource: "create",
+	// "update", "delete" or "replace". It is empty when nothing is planned.
+	Change string `json:"change,omitempty"`
 	// Attributes holds the resource's attribute values with secrets already
 	// redacted by the adapter. It may be nil.
 	Attributes map[string]any `json:"attributes,omitempty"`
@@ -266,8 +277,10 @@ func (g *Graph) Len() (nodes, edges int) {
 // from each node stays the same. It returns the number of edges removed.
 //
 // Terraform state lists indirect dependencies alongside direct ones, so
-// this leaves the edges that say something. If the edges of that kind form
-// a cycle, nothing is removed, because the result would not be well defined.
+// this leaves the edges that say something. The edges of a node marked
+// DependenciesDirect are kept as they are: its code has already settled
+// which are direct. If the edges of that kind form a cycle, nothing is
+// removed, because the result would not be well defined.
 func (g *Graph) ReduceTransitive(kind EdgeKind) int {
 	next := map[string][]string{}
 	incoming := map[string]int{}
@@ -284,6 +297,9 @@ func (g *Graph) ReduceTransitive(kind EdgeKind) int {
 	removed := 0
 	direct := map[string]struct{}{}
 	for from, tos := range next {
+		if n := g.nodes[from]; n != nil && n.DependenciesDirect {
+			continue
+		}
 		clear(direct)
 		for _, to := range tos {
 			direct[to] = struct{}{}
