@@ -14,7 +14,9 @@ import (
 // parsePlan reads the output of `terraform show -json <planfile>`.
 //
 // A plan carries the state it was made against, which is loaded as any
-// state is, and the changes it intends. Each resource that changes is
+// state is, the changes it intends, and what its refresh found to have
+// drifted: changed or deleted outside Terraform. A plan made with
+// -refresh-only holds just the drift. Each resource that changes is
 // marked with what will happen to it, and a resource the plan will create
 // is added, with dependencies taken from the configuration the plan
 // embeds. The values a plan intends to set are not read: they can hold
@@ -72,6 +74,41 @@ func parsePlan(data []byte) (parsed, error) {
 		}
 		known[rc.Address] = len(p.resources)
 		p.resources = append(p.resources, r)
+	}
+	// What a refresh found to differ from the state, outside Terraform.
+	for _, rc := range plan.ResourceDrift {
+		if rc.DeposedKey != "" || rc.Change == nil {
+			continue
+		}
+		drift := ""
+		switch {
+		case rc.Change.Actions.Delete():
+			drift = "deleted"
+		case rc.Change.Actions.Update():
+			drift = "changed"
+		default:
+			continue
+		}
+		if i, ok := known[rc.Address]; ok {
+			p.resources[i].drift = drift
+			continue
+		}
+		// The state a plan carries is the state after its refresh, which
+		// has already dropped a resource found to be gone. It is put back
+		// here so that the loss shows, without the values it used to have.
+		known[rc.Address] = len(p.resources)
+		p.resources = append(p.resources, resource{
+			node: graph.Node{
+				Address:  rc.Address,
+				Module:   rc.ModuleAddress,
+				Mode:     graph.Mode(rc.Mode),
+				Type:     rc.Type,
+				Name:     rc.Name,
+				Provider: rc.ProviderName,
+			},
+			providerKey: rc.ProviderName,
+			drift:       drift,
+		})
 	}
 	return p, nil
 }

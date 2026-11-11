@@ -98,6 +98,12 @@ type Node struct {
 	Name     string `json:"name"`
 	Provider string `json:"provider,omitempty"`
 	Status   Status `json:"status"`
+	// CloudID is what the cloud itself calls the resource: an ARN, a
+	// resource ID or a self link. It is empty when unknown.
+	CloudID string `json:"cloud_id,omitempty"`
+	// Drift says how a resource with the status "drifted" differs from its
+	// state: "changed" or "deleted", outside Terraform.
+	Drift string `json:"drift,omitempty"`
 	// Code is where the resource's block is declared, if the configuration
 	// was loaded and has it.
 	Code *CodeLocation `json:"code,omitempty"`

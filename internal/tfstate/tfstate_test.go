@@ -78,6 +78,7 @@ func TestLoadRawState(t *testing.T) {
 		ConfigAddress: "module.net.aws_subnet.private",
 		Account:       "123456789012",
 		Region:        "us-east-1",
+		CloudID:       "arn:aws:ec2:us-east-1:123456789012:subnet/subnet-1",
 		Attributes:    map[string]any{"id": "subnet-1", "arn": "arn:aws:ec2:us-east-1:123456789012:subnet/subnet-1"},
 		Module:        `module.net["a.b"]`,
 		Mode:          graph.ModeManaged,
@@ -425,7 +426,7 @@ func TestPartition(t *testing.T) {
 		{"non-string values", aws, "aws_vpc", map[string]any{"arn": 5, "region": []any{"a"}}, "", ""},
 	}
 	for _, c := range cases {
-		account, region := partition(c.provider, c.typ, c.attrs)
+		account, region := Partition(c.provider, c.typ, c.attrs)
 		if account != c.account || region != c.region {
 			t.Errorf("%s: got (%q, %q), want (%q, %q)", c.name, account, region, c.account, c.region)
 		}

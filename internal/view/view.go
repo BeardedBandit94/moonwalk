@@ -33,6 +33,14 @@ type Item struct {
 	// Status is set for a resource that is anything but managed, such as
 	// one declared in code and not applied yet.
 	Status graph.Status `json:"status,omitempty"`
+	// Drift says how a drifted resource differs from its state: "changed"
+	// or "deleted".
+	Drift string `json:"drift,omitempty"`
+	// Unmanaged, Drifted and Declared count, for a group, the resources in
+	// it with those statuses.
+	Unmanaged int `json:"unmanaged,omitempty"`
+	Drifted   int `json:"drifted,omitempty"`
+	Declared  int `json:"declared,omitempty"`
 	// Change is what a loaded plan intends for a resource: "create",
 	// "update", "delete" or "replace".
 	Change string `json:"change,omitempty"`
@@ -138,6 +146,7 @@ func (t *Tree) View(expanded func(*Group) bool) View {
 			v.Items = append(v.Items, Item{
 				ID: c.ID, Kind: c.Kind, Label: c.Name, Parent: grp.ID,
 				Depth: c.Depth, Resources: c.Resources, Expanded: open,
+				Unmanaged: c.Unmanaged, Drifted: c.Drifted, Declared: c.Declared,
 			})
 			if open {
 				show(c)
@@ -149,7 +158,7 @@ func (t *Tree) View(expanded func(*Group) bool) View {
 			v.Items = append(v.Items, Item{
 				ID: id, Kind: KindResource, Label: t.labels[id], Parent: grp.ID,
 				Depth: grp.Depth + 1, Resources: 1, Status: t.statuses[id],
-				Change: t.changes[id], NotInCode: t.notInCode[id],
+				Change: t.changes[id], NotInCode: t.notInCode[id], Drift: t.drifts[id],
 			})
 			shownAs[id] = id
 		}

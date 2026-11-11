@@ -128,3 +128,49 @@ func TestChangeName(t *testing.T) {
 		t.Errorf("got %q, want %q", got, want)
 	}
 }
+
+// The drift fixture is a real OpenTofu refresh-only plan, made after one of
+// two files it manages was deleted by hand.
+func TestLoadDrift(t *testing.T) {
+	g := graph.New()
+	loadInto(t, g, "d", "drift.json")
+
+	removed, ok := g.Node(NodeID("d", "local_file.removed"))
+	if !ok || removed.Status != graph.StatusDrifted || removed.Drift != "deleted" || removed.Type != "local_file" {
+		t.Errorf("deleted resource: %+v (found %v)", removed, ok)
+	}
+	if removed.Attributes != nil {
+		t.Error("a deleted resource carries its old values")
+	}
+	kept, _ := g.Node(NodeID("d", "local_file.kept"))
+	if kept.Status != graph.StatusManaged || kept.Drift != "" {
+		t.Errorf("untouched resource: status %q drift %q", kept.Status, kept.Drift)
+	}
+	// What depended on the deleted resource still points at it.
+	if !g.HasEdge(graph.Edge{From: NodeID("d", "terraform_data.uses"), To: NodeID("d", "local_file.removed"), Kind: graph.EdgeDependsOn}) {
+		t.Error("the dependency on the deleted resource is gone")
+	}
+}
+
+func TestDriftKinds(t *testing.T) {
+	g := graph.New()
+	err := Load(g, "d", strings.NewReader(`{"format_version":"1.2","terraform_version":"1.9.5","planned_values":{},
+	  "prior_state":{"format_version":"1.0","terraform_version":"1.9.5","values":{"root_module":{"resources":[
+	    {"address":"t.changed","mode":"managed","type":"t","name":"changed","provider_name":"p","values":{"id":"1"}},
+	    {"address":"t.same","mode":"managed","type":"t","name":"same","provider_name":"p","values":{"id":"2"}}]}}},
+	  "resource_drift":[
+	    {"address":"t.changed","mode":"managed","type":"t","name":"changed","change":{"actions":["update"]}},
+	    {"address":"t.gone","mode":"managed","type":"t","name":"gone","change":{"actions":["delete"]}},
+	    {"address":"t.same","mode":"managed","type":"t","name":"same","change":{"actions":["no-op"]}}]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, n := range g.Nodes() {
+		got = append(got, n.Address+"="+string(n.Status)+":"+n.Drift)
+	}
+	want := []string{"t.changed=drifted:changed", "t.gone=drifted:deleted", "t.same=managed:"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}

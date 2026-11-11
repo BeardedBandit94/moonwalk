@@ -37,6 +37,10 @@ function crowdedState() {
   return JSON.stringify({ version: 4, terraform_version: '1.9.5', resources });
 }
 
+async function classOfItem(page, text) {
+  return (await page.locator('.item', { hasText: text }).first().getAttribute('class')) || '';
+}
+
 async function waitForServer() {
   for (let i = 0; i < 100; i++) {
     try {
@@ -58,7 +62,10 @@ async function main() {
   const code = path.resolve(__dirname, '../internal/tfcode/testdata/network');
   const planCode = path.resolve(__dirname, '../internal/tfcode/testdata/plan');
   fs.copyFileSync(path.join(fixtures, 'plan.json'), path.join(dir, 'plan.json'));
+  const found = path.resolve(__dirname, '../internal/discover/testdata');
+  fs.copyFileSync(path.join(fixtures, 'drift.json'), path.join(dir, 'drift.json'));
   const server = spawn(bin, ['serve', '-addr', `127.0.0.1:${port}`, '-code', `net=${code}`, '-code', `plan=${planCode}`, `plan=${path.join(dir, 'plan.json')}`,
+    `prod=${path.join(found, 'managed.tfstate')}`, `cloud=${path.join(found, 'query.jsonl')}`, `drift=${path.join(dir, 'drift.json')}`,
     `net=${net}`, `lab=${path.join(dir, 'lab.tfstate')}`, `old=${path.join(dir, 'old.tfstate')}`, `crowd=${path.join(dir, 'crowd.tfstate')}`],
   { stdio: ['ignore', 'inherit', 'inherit'] });
   const browser = await chromium.launch();
@@ -76,7 +83,7 @@ async function main() {
     await page.goto(base + '#a=123456789012');
     await page.waitForSelector('.item');
     check('account filter from the address bar', (await page.inputValue('#account')) === '123456789012');
-    check('filtered to the one account', (await page.innerText('#summary')).includes('14 resources'), await page.innerText('#summary'));
+    check('filtered to the one account', (await page.innerText('#summary')).includes('18 resources'), await page.innerText('#summary'));
     await item('aws_instance.app').click();
     await page.waitForSelector('#panel h2');
     const panel = await page.innerText('#panel');
@@ -111,10 +118,10 @@ async function main() {
     await page.waitForFunction(() => document.querySelectorAll('.item.resource').length === 2);
     check('region filter', (await resources()).join() === 'aws_iam_policy.read,aws_iam_role.app', await resources());
     await page.selectOption('#region', '');
-    await page.waitForFunction(() => document.querySelectorAll('.item.resource').length === 14);
+    await page.waitForFunction(() => document.querySelectorAll('.item.resource').length === 18);
     await page.selectOption('#group-by', 'source,account,region,network');
     await page.waitForFunction(() => [...document.querySelectorAll('.title small')].some((e) => e.textContent.startsWith('network')));
-    check('network grouping draws the network', await page.locator('.title', { hasText: 'aws_vpc.main' }).count() === 1);
+    check('network grouping draws the network', await page.locator('.title', { hasText: 'aws_vpc.main' }).count() >= 1);
     await page.fill('#search', 'route_table');
     await page.waitForFunction(() => document.querySelectorAll('.item.resource').length === 1);
     check('search', (await resources()).join() === 'aws_route_table.private', await resources());
@@ -136,6 +143,22 @@ async function main() {
     const unmarked = await page.innerText('#panel');
     check('an unmarked state has its attributes withheld', (await page.locator('#panel pre').count()) === 0 && unmarked.includes('show -json'));
     check('no secret reaches the page', !/hunter2|4@Sze931N|8%exVpqbOs|\$2a\$10\$/.test(marked + unmarked + (await page.content())));
+
+    // What a listing of the cloud found beyond the state, and what drifted.
+    await page.goto(base + '#g=account%2Cregion%2Cnetwork&st=unmanaged');
+    await page.reload();
+    await page.waitForFunction(() => document.querySelectorAll('.item.resource').length === 2);
+    check('resources found only in the cloud are drawn as unmanaged', (await page.locator('.item.resource.unmanaged').count()) === 2);
+    check('a group says how many of its resources are unmanaged', (await page.locator('.group > .title small').first().innerText()).includes('2 unmanaged'));
+    await page.locator('.item.resource.unmanaged').first().click();
+    await page.waitForSelector('#panel h2');
+    const unmanagedPanel = await page.innerText('#panel');
+    check('the panel names the cloud ID and withholds the listing\'s attributes',
+      unmanagedPanel.includes('arn:aws:ec2:us-east-1:123456789012:subnet/') && unmanagedPanel.includes('Withheld') && !unmanagedPanel.includes('cidr_block'), unmanagedPanel);
+    await page.goto(base + '#g=source&st=drifted');
+    await page.reload();
+    await page.waitForFunction(() => document.querySelectorAll('.item.resource').length === 1);
+    check('a resource deleted outside Terraform is drawn as drifted', (await classOfItem(page, 'local_file.removed')).includes('drifted'));
 
     // A plan: what it will change is marked, and can be filtered on.
     await page.goto(base + '#g=source');

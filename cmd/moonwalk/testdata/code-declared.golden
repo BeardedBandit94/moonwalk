@@ -15,7 +15,8 @@
       "label": "net",
       "depth": 1,
       "resources": 6,
-      "expanded": true
+      "expanded": true,
+      "declared": 6
     },
     {
       "id": "net::aws_cloudwatch_log_metric_filter.errors",

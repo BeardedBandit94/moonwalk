@@ -12,7 +12,8 @@
       "type": "aws_vpc",
       "name": "main",
       "provider": "registry.terraform.io/hashicorp/aws",
-      "status": "managed"
+      "status": "managed",
+      "cloud_id": "arn:aws:ec2:us-east-1:123456789012:vpc/vpc-1"
     },
     {
       "id": "prod::data.aws_availability_zones.available",
@@ -27,7 +28,8 @@
       "type": "aws_availability_zones",
       "name": "available",
       "provider": "registry.terraform.io/hashicorp/aws",
-      "status": "managed"
+      "status": "managed",
+      "cloud_id": "us-east-1"
     },
     {
       "id": "prod::module.net[\"a.b\"].aws_route_table_association.private[\"x]y\"]",
@@ -43,7 +45,8 @@
       "type": "aws_route_table_association",
       "name": "private",
       "provider": "registry.terraform.io/hashicorp/aws",
-      "status": "managed"
+      "status": "managed",
+      "cloud_id": "rtbassoc-1"
     },
     {
       "id": "prod::module.net[\"a.b\"].aws_subnet.private[0]",
@@ -57,7 +60,8 @@
       "type": "aws_subnet",
       "name": "private",
       "provider": "registry.terraform.io/hashicorp/aws",
-      "status": "managed"
+      "status": "managed",
+      "cloud_id": "arn:aws:ec2:us-east-1:123456789012:subnet/subnet-0"
     },
     {
       "id": "prod::module.net[\"a.b\"].aws_subnet.private[1]",
@@ -71,7 +75,8 @@
       "type": "aws_subnet",
       "name": "private",
       "provider": "registry.terraform.io/hashicorp/aws",
-      "status": "managed"
+      "status": "managed",
+      "cloud_id": "arn:aws:ec2:us-east-1:123456789012:subnet/subnet-1"
     }
   ],
   "edges": [

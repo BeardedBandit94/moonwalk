@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "nodes": [
+    {
+      "id": "cloud::aws_subnet.subnet-0aa000000000000b2@123456789012/us-east-1",
+      "source": "cloud",
+      "address": "aws_subnet.subnet-0aa000000000000b2",
+      "config_address": "aws_subnet.subnet-0aa000000000000b2",
+      "account": "123456789012",
+      "region": "us-east-1",
+      "mode": "managed",
+      "type": "aws_subnet",
+      "name": "subnet-0aa000000000000b2",
+      "status": "unmanaged",
+      "cloud_id": "arn:aws:ec2:us-east-1:123456789012:subnet/subnet-0aa000000000000b2",
+      "attributes_withheld": true
+    },
+    {
+      "id": "cloud::aws_subnet.subnet-0aa000000000000c3@123456789012/us-east-1",
+      "source": "cloud",
+      "address": "aws_subnet.subnet-0aa000000000000c3",
+      "config_address": "aws_subnet.subnet-0aa000000000000c3",
+      "account": "123456789012",
+      "region": "us-east-1",
+      "mode": "managed",
+      "type": "aws_subnet",
+      "name": "subnet-0aa000000000000c3",
+      "status": "unmanaged",
+      "cloud_id": "arn:aws:ec2:us-east-1:123456789012:subnet/subnet-0aa000000000000c3",
+      "attributes_withheld": true
+    },
+    {
+      "id": "prod::aws_subnet.private[0]",
+      "source": "prod",
+      "address": "aws_subnet.private[0]",
+      "config_address": "aws_subnet.private",
+      "account": "123456789012",
+      "region": "us-east-1",
+      "mode": "managed",
+      "type": "aws_subnet",
+      "name": "private",
+      "provider": "registry.terraform.io/hashicorp/aws",
+      "status": "managed",
+      "cloud_id": "arn:aws:ec2:us-east-1:123456789012:subnet/subnet-0aa000000000000a1",
+      "attributes": {
+        "arn": "arn:aws:ec2:us-east-1:123456789012:subnet/subnet-0aa000000000000a1",
+        "cidr_block": "10.0.1.0/24",
+        "id": "subnet-0aa000000000000a1",
+        "vpc_id": "vpc-0a1b2c3d4e5f60001"
+      }
+    },
+    {
+      "id": "prod::aws_vpc.main",
+      "source": "prod",
+      "address": "aws_vpc.main",
+      "config_address": "aws_vpc.main",
+      "account": "123456789012",
+      "region": "us-east-1",
+      "mode": "managed",
+      "type": "aws_vpc",
+      "name": "main",
+      "provider": "registry.terraform.io/hashicorp/aws",
+      "status": "managed",
+      "cloud_id": "arn:aws:ec2:us-east-1:123456789012:vpc/vpc-0a1b2c3d4e5f60001",
+      "attributes": {
+        "arn": "arn:aws:ec2:us-east-1:123456789012:vpc/vpc-0a1b2c3d4e5f60001",
+        "cidr_block": "10.0.0.0/16",
+        "id": "vpc-0a1b2c3d4e5f60001"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "prod::aws_subnet.private[0]",
+      "to": "prod::aws_vpc.main",
+      "kind": "depends_on"
+    },
+    {
+      "from": "prod::aws_vpc.main",
+      "to": "cloud::aws_subnet.subnet-0aa000000000000b2@123456789012/us-east-1",
+      "kind": "contains"
+    },
+    {
+      "from": "prod::aws_vpc.main",
+      "to": "prod::aws_subnet.private[0]",
+      "kind": "contains"
+    }
+  ]
+}

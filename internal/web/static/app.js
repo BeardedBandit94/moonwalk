@@ -228,10 +228,19 @@ function el(tag, className, text) {
 
 const kindName = (kind) => kind.replace('_', ' ');
 
+// How many of a group's resources are not simply managed.
+function tally(item) {
+  let out = '';
+  for (const what of ['unmanaged', 'drifted', 'declared']) {
+    if (item[what]) out += ` · ${item[what].toLocaleString()} ${what}`;
+  }
+  return out;
+}
+
 // What each status other than "managed" means, for tooltips and the panel.
 const STATUS_NOTES = {
   declared: 'Written in the code but not in the state: not applied yet, or declared with a count of zero.',
-  unmanaged: 'Exists in the cloud but is not in any state.',
+  unmanaged: 'Exists in the cloud but is not in any loaded state.',
   drifted: 'In the state, but differs from what is in the cloud.',
 };
 const plural = (n, noun) => `${n.toLocaleString()} ${noun}${n === 1 ? '' : 's'}`;
@@ -247,7 +256,7 @@ function render() {
     if (item.expanded) {
       node = el('section', 'group');
       const title = el('button', 'title', item.label);
-      title.append(el('small', '', `${kindName(item.kind)} · ${item.resources.toLocaleString()}`));
+      title.append(el('small', '', `${kindName(item.kind)} · ${item.resources.toLocaleString()}${tally(item)}`));
       title.title = 'Collapse';
       title.addEventListener('click', () => toggle(item.id));
       const children = el('div', 'children');
@@ -272,7 +281,7 @@ function render() {
       node.addEventListener('click', () => select(item.id));
     } else {
       node = el('button', 'item collapsed', item.label);
-      node.append(el('small', '', item.resources.toLocaleString()));
+      node.append(el('small', '', item.resources.toLocaleString() + tally(item)));
       node.title = `${kindName(item.kind)}, ${plural(item.resources, 'resource')}. Expand`;
       node.addEventListener('click', () => toggle(item.id));
     }
@@ -505,7 +514,8 @@ async function showResource(id) {
   const fact = (name, value) => { if (value) facts.append(el('dt', '', name), el('dd', '', value)); };
   fact('Account', n.account && n.account + (n.account_inferred ? ' (inferred)' : ''));
   fact('Region', n.region && n.region + (n.region_inferred ? ' (inferred)' : ''));
-  fact('Status', n.status);
+  fact('Status', n.status === 'drifted' && n.drift ? `drifted: ${n.drift} outside Terraform` : n.status);
+  fact('Cloud ID', n.cloud_id);
   fact('Kind', n.mode === 'data' ? 'data source' : n.glue ? 'managed, glue' : 'managed');
   fact('Planned', n.change);
   fact('Provider', n.provider);

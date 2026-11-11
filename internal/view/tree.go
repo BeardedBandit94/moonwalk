@@ -81,6 +81,10 @@ type Group struct {
 	Nodes  []string // IDs of the resources directly inside, in display order.
 	// Resources counts every resource inside, at any depth.
 	Resources int
+	// Unmanaged, Drifted and Declared count those with each status.
+	Unmanaged int
+	Drifted   int
+	Declared  int
 	// Depth is 1 for a top-level group and one more for each level below.
 	Depth int
 
@@ -114,6 +118,7 @@ type Tree struct {
 	// notInCode the resources that the loaded code no longer declares.
 	statuses  map[string]graph.Status
 	changes   map[string]string
+	drifts    map[string]string
 	notInCode map[string]bool
 	// perDepth[d] counts the groups and resources at depth d.
 	perDepth []int
@@ -136,6 +141,7 @@ func Build(g *graph.Graph, o Options) *Tree {
 		types:     map[string]string{},
 		statuses:  map[string]graph.Status{},
 		changes:   map[string]string{},
+		drifts:    map[string]string{},
 		notInCode: map[string]bool{},
 		inGroup:   map[string]*Group{},
 	}
@@ -237,6 +243,9 @@ func Build(g *graph.Graph, o Options) *Tree {
 		}
 		if n.Change != "" {
 			t.changes[n.ID] = n.Change
+		}
+		if n.Drift != "" {
+			t.drifts[n.ID] = n.Drift
 		}
 		if n.NotInCode {
 			t.notInCode[n.ID] = true
@@ -395,10 +404,21 @@ func (t *Tree) finish(grp *Group, depth int) {
 	for _, id := range grp.Nodes {
 		t.count(depth + 1)
 		t.inGroup[id] = grp
+		switch t.statuses[id] {
+		case graph.StatusUnmanaged:
+			grp.Unmanaged++
+		case graph.StatusDrifted:
+			grp.Drifted++
+		case graph.StatusDeclared:
+			grp.Declared++
+		}
 	}
 	for _, c := range grp.Groups {
 		t.finish(c, depth+1)
 		grp.Resources += c.Resources
+		grp.Unmanaged += c.Unmanaged
+		grp.Drifted += c.Drifted
+		grp.Declared += c.Declared
 	}
 }
 

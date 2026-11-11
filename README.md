@@ -140,8 +140,57 @@ be created are added, with their dependencies. `-change` filters on this:
 `-change any` shows everything the plan touches, `-change delete,replace`
 what it will destroy.
 
+A plan also carries what its refresh found to have drifted: changed or
+deleted outside Terraform. Such resources get the status `drifted`. To look
+for drift alone, make the plan with `-refresh-only`.
+
 A plan file holds variables and planned values in the clear, secrets
 included. moonwalk reads neither.
+
+### What is really in the cloud
+
+Terraform 1.14 and later can list what exists through the provider, with
+`terraform query`. Write a query file next to the configuration, for
+instance `discover.tfquery.hcl`:
+
+```hcl
+list "aws_vpc" "all" {
+  provider         = aws
+  include_resource = true
+}
+
+list "aws_subnet" "all" {
+  provider         = aws
+  include_resource = true
+}
+```
+
+Run it, and give moonwalk the result along with the states:
+
+```bash
+terraform query -json > found.jsonl
+```
+
+```bash
+go run ./cmd/moonwalk serve -group-by account,region,network terraform.tfstate found.jsonl
+```
+
+Every listed resource that no loaded state holds appears with the status
+`unmanaged`; `-status unmanaged` shows only those, and each group says how
+many it contains. Grouping without `source`, as above, puts them next to the
+managed resources they sit among.
+
+- `include_resource` makes Terraform return each resource's attributes,
+  which is what lets moonwalk place it in its network. They are used for
+  that and never shown: a listing does not say which are secret.
+- Resources the cloud makes by itself, such as default security groups and
+  service-linked roles, are left out.
+- If the listing reports an error, such as a type it may not list, moonwalk
+  warns that it is incomplete.
+- Only what you list is found. The AWS provider can list 280 of its 1,766
+  resource types (version 6.73), among them nearly all the common ones.
+- Listing needs read-only credentials only, and moonwalk itself never
+  touches the cloud.
 
 ### What moonwalk works out
 
@@ -247,6 +296,7 @@ Both commands take `-format json`, and the output carries a
 | `internal/graph` | The normalized graph model every input is translated into |
 | `internal/tfstate` | Adapter from Terraform and OpenTofu state to the graph |
 | `internal/tfcode` | Adapter from Terraform and OpenTofu configuration to the graph |
+| `internal/discover` | Adapter from `terraform query` output to the graph |
 | `internal/relate` | Relationships inferred from attributes: containment, glue |
 | `internal/view` | Grouping of a graph, filters, and the collapsed views of it |
 | `internal/web` | The explorer: a JSON API over the graph and the browser front end |
