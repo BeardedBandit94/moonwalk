@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "group_by": [
+    "source",
+    "account",
+    "region",
+    "module"
+  ],
+  "depth": 4,
+  "max_depth": 4,
+  "resources": 2,
+  "total": 11,
+  "glue_folded": 3,
+  "items": [
+    {
+      "id": "source:net",
+      "kind": "source",
+      "label": "net",
+      "depth": 1,
+      "resources": 2,
+      "expanded": true
+    },
+    {
+      "id": "source:net/account:123456789012",
+      "kind": "account",
+      "label": "123456789012",
+      "parent": "source:net",
+      "depth": 2,
+      "resources": 2,
+      "expanded": true
+    },
+    {
+      "id": "source:net/account:123456789012/region:global",
+      "kind": "region",
+      "label": "global",
+      "parent": "source:net/account:123456789012",
+      "depth": 3,
+      "resources": 2,
+      "expanded": true
+    },
+    {
+      "id": "net::aws_iam_policy.read",
+      "kind": "resource",
+      "label": "aws_iam_policy.read",
+      "parent": "source:net/account:123456789012/region:global",
+      "depth": 4,
+      "resources": 1
+    },
+    {
+      "id": "net::aws_iam_role.app",
+      "kind": "resource",
+      "label": "aws_iam_role.app",
+      "parent": "source:net/account:123456789012/region:global",
+      "depth": 4,
+      "resources": 1
+    }
+  ],
+  "links": [
+    {
+      "from": "net::aws_iam_policy.read",
+      "to": "net::aws_iam_role.app",
+      "kind": "links",
+      "count": 1
+    }
+  ]
+}

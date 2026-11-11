@@ -1,0 +1,40 @@
+11 resources, 16 dependencies, 1 source
+
+net
+  aws_iam_policy.read  (123456789012, global)
+    -- aws_iam_role.app  (by aws_iam_role_policy_attachment.app)
+  aws_iam_role.app  (123456789012, global)
+  aws_iam_role_policy_attachment.app  (123456789012, global)
+    -> aws_iam_policy.read
+    -> aws_iam_role.app
+  aws_instance.app  (123456789012, us-east-1)
+    -> aws_subnet.private[1]
+    -> aws_vpc.main
+  aws_lb.web  (123456789012, us-east-1)
+    -> aws_subnet.private[0]
+    -> aws_subnet.private[1]
+    -> aws_vpc.main
+  aws_route_table.private  (123456789012, us-east-1)
+    -- aws_subnet.private[0]  (by aws_route_table_association.private[0])
+    -- aws_subnet.private[1]  (by aws_route_table_association.private[1])
+    -> aws_vpc.main
+  aws_route_table_association.private[0]  (123456789012, us-east-1)
+    -> aws_route_table.private
+    -> aws_subnet.private[0]
+    -> aws_vpc.main
+  aws_route_table_association.private[1]  (123456789012, us-east-1)
+    -> aws_route_table.private
+    -> aws_subnet.private[1]
+    -> aws_vpc.main
+  aws_subnet.private[0]  (123456789012, us-east-1)
+    contains aws_route_table_association.private[0]
+    -> aws_vpc.main
+  aws_subnet.private[1]  (123456789012, us-east-1)
+    contains aws_instance.app
+    contains aws_route_table_association.private[1]
+    -> aws_vpc.main
+  aws_vpc.main  (123456789012, us-east-1)
+    contains aws_lb.web
+    contains aws_route_table.private
+    contains aws_subnet.private[0]
+    contains aws_subnet.private[1]

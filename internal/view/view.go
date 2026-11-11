@@ -32,20 +32,22 @@ type Item struct {
 	Expanded bool `json:"expanded,omitempty"`
 }
 
-// Link says that resources in one item depend on resources in another.
-// Links join the items that stand for resources in a view: single resources
-// and collapsed groups.
+// Link joins two items that stand for resources in a view: single resources
+// and collapsed groups. With kind depends_on, resources in From depend on
+// resources in To. With kind links, glue resources attach the two sides to
+// each other, in no direction; From is the smaller ID.
 type Link struct {
-	From string `json:"from"`
-	To   string `json:"to"`
-	// Count is the number of dependencies the link stands for.
+	From string         `json:"from"`
+	To   string         `json:"to"`
+	Kind graph.EdgeKind `json:"kind"`
+	// Count is the number of edges the link stands for.
 	Count int `json:"count"`
 }
 
 // View is what is visible for one choice of expanded groups.
 type View struct {
 	Items []Item // In display order: each group is followed by its contents.
-	Links []Link // Ordered by From, then To.
+	Links []Link // Ordered by From, then To, then Kind.
 }
 
 // Document is the serializable form of a view.
@@ -53,11 +55,16 @@ type Document struct {
 	SchemaVersion int         `json:"schema_version"`
 	GroupBy       []Dimension `json:"group_by"`
 	// Depth is how far the view is expanded; MaxDepth shows every resource.
-	Depth     int    `json:"depth"`
-	MaxDepth  int    `json:"max_depth"`
-	Resources int    `json:"resources"`
-	Items     []Item `json:"items"`
-	Links     []Link `json:"links"`
+	Depth    int `json:"depth"`
+	MaxDepth int `json:"max_depth"`
+	// Resources counts the resources the view stands for. Total counts all
+	// those loaded; the difference is what a filter left out and the glue
+	// resources folded into links, counted by GlueFolded.
+	Resources  int    `json:"resources"`
+	Total      int    `json:"total"`
+	GlueFolded int    `json:"glue_folded"`
+	Items      []Item `json:"items"`
+	Links      []Link `json:"links"`
 }
 
 // AtDepth returns the view with every group above the given depth expanded:
@@ -71,10 +78,12 @@ func (t *Tree) Document(depth int) Document {
 	v := t.AtDepth(depth)
 	return Document{
 		SchemaVersion: SchemaVersion,
-		GroupBy:       t.dims,
+		GroupBy:       t.opts.Dimensions,
 		Depth:         depth,
 		MaxDepth:      t.Depth(),
 		Resources:     t.Resources(),
+		Total:         t.total,
+		GlueFolded:    t.glue,
 		Items:         v.Items,
 		Links:         v.Links,
 	}
@@ -121,25 +130,37 @@ func (t *Tree) View(expanded func(*Group) bool) View {
 	}
 	show(t.root)
 
-	counts := map[[2]string]int{}
+	counts := map[Link]int{}
 	for e := range t.g.AllEdges() {
-		if e.Kind != graph.EdgeDependsOn {
+		// A link stands in for a glue resource; when the glue itself is
+		// shown, its own dependencies say the same thing.
+		if e.Kind != graph.EdgeDependsOn && (e.Kind != graph.EdgeLinks || t.opts.ShowGlue) {
 			continue
 		}
-		from, to := shownAs[e.From], shownAs[e.To]
-		if from != to {
-			counts[[2]string{from, to}]++
+		// An end may be missing: filtered out, or folded glue.
+		from, ok := shownAs[e.From]
+		to, ok2 := shownAs[e.To]
+		if !ok || !ok2 || from == to {
+			continue
 		}
+		if e.Kind == graph.EdgeLinks && to < from {
+			from, to = to, from
+		}
+		counts[Link{From: from, To: to, Kind: e.Kind}]++
 	}
 	v.Links = make([]Link, 0, len(counts))
-	for pair, n := range counts {
-		v.Links = append(v.Links, Link{From: pair[0], To: pair[1], Count: n})
+	for l, n := range counts {
+		l.Count = n
+		v.Links = append(v.Links, l)
 	}
 	slices.SortFunc(v.Links, func(a, b Link) int {
 		if c := strings.Compare(a.From, b.From); c != 0 {
 			return c
 		}
-		return strings.Compare(a.To, b.To)
+		if c := strings.Compare(a.To, b.To); c != 0 {
+			return c
+		}
+		return strings.Compare(string(a.Kind), string(b.Kind))
 	})
 	return v
 }

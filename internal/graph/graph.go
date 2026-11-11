@@ -33,8 +33,20 @@ const (
 // EdgeKind names the relationship an edge represents.
 type EdgeKind string
 
-// EdgeDependsOn means From was created using values from To.
-const EdgeDependsOn EdgeKind = "depends_on"
+const (
+	// EdgeDependsOn means From was created using values from To.
+	EdgeDependsOn EdgeKind = "depends_on"
+	// EdgeContains means To sits inside From, as a subnet sits inside a
+	// network. A node has at most one container.
+	EdgeContains EdgeKind = "contains"
+	// EdgeLinks means From and To are attached to each other by the glue
+	// resource named in Via. The link has no direction; From is the smaller ID.
+	EdgeLinks EdgeKind = "links"
+)
+
+// RegionGlobal is the Region of a resource that exists once per account
+// rather than in a region, such as an IAM role.
+const RegionGlobal = "global"
 
 // Node is one resource instance.
 type Node struct {
@@ -58,6 +70,12 @@ type Node struct {
 	// AccountInferred is true when Account was not stated by the resource
 	// itself but taken from other resources that share its provider.
 	AccountInferred bool `json:"account_inferred,omitempty"`
+	// RegionInferred is the same for Region.
+	RegionInferred bool `json:"region_inferred,omitempty"`
+	// Glue is true for a resource that only attaches two others to each
+	// other, such as a route table association. It is represented by an
+	// EdgeLinks edge between the two, and views leave it out.
+	Glue bool `json:"glue,omitempty"`
 	// Module is the module instance path, or "" for the root module.
 	Module   string `json:"module,omitempty"`
 	Mode     Mode   `json:"mode"`
@@ -75,6 +93,8 @@ type Edge struct {
 	From string   `json:"from"`
 	To   string   `json:"to"`
 	Kind EdgeKind `json:"kind"`
+	// Via is the ID of the glue resource behind an EdgeLinks edge.
+	Via string `json:"via,omitempty"`
 }
 
 // Graph is a set of nodes and the edges between them.
@@ -114,6 +134,27 @@ func (g *Graph) AddEdge(e Edge) error {
 	return nil
 }
 
+// HasEdge reports whether e is present.
+func (g *Graph) HasEdge(e Edge) bool {
+	_, ok := g.edges[e]
+	return ok
+}
+
+// RemoveEdge deletes e if it is present.
+func (g *Graph) RemoveEdge(e Edge) {
+	delete(g.edges, e)
+}
+
+// Update applies change to the node with the given ID. The ID itself must
+// not be changed. It reports whether the node exists.
+func (g *Graph) Update(id string, change func(*Node)) bool {
+	n, ok := g.nodes[id]
+	if ok {
+		change(n)
+	}
+	return ok
+}
+
 // Node returns the node with the given ID.
 func (g *Graph) Node(id string) (Node, bool) {
 	n, ok := g.nodes[id]
@@ -133,7 +174,7 @@ func (g *Graph) Nodes() []Node {
 	return out
 }
 
-// Edges returns all edges sorted by From, then To, then Kind.
+// Edges returns all edges sorted by From, then To, then Kind, then Via.
 func (g *Graph) Edges() []Edge {
 	out := make([]Edge, 0, len(g.edges))
 	for e := range g.edges {
@@ -147,7 +188,10 @@ func (g *Graph) Edges() []Edge {
 		if a.To != b.To {
 			return a.To < b.To
 		}
-		return a.Kind < b.Kind
+		if a.Kind != b.Kind {
+			return a.Kind < b.Kind
+		}
+		return a.Via < b.Via
 	})
 	return out
 }

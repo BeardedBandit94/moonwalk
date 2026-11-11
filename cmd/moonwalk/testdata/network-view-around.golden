@@ -1,0 +1,17 @@
+4 resources in 6 items, grouped by source
+4 resources left out by the filter
+3 glue resources folded into links marked -- (-glue shows them)
+
+net  (source, 4 resources)
+  aws_subnet.private  (block, 2 resources)
+    aws_subnet.private[0]
+        -- aws_route_table.private
+        -> aws_vpc.main
+    aws_subnet.private[1]
+        -- aws_route_table.private
+        -> aws_vpc.main
+  aws_route_table.private
+      -- aws_subnet.private / aws_subnet.private[0]
+      -- aws_subnet.private / aws_subnet.private[1]
+      -> aws_vpc.main
+  aws_vpc.main

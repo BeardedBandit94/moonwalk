@@ -3,6 +3,7 @@ package view
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -72,7 +73,7 @@ func outline(v View) []string {
 }
 
 func TestTreeAndViews(t *testing.T) {
-	tree := Build(small(t), DefaultDimensions)
+	tree := Build(small(t), Options{Dimensions: DefaultDimensions})
 	if tree.Resources() != 7 || tree.Depth() != 7 {
 		t.Fatalf("resources %d, depth %d; want 7 and 7", tree.Resources(), tree.Depth())
 	}
@@ -120,6 +121,7 @@ func TestTreeAndViews(t *testing.T) {
 	wantLinks := []Link{{
 		From:  `source:prod/account:111111111111/region:us-east-1/module:module.net`,
 		To:    `prod::aws_vpc.main`,
+		Kind:  graph.EdgeDependsOn,
 		Count: 4,
 	}}
 	if !reflect.DeepEqual(collapsed.Links, wantLinks) {
@@ -140,7 +142,7 @@ func TestTreeAndViews(t *testing.T) {
 }
 
 func TestViewExpandsOnlyWhatIsAsked(t *testing.T) {
-	tree := Build(small(t), DefaultDimensions)
+	tree := Build(small(t), Options{Dimensions: DefaultDimensions})
 	path := map[string]bool{
 		`source:prod`:                      true,
 		`source:prod/account:111111111111`: true,
@@ -166,7 +168,7 @@ func TestGroupingOrderAndLabels(t *testing.T) {
 
 	// Without a source level, the outermost module carries the source, so
 	// two states' modules of the same name stay apart.
-	byModule := Build(g, []Dimension{ByModule})
+	byModule := Build(g, Options{Dimensions: []Dimension{ByModule}})
 	var tops []string
 	for _, grp := range byModule.Top() {
 		tops = append(tops, grp.Name)
@@ -183,7 +185,7 @@ func TestGroupingOrderAndLabels(t *testing.T) {
 
 	// Without modules in the grouping the label carries the module path,
 	// and without sources it carries the source, so labels stay distinct.
-	tree := Build(g, []Dimension{ByRegion})
+	tree := Build(g, Options{Dimensions: []Dimension{ByRegion}})
 	var labels []string
 	for _, it := range tree.AtDepth(tree.Depth()).Items {
 		if it.Kind == KindResource {
@@ -202,6 +204,141 @@ func TestGroupingOrderAndLabels(t *testing.T) {
 	}
 	if !reflect.DeepEqual(labels, want) {
 		t.Errorf("labels:\n%s\nwant:\n%s", strings.Join(labels, "\n"), strings.Join(want, "\n"))
+	}
+}
+
+// related is a network with two subnets, a machine in the second, a route
+// table attached to the first by a glue resource, and a bucket outside.
+func related(t *testing.T) *graph.Graph {
+	g := graph.New()
+	n := func(resource, typ string) graph.Node {
+		return node("prod", "111111111111", "us-east-1", "", resource, typ)
+	}
+	glue := n("aws_route_table_association.a", "aws_route_table_association")
+	glue.Glue = true
+	bucket := n("aws_s3_bucket.logs", "aws_s3_bucket")
+	bucket.Region = "eu-west-1"
+	mustAdd(t, g,
+		n("aws_vpc.main", "aws_vpc"),
+		n("aws_subnet.s[0]", "aws_subnet"),
+		n("aws_subnet.s[1]", "aws_subnet"),
+		n("aws_instance.app", "aws_instance"),
+		n("aws_route_table.rt", "aws_route_table"),
+		glue, bucket,
+	)
+	add := func(from, to string, kind graph.EdgeKind, via string) {
+		e := graph.Edge{From: "prod::" + from, To: "prod::" + to, Kind: kind}
+		if via != "" {
+			e.Via = "prod::" + via
+		}
+		if err := g.AddEdge(e); err != nil {
+			t.Fatal(err)
+		}
+	}
+	add("aws_vpc.main", "aws_subnet.s[0]", graph.EdgeContains, "")
+	add("aws_vpc.main", "aws_subnet.s[1]", graph.EdgeContains, "")
+	add("aws_vpc.main", "aws_route_table.rt", graph.EdgeContains, "")
+	add("aws_subnet.s[1]", "aws_instance.app", graph.EdgeContains, "")
+	add("aws_subnet.s[0]", "aws_route_table_association.a", graph.EdgeContains, "")
+	add("aws_instance.app", "aws_subnet.s[1]", graph.EdgeDependsOn, "")
+	add("aws_route_table_association.a", "aws_subnet.s[0]", graph.EdgeDependsOn, "")
+	add("aws_route_table_association.a", "aws_route_table.rt", graph.EdgeDependsOn, "")
+	add("aws_route_table.rt", "aws_subnet.s[0]", graph.EdgeLinks, "aws_route_table_association.a")
+	return g
+}
+
+func TestNetworkLevel(t *testing.T) {
+	tree := Build(related(t), Options{Dimensions: []Dimension{BySource, ByNetwork}})
+	want := []string{
+		`prod (source 6)`,
+		`  aws_vpc.main (network 5)`,
+		`    aws_subnet.s[0] (subnet 1)`,
+		`      aws_subnet.s[0] (resource)`,
+		`    aws_subnet.s[1] (subnet 2)`,
+		`      aws_instance.app (resource)`,
+		`      aws_subnet.s[1] (resource)`,
+		`    aws_route_table.rt (resource)`,
+		`    aws_vpc.main (resource)`,
+		`  aws_s3_bucket.logs (resource)`,
+	}
+	if got := outline(tree.AtDepth(tree.Depth())); !reflect.DeepEqual(got, want) {
+		t.Errorf("got:\n%s\nwant:\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
+	}
+}
+
+func TestGlueIsFoldedIntoLinks(t *testing.T) {
+	g := related(t)
+	dims := []Dimension{BySource}
+
+	folded := Build(g, Options{Dimensions: dims})
+	if folded.Resources() != 6 || folded.Total() != 7 || folded.GlueFolded() != 1 {
+		t.Errorf("resources %d, total %d, glue %d; want 6, 7, 1", folded.Resources(), folded.Total(), folded.GlueFolded())
+	}
+	wantLinks := []Link{
+		{From: "prod::aws_instance.app", To: "prod::aws_subnet.s[1]", Kind: graph.EdgeDependsOn, Count: 1},
+		{From: "prod::aws_route_table.rt", To: "prod::aws_subnet.s[0]", Kind: graph.EdgeLinks, Count: 1},
+	}
+	if got := folded.AtDepth(folded.Depth()).Links; !reflect.DeepEqual(got, wantLinks) {
+		t.Errorf("folded links: %+v\nwant %+v", got, wantLinks)
+	}
+
+	// Shown, the glue resource carries its own dependencies and the link
+	// that stood for it is gone.
+	shown := Build(g, Options{Dimensions: dims, ShowGlue: true})
+	wantLinks = []Link{
+		{From: "prod::aws_instance.app", To: "prod::aws_subnet.s[1]", Kind: graph.EdgeDependsOn, Count: 1},
+		{From: "prod::aws_route_table_association.a", To: "prod::aws_route_table.rt", Kind: graph.EdgeDependsOn, Count: 1},
+		{From: "prod::aws_route_table_association.a", To: "prod::aws_subnet.s[0]", Kind: graph.EdgeDependsOn, Count: 1},
+	}
+	if got := shown.AtDepth(shown.Depth()).Links; shown.Resources() != 7 || !reflect.DeepEqual(got, wantLinks) {
+		t.Errorf("shown: %d resources, links %+v\nwant 7, %+v", shown.Resources(), got, wantLinks)
+	}
+
+	// A link between two resources inside one collapsed group disappears,
+	// like any other.
+	if got := folded.AtDepth(1).Links; len(got) != 0 {
+		t.Errorf("collapsed view has links: %+v", got)
+	}
+}
+
+func TestFilter(t *testing.T) {
+	g := related(t)
+	cases := []struct {
+		name   string
+		filter Filter
+		want   []string
+	}{
+		{"type", Filter{Types: []string{"aws_subnet"}}, []string{"aws_subnet.s[0]", "aws_subnet.s[1]"}},
+		{"type pattern", Filter{Types: []string{"aws_s*"}}, []string{"aws_s3_bucket.logs", "aws_subnet.s[0]", "aws_subnet.s[1]"}},
+		{"several types", Filter{Types: []string{"aws_vpc", "aws_instance"}}, []string{"aws_instance.app", "aws_vpc.main"}},
+		{"region", Filter{Regions: []string{"eu-west-1"}}, []string{"aws_s3_bucket.logs"}},
+		{"account and region", Filter{Accounts: []string{"111111111111"}, Regions: []string{"nowhere"}}, nil},
+		{"source", Filter{Sources: []string{"staging"}}, nil},
+		{"status", Filter{Statuses: []string{"unmanaged"}}, nil},
+		{"search ignores case", Filter{Search: "ROUTE"}, []string{"aws_route_table.rt"}},
+		// The machine, the subnet it depends on and sits in; nothing further.
+		{"around", Filter{Around: "prod::aws_instance.app"}, []string{"aws_instance.app", "aws_subnet.s[1]"}},
+		// The table, its network, and the subnet its glue attaches it to.
+		{"around follows links", Filter{Around: "prod::aws_route_table.rt"}, []string{"aws_route_table.rt", "aws_subnet.s[0]", "aws_vpc.main"}},
+		// A folded glue resource is not shown, but what it joins is.
+		{"around glue", Filter{Around: "prod::aws_route_table_association.a"}, []string{"aws_route_table.rt", "aws_subnet.s[0]"}},
+		{"around and type", Filter{Around: "prod::aws_vpc.main", Types: []string{"aws_subnet"}}, []string{"aws_subnet.s[0]", "aws_subnet.s[1]"}},
+	}
+	for _, c := range cases {
+		tree := Build(g, Options{Dimensions: []Dimension{BySource}, Filter: c.filter})
+		var got []string
+		for _, it := range tree.AtDepth(tree.Depth()).Items {
+			if it.Kind == KindResource {
+				got = append(got, it.Label)
+			}
+		}
+		slices.Sort(got)
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
+		}
+		if tree.Resources() != len(c.want) || tree.Total() != 7 {
+			t.Errorf("%s: resources %d, total %d", c.name, tree.Resources(), tree.Total())
+		}
 	}
 }
 
@@ -236,7 +373,7 @@ func TestCrowdedGroupIsSplitByType(t *testing.T) {
 			mustAdd(t, g, node("prod", "", "", "", fmt.Sprintf("%s.r%d", typ, i), typ))
 		}
 	}
-	tree := Build(g, []Dimension{BySource})
+	tree := Build(g, Options{Dimensions: []Dimension{BySource}})
 	prod := tree.Top()[0]
 	var kinds []string
 	for _, c := range prod.Groups {
@@ -253,7 +390,7 @@ func TestCrowdedGroupIsSplitByRange(t *testing.T) {
 	for i := 0; i < 250; i++ {
 		mustAdd(t, g, node("prod", "", "", "", fmt.Sprintf("aws_instance.w[%d]", i), "aws_instance"))
 	}
-	tree := Build(g, []Dimension{BySource})
+	tree := Build(g, Options{Dimensions: []Dimension{BySource}})
 	block := tree.Top()[0].Groups[0]
 	var names []string
 	for _, c := range block.Groups {
@@ -277,7 +414,7 @@ func TestRangesWithIdenticalLabels(t *testing.T) {
 		n.ID = fmt.Sprintf("prod-%d::aws_vpc.main", i)
 		mustAdd(t, g, n)
 	}
-	tree := Build(g, []Dimension{BySource})
+	tree := Build(g, Options{Dimensions: []Dimension{BySource}})
 	if got := len(tree.Top()[0].Groups); got != 3 {
 		t.Errorf("got %d ranges, want 3", got)
 	}
@@ -336,7 +473,7 @@ func estate(t testing.TB, modules int) *graph.Graph {
 func TestBudgetOnLargeEstate(t *testing.T) {
 	g := estate(t, 1000)
 	for _, dims := range [][]Dimension{DefaultDimensions, {ByModule}, {ByAccount}, {BySource}} {
-		tree := Build(g, dims)
+		tree := Build(g, Options{Dimensions: dims})
 		if tree.Resources() != 100000 {
 			t.Fatalf("%v: %d resources", dims, tree.Resources())
 		}
@@ -366,7 +503,7 @@ func BenchmarkBuildAndView100k(b *testing.B) {
 	g := estate(b, 1000)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		tree := Build(g, DefaultDimensions)
+		tree := Build(g, Options{Dimensions: DefaultDimensions})
 		tree.AtDepth(tree.AutoDepth(Budget))
 	}
 }

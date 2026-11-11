@@ -1,0 +1,33 @@
+11 resources in 19 items, grouped by source, region, network
+
+net  (source, 11 resources)
+  global  (region, 3 resources)
+    aws_iam_policy.read
+    aws_iam_role.app
+    aws_iam_role_policy_attachment.app
+        -> aws_iam_policy.read
+        -> aws_iam_role.app
+  us-east-1  (region, 8 resources)
+    aws_vpc.main  (network, 8 resources)
+      aws_subnet.private[0]  (subnet, 2 resources)
+        aws_route_table_association.private  (block, 1 resource)
+          aws_route_table_association.private[0]
+              -> aws_route_table.private
+              -> aws_subnet.private[0]
+        aws_subnet.private[0]
+            -> aws_vpc.main
+      aws_subnet.private[1]  (subnet, 3 resources)
+        aws_route_table_association.private  (block, 1 resource)
+          aws_route_table_association.private[1]
+              -> aws_route_table.private
+              -> aws_subnet.private[1]
+        aws_instance.app
+            -> aws_subnet.private[1]
+        aws_subnet.private[1]
+            -> aws_vpc.main
+      aws_lb.web
+          -> aws_subnet.private[0] / aws_subnet.private[0]
+          -> aws_subnet.private[1] / aws_subnet.private[1]
+      aws_route_table.private
+          -> aws_vpc.main
+      aws_vpc.main

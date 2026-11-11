@@ -31,7 +31,8 @@ func TestDocumentIsSortedAndDeduplicated(t *testing.T) {
 	for _, id := range []string{"c", "a", "b"} {
 		_ = g.AddNode(Node{ID: id})
 	}
-	for _, e := range []Edge{{"c", "a", EdgeDependsOn}, {"b", "a", EdgeDependsOn}, {"c", "a", EdgeDependsOn}} {
+	for _, pair := range [][2]string{{"c", "a"}, {"b", "a"}, {"c", "a"}} {
+		e := Edge{From: pair[0], To: pair[1], Kind: EdgeDependsOn}
 		if err := g.AddEdge(e); err != nil {
 			t.Fatal(err)
 		}

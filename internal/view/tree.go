@@ -20,18 +20,23 @@ const (
 	ByAccount Dimension = "account"
 	ByRegion  Dimension = "region"
 	ByModule  Dimension = "module"
+	// ByNetwork groups a resource under the network and subnet that
+	// contain it, as recorded by the graph's containment edges.
+	ByNetwork Dimension = "network"
 )
 
 // DefaultDimensions is the grouping used when none is asked for.
 var DefaultDimensions = []Dimension{BySource, ByAccount, ByRegion, ByModule}
+
+var allDimensions = []Dimension{BySource, ByAccount, ByRegion, ByModule, ByNetwork}
 
 // ParseDimensions reads a comma-separated list such as "account,module".
 func ParseDimensions(s string) ([]Dimension, error) {
 	var dims []Dimension
 	for _, part := range strings.Split(s, ",") {
 		d := Dimension(strings.TrimSpace(part))
-		if !slices.Contains(DefaultDimensions, d) {
-			return nil, fmt.Errorf("unknown grouping %q (want any of source, account, region, module)", part)
+		if !slices.Contains(allDimensions, d) {
+			return nil, fmt.Errorf("unknown grouping %q (want any of source, account, region, module, network)", part)
 		}
 		if slices.Contains(dims, d) {
 			return nil, fmt.Errorf("grouping %q is given twice", d)
@@ -50,6 +55,8 @@ const (
 	KindRegion   Kind = "region"
 	KindModule   Kind = "module"          // A module call, such as module.app.
 	KindInstance Kind = "module_instance" // One instance of a call with count or for_each.
+	KindNetwork  Kind = "network"         // A network and what it contains.
+	KindSubnet   Kind = "subnet"          // A subnet and what it contains.
 	KindType     Kind = "type"            // Resources of one type, split out of a crowded group.
 	KindBlock    Kind = "block"           // The instances of one resource block.
 	KindRange    Kind = "range"           // A slice of a group that is still too crowded.
@@ -77,10 +84,21 @@ type Group struct {
 	resourceType string // For a block: the type of its resources.
 }
 
+// Options says how to arrange a graph.
+type Options struct {
+	// Dimensions are the levels to group by, outermost first.
+	Dimensions []Dimension
+	// Filter leaves out the resources it does not match.
+	Filter Filter
+	// ShowGlue keeps glue resources as items. By default they are left
+	// out, and the links they stand for are shown in their place.
+	ShowGlue bool
+}
+
 // Tree is a graph arranged into groups.
 type Tree struct {
 	g      *graph.Graph
-	dims   []Dimension
+	opts   Options
 	root   *Group // Holds the top-level groups; never shown.
 	groups map[string]*Group
 	// byName finds a group by its parent, kind and name without building
@@ -90,23 +108,47 @@ type Tree struct {
 	types  map[string]string // Node ID to resource type.
 	// perDepth[d] counts the groups and resources at depth d.
 	perDepth []int
+	total    int // Resources in the graph, glue included.
+	glue     int // Glue resources left out.
 }
 
-// Build arranges g by the given dimensions, outermost first. Below them,
+// Build arranges g as the options say. Below the chosen dimensions,
 // instances of one resource block are always kept together. A resource that
 // lacks a property, such as a region, skips that level.
-func Build(g *graph.Graph, dims []Dimension) *Tree {
+func Build(g *graph.Graph, o Options) *Tree {
 	t := &Tree{
 		g:      g,
-		dims:   dims,
+		opts:   o,
 		root:   &Group{},
 		groups: map[string]*Group{},
 		byName: map[childKey]*Group{},
 		labels: map[string]string{},
 		types:  map[string]string{},
 	}
+	dims := o.Dimensions
 	byModule, bySource := slices.Contains(dims, ByModule), slices.Contains(dims, BySource)
+
+	// What contains what, for the network level and for Filter.Around.
+	containerOf, isContainer := map[string]string{}, map[string]bool{}
+	if slices.Contains(dims, ByNetwork) {
+		for e := range g.AllEdges() {
+			if e.Kind == graph.EdgeContains {
+				containerOf[e.To] = e.From
+				isContainer[e.From] = true
+			}
+		}
+	}
+	match := o.Filter.matcher(g)
+
 	for _, n := range g.Nodes() {
+		t.total++
+		if n.Glue && !o.ShowGlue {
+			t.glue++
+			continue
+		}
+		if !match(n) {
+			continue
+		}
 		grp := t.root
 		for _, d := range dims {
 			switch d {
@@ -134,6 +176,28 @@ func Build(g *graph.Graph, dims []Dimension) *Tree {
 					}
 					prefix = ""
 				}
+			case ByNetwork:
+				// The containers of n, outermost first. A container sits in
+				// the group named after itself, next to what it contains.
+				var chain []string
+				if isContainer[n.ID] {
+					chain = append(chain, n.ID)
+				}
+				for id, ok := containerOf[n.ID]; ok && len(chain) < 8; id, ok = containerOf[id] {
+					chain = append(chain, id)
+				}
+				slices.Reverse(chain)
+				for i, id := range chain {
+					name := id // A node ID already carries the source.
+					if c, ok := g.Node(id); ok && bySource {
+						name = c.Address
+					}
+					kind := KindSubnet
+					if i == 0 {
+						kind = KindNetwork
+					}
+					grp = t.child(grp, kind, name)
+				}
 			}
 		}
 		label := n.Address
@@ -146,7 +210,8 @@ func Build(g *graph.Graph, dims []Dimension) *Tree {
 			// Two states can hold the same address; keep the labels apart.
 			label = n.Source + "::" + label
 		}
-		if block, keyed := tfaddr.Block(label); keyed {
+		// A container already has a group of its own to sit in.
+		if block, keyed := tfaddr.Block(label); keyed && !isContainer[n.ID] {
 			grp = t.child(grp, KindBlock, block)
 			grp.resourceType = n.Type
 		}
@@ -321,7 +386,14 @@ func (t *Tree) count(depth int) {
 }
 
 // Dimensions returns the dimensions the tree was built with.
-func (t *Tree) Dimensions() []Dimension { return t.dims }
+func (t *Tree) Dimensions() []Dimension { return t.opts.Dimensions }
+
+// Total returns the number of resources in the graph, whether or not the
+// tree shows them.
+func (t *Tree) Total() int { return t.total }
+
+// GlueFolded returns the number of glue resources left out of the tree.
+func (t *Tree) GlueFolded() int { return t.glue }
 
 // Top returns the top-level groups.
 func (t *Tree) Top() []*Group { return t.root.Groups }
@@ -336,7 +408,7 @@ func (t *Tree) Group(id string) (*Group, bool) {
 // the module path when modules are part of the grouping.
 func (t *Tree) Label(nodeID string) string { return t.labels[nodeID] }
 
-// Resources returns the number of resources in the tree.
+// Resources returns the number of resources the tree shows.
 func (t *Tree) Resources() int { return t.root.Resources }
 
 // Depth returns the depth of the deepest item, which is the depth at which

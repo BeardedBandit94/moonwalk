@@ -11,19 +11,20 @@ import (
 	"strings"
 
 	"github.com/BeardedBandit94/moonwalk/internal/graph"
+	"github.com/BeardedBandit94/moonwalk/internal/relate"
 	"github.com/BeardedBandit94/moonwalk/internal/view"
 )
 
 const usage = `Usage:
-  moonwalk view  [-format text|json] [-group-by <list>] [-depth <n>] <state>...
-  moonwalk graph [-format text|json] [-direct] [-attributes] <state>...
+  moonwalk view  [options] <state>...
+  moonwalk graph [options] <state>...
 
 Reads Terraform or OpenTofu states ('terraform show -json' output or raw
 .tfstate files) into a single resource graph.
 
   view   prints the graph collapsed into nested groups, sized to stay
          readable however large the states are
-  graph  prints every resource and dependency
+  graph  prints every resource and relationship
 
 Each <state> is one of:
   path         a state file, named after its path
@@ -31,15 +32,28 @@ Each <state> is one of:
   -            standard input, named "stdin"
   name=<any of the above>   the same, under a name of your choosing
 
-Options:
+Options for both:
   -format      text (default) or json
-  -group-by    view: comma-separated levels, outermost first, from source,
-               account, region and module (default: all four in that order)
-  -depth       view: how many levels to expand (default: as many as fit in
-               ` + "300" + ` items)
-  -direct      graph: leave out dependencies that others already imply
-  -attributes  graph: include attribute values in JSON output; values that
-               the state marks as sensitive are replaced with "(sensitive)"
+
+Options for view:
+  -group-by    comma-separated levels, outermost first, from source,
+               account, region, module and network
+               (default: source,account,region,module)
+  -depth       how many levels to expand (default: as many as fit in 300
+               items)
+  -type, -account, -region, -source, -status
+               show only resources with one of the comma-separated values;
+               -type also takes patterns such as 'aws_iam_*'
+  -search      show only resources whose address or type contains the text
+  -around      show only the resource with this address and the resources
+               directly related to it
+  -glue        show glue resources, such as route table associations,
+               instead of folding each into a link between what it joins
+
+Options for graph:
+  -direct      leave out dependencies that others already imply
+  -attributes  include attribute values in JSON output; values that the
+               state marks as sensitive are replaced with "(sensitive)"
 `
 
 func main() {
@@ -49,25 +63,42 @@ func main() {
 	}
 }
 
+// options holds every flag; each command registers only its own.
+type options struct {
+	format             string
+	direct, attributes bool // graph
+	groupBy            string
+	depth              int
+	types, accounts    string
+	regions, sources   string
+	statuses           string
+	search, around     string
+	glue               bool
+}
+
 func run(args []string, stdin io.Reader, stdout io.Writer) error {
 	if len(args) == 0 || (args[0] != "graph" && args[0] != "view") {
 		return fmt.Errorf("expected the 'view' or 'graph' command\n\n%s", usage)
 	}
 	command := args[0]
+	var o options
 	fs := flag.NewFlagSet(command, flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
-	format := fs.String("format", "text", "")
-	var (
-		direct, attributes *bool
-		groupBy            *string
-		depth              *int
-	)
+	fs.StringVar(&o.format, "format", "text", "")
 	if command == "graph" {
-		direct = fs.Bool("direct", false, "")
-		attributes = fs.Bool("attributes", false, "")
+		fs.BoolVar(&o.direct, "direct", false, "")
+		fs.BoolVar(&o.attributes, "attributes", false, "")
 	} else {
-		groupBy = fs.String("group-by", "source,account,region,module", "")
-		depth = fs.Int("depth", 0, "")
+		fs.StringVar(&o.groupBy, "group-by", "source,account,region,module", "")
+		fs.IntVar(&o.depth, "depth", 0, "")
+		fs.StringVar(&o.types, "type", "", "")
+		fs.StringVar(&o.accounts, "account", "", "")
+		fs.StringVar(&o.regions, "region", "", "")
+		fs.StringVar(&o.sources, "source", "", "")
+		fs.StringVar(&o.statuses, "status", "", "")
+		fs.StringVar(&o.search, "search", "", "")
+		fs.StringVar(&o.around, "around", "", "")
+		fs.BoolVar(&o.glue, "glue", false, "")
 	}
 	if err := fs.Parse(args[1:]); err != nil {
 		return fmt.Errorf("%w\n\n%s", err, usage)
@@ -75,16 +106,16 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 	if fs.NArg() == 0 {
 		return fmt.Errorf("expected at least one state\n\n%s", usage)
 	}
-	if *format != "text" && *format != "json" {
-		return fmt.Errorf("unknown format %q (want text or json)", *format)
+	if o.format != "text" && o.format != "json" {
+		return fmt.Errorf("unknown format %q (want text or json)", o.format)
 	}
 	var dims []view.Dimension
 	if command == "view" {
 		var err error
-		if dims, err = view.ParseDimensions(*groupBy); err != nil {
+		if dims, err = view.ParseDimensions(o.groupBy); err != nil {
 			return err
 		}
-		if *depth < 0 {
+		if o.depth < 0 {
 			return fmt.Errorf("-depth must be 1 or more")
 		}
 	}
@@ -99,36 +130,84 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 			return err
 		}
 	}
+	// Work out containment, drop dependencies on instances that are
+	// evidently not meant, and find the glue.
+	relate.Enrich(g)
 
-	if command == "view" {
-		// State lists indirect dependencies too; links should count only
-		// the direct ones.
-		g.ReduceTransitive(graph.EdgeDependsOn)
-		tree := view.Build(g, dims)
-		d := min(*depth, tree.Depth())
-		if d == 0 {
-			d = tree.AutoDepth(view.Budget)
+	if command == "graph" {
+		if o.direct {
+			g.ReduceTransitive(graph.EdgeDependsOn)
 		}
-		doc := tree.Document(d)
-		if *format == "text" {
-			return writeView(stdout, doc)
+		d := g.Document()
+		if o.format == "text" {
+			return writeGraph(stdout, d)
 		}
-		return writeJSON(stdout, doc)
+		if !o.attributes {
+			for i := range d.Nodes {
+				d.Nodes[i].Attributes = nil
+			}
+		}
+		return writeJSON(stdout, d)
 	}
 
-	if *direct {
-		g.ReduceTransitive(graph.EdgeDependsOn)
+	filter := view.Filter{
+		Types:    list(o.types),
+		Accounts: list(o.accounts),
+		Regions:  list(o.regions),
+		Sources:  list(o.sources),
+		Statuses: list(o.statuses),
+		Search:   o.search,
 	}
-	d := g.Document()
-	if *format == "text" {
-		return writeText(stdout, d)
-	}
-	if !*attributes {
-		for i := range d.Nodes {
-			d.Nodes[i].Attributes = nil
+	if o.around != "" {
+		if filter.Around, err = findNode(g, o.around); err != nil {
+			return err
 		}
 	}
-	return writeJSON(stdout, d)
+	// State lists indirect dependencies too; links should count only the
+	// direct ones.
+	g.ReduceTransitive(graph.EdgeDependsOn)
+	tree := view.Build(g, view.Options{Dimensions: dims, Filter: filter, ShowGlue: o.glue})
+	depth := min(o.depth, tree.Depth())
+	if depth == 0 {
+		depth = tree.AutoDepth(view.Budget)
+	}
+	doc := tree.Document(depth)
+	if o.format == "text" {
+		return writeView(stdout, doc)
+	}
+	return writeJSON(stdout, doc)
+}
+
+// list splits a comma-separated flag value; an empty value gives no list.
+func list(s string) []string {
+	var out []string
+	for _, part := range strings.Split(s, ",") {
+		if part = strings.TrimSpace(part); part != "" {
+			out = append(out, part)
+		}
+	}
+	return out
+}
+
+// findNode returns the ID of the resource with the given ID or address.
+func findNode(g *graph.Graph, name string) (string, error) {
+	if _, ok := g.Node(name); ok {
+		return name, nil
+	}
+	var found []string
+	for n := range g.AllNodes() {
+		if n.Address == name {
+			found = append(found, n.ID)
+		}
+	}
+	switch len(found) {
+	case 0:
+		return "", fmt.Errorf("no resource has the address %q", name)
+	case 1:
+		return found[0], nil
+	}
+	slices.Sort(found)
+	return "", fmt.Errorf("the address %q is in several states; use one of: %s", name, strings.Join(found, ", "))
 }
 
 func writeJSON(w io.Writer, v any) error {
@@ -138,8 +217,9 @@ func writeJSON(w io.Writer, v any) error {
 }
 
 // writeView prints a collapsed view as an indented outline. Under each item
-// that stands for resources come the items those resources depend on, named
-// relative to the nearest group the two share.
+// that stands for resources come the items it is related to, named relative
+// to the nearest group the two share: "->" for what it depends on and "--"
+// for what glue resources attach it to.
 func writeView(w io.Writer, d view.Document) error {
 	byID := make(map[string]view.Item, len(d.Items))
 	for _, it := range d.Items {
@@ -155,9 +235,19 @@ func writeView(w io.Writer, d view.Document) error {
 		slices.Reverse(p)
 		return p
 	}
-	links := map[string][]view.Link{}
+	// A link without direction is listed under both of its ends.
+	type relation struct {
+		arrow, other string
+		count        int
+	}
+	relations := map[string][]relation{}
 	for _, l := range d.Links {
-		links[l.From] = append(links[l.From], l)
+		if l.Kind == graph.EdgeLinks {
+			relations[l.From] = append(relations[l.From], relation{"--", l.To, l.Count})
+			relations[l.To] = append(relations[l.To], relation{"--", l.From, l.Count})
+		} else {
+			relations[l.From] = append(relations[l.From], relation{"->", l.To, l.Count})
+		}
 	}
 
 	var b strings.Builder
@@ -165,7 +255,13 @@ func writeView(w io.Writer, d view.Document) error {
 	for _, dim := range d.GroupBy {
 		dims = append(dims, string(dim))
 	}
-	fmt.Fprintf(&b, "%d resources in %d items, grouped by %s\n", d.Resources, len(d.Items), strings.Join(dims, ", "))
+	fmt.Fprintf(&b, "%s in %s, grouped by %s\n", plural(d.Resources, "resource"), plural(len(d.Items), "item"), strings.Join(dims, ", "))
+	if left := d.Total - d.GlueFolded - d.Resources; left > 0 {
+		fmt.Fprintf(&b, "%s left out by the filter\n", plural(left, "resource"))
+	}
+	if d.GlueFolded > 0 {
+		fmt.Fprintf(&b, "%s folded into links marked -- (-glue shows them)\n", plural(d.GlueFolded, "glue resource"))
+	}
 	if d.Depth < d.MaxDepth {
 		fmt.Fprintf(&b, "Expanded to depth %d of %d; groups marked + hold more (-depth %d)\n", d.Depth, d.MaxDepth, d.Depth+1)
 	}
@@ -181,8 +277,8 @@ func writeView(w io.Writer, d view.Document) error {
 			fmt.Fprintf(&b, "%s+ %s  (%s, %s)\n", indent, it.Label, kindName(it.Kind), plural(it.Resources, "resource"))
 		}
 		from := path(it.ID)
-		for _, l := range links[it.ID] {
-			to := path(l.To)
+		for _, r := range relations[it.ID] {
+			to := path(r.other)
 			shared := 0
 			for shared < len(from)-1 && shared < len(to)-1 && from[shared].ID == to[shared].ID {
 				shared++
@@ -191,9 +287,9 @@ func writeView(w io.Writer, d view.Document) error {
 			for _, step := range to[shared:] {
 				names = append(names, step.Label)
 			}
-			fmt.Fprintf(&b, "%s    -> %s", indent, strings.Join(names, " / "))
-			if l.Count > 1 {
-				fmt.Fprintf(&b, "  (%d dependencies)", l.Count)
+			fmt.Fprintf(&b, "%s    %s %s", indent, r.arrow, strings.Join(names, " / "))
+			if r.count > 1 {
+				fmt.Fprintf(&b, "  (%d)", r.count)
 			}
 			b.WriteByte('\n')
 		}
@@ -213,8 +309,17 @@ func plural(n int, noun string) string {
 	return fmt.Sprintf("%d %ss", n, noun)
 }
 
-// writeText prints nodes grouped by source, each followed by its dependencies.
-func writeText(w io.Writer, d graph.Document) error {
+func pluralY(n int, stem string) string {
+	if n == 1 {
+		return "1 " + stem + "y"
+	}
+	return fmt.Sprintf("%d %sies", n, stem)
+}
+
+// writeGraph prints every resource, grouped by source, followed by its
+// relationships: "->" for what it depends on, "contains" for what sits
+// inside it, and "--" for what a glue resource attaches it to.
+func writeGraph(w io.Writer, d graph.Document) error {
 	byID := map[string]graph.Node{}
 	var sources []string // In order of first appearance; nodes are sorted by ID.
 	for _, n := range d.Nodes {
@@ -223,26 +328,39 @@ func writeText(w io.Writer, d graph.Document) error {
 			sources = append(sources, n.Source)
 		}
 	}
-	deps := map[string][]string{}
+	edges := map[string][]graph.Edge{}
+	dependencies := 0
 	for _, e := range d.Edges {
-		deps[e.From] = append(deps[e.From], e.To)
+		edges[e.From] = append(edges[e.From], e)
+		if e.Kind == graph.EdgeDependsOn {
+			dependencies++
+		}
+	}
+	// name refers to another node from the point of view of n.
+	name := func(n graph.Node, id string) string {
+		if other := byID[id]; other.Source == n.Source {
+			return other.Address
+		}
+		return id
 	}
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "%d resources, %d dependencies, %d sources\n", len(d.Nodes), len(d.Edges), len(sources))
+	fmt.Fprintf(&b, "%s, %s, %s\n", plural(len(d.Nodes), "resource"), pluralY(dependencies, "dependenc"), plural(len(sources), "source"))
 	i := 0
 	for _, source := range sources {
 		fmt.Fprintf(&b, "\n%s\n", source)
 		for ; i < len(d.Nodes) && d.Nodes[i].Source == source; i++ {
 			n := d.Nodes[i]
 			fmt.Fprintf(&b, "  %s%s\n", n.Address, partitionLabel(n))
-			for _, id := range deps[n.ID] {
-				to := byID[id]
-				name := to.Address
-				if to.Source != n.Source {
-					name = to.ID
+			for _, e := range edges[n.ID] {
+				switch e.Kind {
+				case graph.EdgeDependsOn:
+					fmt.Fprintf(&b, "    -> %s\n", name(n, e.To))
+				case graph.EdgeContains:
+					fmt.Fprintf(&b, "    contains %s\n", name(n, e.To))
+				case graph.EdgeLinks:
+					fmt.Fprintf(&b, "    -- %s  (by %s)\n", name(n, e.To), name(n, e.Via))
 				}
-				fmt.Fprintf(&b, "    -> %s\n", name)
 			}
 		}
 	}
