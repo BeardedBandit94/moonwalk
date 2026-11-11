@@ -75,7 +75,23 @@ func (t *Tree) AtDepth(depth int) View {
 
 // Document returns the view at the given depth in serializable form.
 func (t *Tree) Document(depth int) Document {
-	v := t.AtDepth(depth)
+	return t.document(t.AtDepth(depth), depth)
+}
+
+// DocumentOpen returns the view in which the groups with the given IDs are
+// expanded, along with every group they sit in, so that each of them is
+// visible. IDs that name no group are ignored. Depth is 0 in the result.
+func (t *Tree) DocumentOpen(ids []string) Document {
+	open := map[*Group]bool{}
+	for _, id := range ids {
+		for grp := t.groups[id]; grp != nil && !open[grp]; grp = grp.Parent {
+			open[grp] = true
+		}
+	}
+	return t.document(t.View(func(grp *Group) bool { return open[grp] }), 0)
+}
+
+func (t *Tree) document(v View, depth int) Document {
 	return Document{
 		SchemaVersion: SchemaVersion,
 		GroupBy:       t.opts.Dimensions,

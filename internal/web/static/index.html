@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>moonwalk</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>moonwalk</h1>
+  <label>Group by
+    <select id="group-by"></select>
+  </label>
+  <input id="search" type="search" placeholder="Search address or type" aria-label="Search address or type" title="Press / to search">
+  <input id="type" type="search" placeholder="Type, such as aws_iam_*" aria-label="Filter by resource type">
+  <label class="check"><input id="glue" type="checkbox"> Show glue</label>
+  <span id="summary" role="status"></span>
+</header>
+<p id="notice" hidden></p>
+<main>
+  <section id="canvas" aria-label="Resources">
+    <div id="stage">
+      <div id="root" class="children"></div>
+      <svg id="links" aria-hidden="true">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0L10 5L0 10z"></path>
+          </marker>
+          <marker id="arrow-on" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0L10 5L0 10z"></path>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+  </section>
+  <aside id="panel" aria-label="Details"></aside>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>

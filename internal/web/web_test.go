@@ -1,0 +1,315 @@
+package web
+
+import (
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"os"
+	"strings"
+	"testing"
+
+	"github.com/BeardedBandit94/moonwalk/internal/graph"
+	"github.com/BeardedBandit94/moonwalk/internal/relate"
+	"github.com/BeardedBandit94/moonwalk/internal/tfstate"
+	"github.com/BeardedBandit94/moonwalk/internal/view"
+)
+
+// serve starts a server over the AWS-shaped network fixture and a state
+// that holds secrets, prepared as the serve command prepares them.
+func serve(t *testing.T) *httptest.Server {
+	t.Helper()
+	return serveStates(t, map[string]string{"net": "network.tfstate", "lab": "secrets.tfstate"})
+}
+
+func serveStates(t *testing.T, states map[string]string) *httptest.Server {
+	t.Helper()
+	g := graph.New()
+	for source, file := range states {
+		f, err := os.Open("../tfstate/testdata/" + file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = tfstate.Load(g, source, f)
+		f.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	relate.Enrich(g)
+	g.ReduceTransitive(graph.EdgeDependsOn)
+	s := New(g)
+	s.LocalOnly = true
+	ts := httptest.NewServer(s.Handler())
+	t.Cleanup(ts.Close)
+	return ts
+}
+
+func get(t *testing.T, ts *httptest.Server, path string) (int, string) {
+	t.Helper()
+	res, err := http.Get(ts.URL + path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return res.StatusCode, string(body)
+}
+
+func getJSON(t *testing.T, ts *httptest.Server, path string, into any) {
+	t.Helper()
+	status, body := get(t, ts, path)
+	if status != http.StatusOK {
+		t.Fatalf("GET %s: status %d: %s", path, status, body)
+	}
+	if err := json.Unmarshal([]byte(body), into); err != nil {
+		t.Fatalf("GET %s: %v", path, err)
+	}
+}
+
+func labels(d view.Document, kind view.Kind) []string {
+	var out []string
+	for _, it := range d.Items {
+		if it.Kind == kind {
+			out = append(out, it.Label)
+		}
+	}
+	return out
+}
+
+func TestMeta(t *testing.T) {
+	var m metaResponse
+	getJSON(t, serve(t), "/api/meta", &m)
+	if m.Resources != 19 || strings.Join(m.Sources, ",") != "lab,net" || m.Budget != view.Budget || len(m.Dimensions) != 5 {
+		t.Errorf("got %+v", m)
+	}
+}
+
+func TestViewDefaultsToWhatFits(t *testing.T) {
+	var d view.Document
+	getJSON(t, serve(t), "/api/view", &d)
+	// Small enough to show in full: 16 resources once the 3 glue ones fold.
+	if d.Resources != 16 || d.Total != 19 || d.GlueFolded != 3 || d.Depth != d.MaxDepth {
+		t.Errorf("resources %d, total %d, glue %d, depth %d of %d", d.Resources, d.Total, d.GlueFolded, d.Depth, d.MaxDepth)
+	}
+	if got := len(labels(d, view.KindResource)); got != 16 {
+		t.Errorf("%d resources drawn, want 16", got)
+	}
+}
+
+func TestViewDepthAndOpen(t *testing.T) {
+	ts := serve(t)
+	var top view.Document
+	getJSON(t, ts, "/api/view?depth=1", &top)
+	if len(top.Items) != 2 || top.Items[0].Expanded {
+		t.Fatalf("depth 1: %+v", top.Items)
+	}
+
+	// Naming one deep group opens it and everything above it, and nothing
+	// beside it.
+	region := "source:net/account:123456789012/region:global"
+	var d view.Document
+	getJSON(t, ts, "/api/view?open="+url.QueryEscape(region)+"&open=no-such-group", &d)
+	var open, closed []string
+	for _, it := range d.Items {
+		if it.Kind == view.KindResource {
+			continue
+		}
+		if it.Expanded {
+			open = append(open, it.Label)
+		} else {
+			closed = append(closed, it.Label)
+		}
+	}
+	if strings.Join(open, ",") != "net,123456789012,global" || strings.Join(closed, ",") != "lab,us-east-1" {
+		t.Errorf("open %q, closed %q", open, closed)
+	}
+	if got := strings.Join(labels(d, view.KindResource), ","); got != "aws_iam_policy.read,aws_iam_role.app" {
+		t.Errorf("resources drawn: %s", got)
+	}
+	// The glue between the role and the policy shows as a link.
+	if len(d.Links) != 1 || d.Links[0].Kind != graph.EdgeLinks {
+		t.Errorf("links: %+v", d.Links)
+	}
+}
+
+func TestViewGroupingAndFilters(t *testing.T) {
+	ts := serve(t)
+	var d view.Document
+	getJSON(t, ts, "/api/view?group_by=source,network&source=net", &d)
+	if got := strings.Join(labels(d, view.KindNetwork), ","); got != "aws_vpc.main" {
+		t.Errorf("networks: %q", got)
+	}
+	if got := strings.Join(labels(d, view.KindSubnet), ","); got != "aws_subnet.private[0],aws_subnet.private[1]" {
+		t.Errorf("subnets: %q", got)
+	}
+
+	getJSON(t, ts, "/api/view?type=aws_iam_*&glue=1", &d)
+	if got := strings.Join(labels(d, view.KindResource), ","); got != "aws_iam_policy.read,aws_iam_role.app,aws_iam_role_policy_attachment.app" {
+		t.Errorf("type filter with glue shown: %q", got)
+	}
+
+	getJSON(t, ts, "/api/view?search=LB.web", &d)
+	if got := strings.Join(labels(d, view.KindResource), ","); got != "aws_lb.web" {
+		t.Errorf("search: %q", got)
+	}
+
+	getJSON(t, ts, "/api/view?group_by=source&around="+url.QueryEscape("net::aws_instance.app"), &d)
+	if got := strings.Join(labels(d, view.KindResource), ","); got != "aws_subnet.private[1],aws_instance.app" {
+		t.Errorf("around: %q", got)
+	}
+}
+
+func TestViewRejectsBadRequests(t *testing.T) {
+	ts := serve(t)
+	for _, path := range []string{
+		"/api/view?group_by=zone",
+		"/api/view?depth=0",
+		"/api/view?depth=deep",
+		"/api/view?around=net::aws_vpc.nope",
+	} {
+		if status, _ := get(t, ts, path); status != http.StatusBadRequest {
+			t.Errorf("GET %s: status %d, want 400", path, status)
+		}
+	}
+}
+
+func TestResource(t *testing.T) {
+	ts := serve(t)
+	names := func(r related) string {
+		var out []string
+		for _, it := range r.Items {
+			name := it.Address
+			if it.Via != nil {
+				name += " by " + it.Via.Address
+			}
+			out = append(out, name)
+		}
+		return strings.Join(out, ",")
+	}
+
+	var r resourceResponse
+	getJSON(t, ts, "/api/resource?id="+url.QueryEscape("net::aws_subnet.private[1]"), &r)
+	if !r.Shown || r.Group != "source:net/account:123456789012/region:us-east-1/block:aws_subnet.private" {
+		t.Errorf("shown %v in %q", r.Shown, r.Group)
+	}
+	if r.Container == nil || r.Container.Address != "aws_vpc.main" {
+		t.Errorf("container: %+v", r.Container)
+	}
+	if got := names(r.DependsOn); got != "aws_vpc.main" {
+		t.Errorf("depends on: %q", got)
+	}
+	// The association also depends on the subnet, but it is glue: it shows
+	// up as what attaches the subnet to the route table.
+	if got := names(r.DependedOnBy); got != "aws_instance.app,aws_lb.web,aws_route_table_association.private[1]" {
+		t.Errorf("depended on by: %q", got)
+	}
+	if got := names(r.LinkedTo); got != "aws_route_table.private by aws_route_table_association.private[1]" {
+		t.Errorf("linked to: %q", got)
+	}
+	if got := names(r.Contains); got != "aws_instance.app,aws_route_table_association.private[1]" || r.Contains.Total != 2 {
+		t.Errorf("contains: %q (%d)", got, r.Contains.Total)
+	}
+
+	// A folded glue resource is not drawn, and says what it joins.
+	getJSON(t, ts, "/api/resource?id="+url.QueryEscape("net::aws_iam_role_policy_attachment.app"), &r)
+	if r.Shown || !r.Node.Glue || names(r.Joins) != "aws_iam_policy.read,aws_iam_role.app" {
+		t.Errorf("glue: shown %v, glue %v, joins %q", r.Shown, r.Node.Glue, names(r.Joins))
+	}
+	getJSON(t, ts, "/api/resource?glue=1&id="+url.QueryEscape("net::aws_iam_role_policy_attachment.app"), &r)
+	if !r.Shown {
+		t.Error("glue resource not shown with glue=1")
+	}
+
+	if status, _ := get(t, ts, "/api/resource?id=net::nope"); status != http.StatusNotFound {
+		t.Errorf("unknown resource: status %d", status)
+	}
+}
+
+// The explorer shows attributes, so it must show them redacted.
+func TestResourceAttributesAreRedacted(t *testing.T) {
+	ts := serve(t)
+	for _, id := range []string{"lab::random_password.db", "lab::terraform_data.cfg"} {
+		_, body := get(t, ts, "/api/resource?id="+url.QueryEscape(id))
+		for _, secret := range []string{"hunter2", "4@Sze931N+:r", "$2a$10$INNvf"} {
+			if strings.Contains(body, secret) {
+				t.Errorf("%s: response contains the secret %q", id, secret)
+			}
+		}
+		if !strings.Contains(body, "(sensitive)") {
+			t.Errorf("%s: no redaction marker in the response", id)
+		}
+	}
+}
+
+// A state from a version that does not mark every secret cannot be
+// redacted, so the explorer must not be sent its attributes at all.
+func TestResourceAttributesOfUnmarkedStatesAreWithheld(t *testing.T) {
+	ts := serveStates(t, map[string]string{"old": "unmarked.tfstate"})
+	status, body := get(t, ts, "/api/resource?id="+url.QueryEscape("old::random_password.db"))
+	if status != http.StatusOK {
+		t.Fatalf("status %d: %s", status, body)
+	}
+	for _, secret := range []string{"8%exVpqbOs%l", "$2a$10$Yh49MOe"} {
+		if strings.Contains(body, secret) {
+			t.Errorf("response contains the secret %q", secret)
+		}
+	}
+	if strings.Contains(body, `"attributes":`) || !strings.Contains(body, `"attributes_withheld":true`) {
+		t.Errorf("attributes should be withheld and marked as such: %s", body)
+	}
+}
+
+func TestFrontEndIsServed(t *testing.T) {
+	ts := serve(t)
+	for path, want := range map[string]string{
+		"/":          "<title>moonwalk</title>",
+		"/app.js":    "api/view",
+		"/style.css": "--accent",
+	} {
+		status, body := get(t, ts, path)
+		if status != http.StatusOK || !strings.Contains(body, want) {
+			t.Errorf("GET %s: status %d, missing %q", path, status, want)
+		}
+	}
+	res, err := http.Get(ts.URL + "/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+	if csp := res.Header.Get("Content-Security-Policy"); !strings.Contains(csp, "default-src 'self'") {
+		t.Errorf("Content-Security-Policy: %q", csp)
+	}
+}
+
+// A page on another site can point a host name at 127.0.0.1; requests that
+// arrive under such a name must be refused.
+func TestLocalOnlyRefusesOtherHosts(t *testing.T) {
+	ts := serve(t)
+	for host, want := range map[string]int{
+		"localhost:7878":    http.StatusOK,
+		"127.0.0.1:7878":    http.StatusOK,
+		"[::1]:7878":        http.StatusOK,
+		"evil.example":      http.StatusForbidden,
+		"evil.example:7878": http.StatusForbidden,
+		"192.168.1.10:7878": http.StatusForbidden,
+	} {
+		req, err := http.NewRequest(http.MethodGet, ts.URL+"/api/meta", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Host = host
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		res.Body.Close()
+		if res.StatusCode != want {
+			t.Errorf("Host %q: status %d, want %d", host, res.StatusCode, want)
+		}
+	}
+}
