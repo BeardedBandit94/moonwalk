@@ -1,0 +1,38 @@
+# Lists what exists through the aws provider: 2 resource types.
+# Written by 'moonwalk query-file'. Put it next to the provider configuration and run:
+#
+#   terraform query -json > found.jsonl
+#
+# Each block sets a limit, because a list block stops at 100 resources without one.
+# Check it first with 'terraform validate -query', and delete any block it rejects:
+# a few types need an argument that the provider's schema does not mark as required.
+#
+# Left out, because each needs an argument that names a parent resource:
+#   aws_cloudwatch_log_stream, aws_thing_with_block
+
+list "aws_iam_role" "all" {
+  provider         = aws
+  include_resource = true
+  limit            = 1000000
+}
+
+list "aws_vpc" "us_east_1" {
+  provider         = aws
+  include_resource = true
+  limit            = 1000000
+
+  config {
+    region = "us-east-1"
+  }
+}
+
+list "aws_vpc" "eu_west_1" {
+  provider         = aws
+  include_resource = true
+  limit            = 1000000
+
+  config {
+    region = "eu-west-1"
+  }
+}
+

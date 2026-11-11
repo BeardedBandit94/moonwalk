@@ -1,0 +1,28 @@
+{
+    "ResourceTagMappingList": [
+        {
+            "ResourceARN": "arn:aws:ec2:us-east-1:111111111111:vpc/vpc-1",
+            "Tags": [{"Key": "Name", "Value": "main"}]
+        },
+        {
+            "ResourceARN": "arn:aws:ec2:us-east-1:111111111111:subnet/subnet-9",
+            "Tags": [{"Key": "Name", "Value": "spare"}, {"Key": "team", "Value": "platform"}]
+        },
+        {
+            "ResourceARN": "arn:aws:s3:::acme-logs",
+            "Tags": [{"Key": "Name", "Value": "logs"}]
+        },
+        {
+            "ResourceARN": "arn:aws:iam::111111111111:role/deploy",
+            "Tags": []
+        },
+        {
+            "ResourceARN": "arn:aws:iam::111111111111:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS",
+            "Tags": []
+        },
+        {
+            "ResourceARN": "arn:aws:glue:us-east-1:111111111111:crawler/nightly",
+            "Tags": []
+        }
+    ]
+}

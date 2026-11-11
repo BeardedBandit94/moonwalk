@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"sort"
 	"strings"
 
@@ -26,10 +27,21 @@ type Result struct {
 	Matched   int // Of those, the ones a state already holds.
 	Unmanaged int // The ones added as unmanaged.
 	Defaults  int // The ones left out because the cloud made them itself.
+	// NotListed counts the resources in state that the listing should have
+	// found, going by the types and places it covered, and did not.
+	NotListed int
 	// Errors holds what the query reported as errors, such as a type it
 	// was not allowed to list. With any, the listing is incomplete.
 	Errors []string
+	// Capped names the list blocks that returned exactly as many resources
+	// as a list block returns when it has no limit of its own, and so have
+	// probably been cut short.
+	Capped []string
 }
+
+// defaultLimit is how many resources a list block returns unless it sets
+// a limit. Terraform stops there without saying so.
+const defaultLimit = 100
 
 // IsQueryOutput reports whether data looks like `terraform query -json`
 // output: a stream of JSON messages, not a state.
@@ -44,8 +56,17 @@ func IsQueryOutput(data []byte) bool {
 
 // message is one line of the query's output.
 type message struct {
-	Type       string `json:"type"`
-	Found      *found `json:"list_resource_found"`
+	Type  string `json:"type"`
+	Found *found `json:"list_resource_found"`
+	Start *struct {
+		Address      string         `json:"address"`
+		ResourceType string         `json:"resource_type"`
+		InputConfig  map[string]any `json:"input_config"`
+	} `json:"list_start"`
+	Complete *struct {
+		Address string `json:"address"`
+		Total   int    `json:"total"`
+	} `json:"list_complete"`
 	Diagnostic *struct {
 		Severity string `json:"severity"`
 		Summary  string `json:"summary"`
@@ -55,6 +76,7 @@ type message struct {
 
 // found is a resource the query listed.
 type found struct {
+	Address      string         `json:"address"` // Of the list block.
 	DisplayName  string         `json:"display_name"`
 	ResourceType string         `json:"resource_type"`
 	Identity     map[string]any `json:"identity"`
@@ -78,6 +100,10 @@ func Load(g *graph.Graph, source string, r io.Reader) (Result, error) {
 		return res, fmt.Errorf("discover: source name is empty")
 	}
 	idx := newIndex(g)
+	blocks := map[string]*listBlock{}
+	matched := map[string]bool{}
+	accounts := map[string]bool{}
+
 	dec := json.NewDecoder(r)
 	dec.UseNumber()
 	for {
@@ -90,16 +116,41 @@ func Load(g *graph.Graph, source string, r io.Reader) (Result, error) {
 		if d := m.Diagnostic; d != nil && d.Severity == "error" {
 			res.Errors = append(res.Errors, strings.TrimSpace(d.Summary+": "+d.Detail))
 		}
+		if st := m.Start; st != nil {
+			region, _ := st.InputConfig["region"].(string)
+			blocks[st.Address] = &listBlock{resourceType: st.ResourceType, region: region, regions: map[string]bool{}}
+		}
+		if c := m.Complete; c != nil {
+			if blk := blocks[c.Address]; blk != nil {
+				blk.complete = true
+			}
+			if c.Total == defaultLimit {
+				res.Capped = append(res.Capped, c.Address)
+				delete(blocks, c.Address) // Not a full listing of anything.
+			}
+		}
 		f := m.Found
 		if m.Type != "list_resource_found" || f == nil || f.ResourceType == "" {
 			continue
 		}
 		res.Found++
+		parts, _ := f.identity()
+		if a := accountOf(parts); a != "" {
+			accounts[a] = true
+		}
+		if blk := blocks[f.Address]; blk != nil {
+			r := regionOf(parts)
+			if r == "" {
+				r = graph.RegionGlobal // An identity with no region: a global resource.
+			}
+			blk.regions[r] = true
+		}
 		if madeByCloud(f) {
 			res.Defaults++
 			continue
 		}
-		if idx.matches(f) {
+		if id := idx.match(f); id != "" {
+			matched[id] = true
 			res.Matched++
 			continue
 		}
@@ -112,8 +163,95 @@ func Load(g *graph.Graph, source string, r io.Reader) (Result, error) {
 		}
 		res.Unmanaged++
 	}
+
+	res.NotListed = markNotListed(g, idx, blocks, matched, accounts, len(res.Errors) > 0)
 	return res, nil
 }
+
+// listBlock is one list block of the query and what it covered.
+type listBlock struct {
+	resourceType string
+	// region is the region the block was configured with, if any; regions
+	// holds those of the resources it found.
+	region   string
+	regions  map[string]bool
+	complete bool
+}
+
+// markNotListed marks the resources in state that the listing covered and
+// did not find. A resource is covered only when all of this is known: the
+// listing finished without errors, some list block listed the resource's
+// type in full in its region, and the listing was made in its account.
+// Anything less and the resource is left alone.
+func markNotListed(g *graph.Graph, idx *index, blocks map[string]*listBlock, matched, accounts map[string]bool, failed bool) int {
+	if failed || len(accounts) != 1 {
+		return 0
+	}
+	var account string
+	for a := range accounts {
+		account = a
+	}
+	// The regions each type was listed in. A block with no region of its
+	// own ran in the provider's, which shows only in what it found.
+	covered := map[string]map[string]bool{}
+	for _, blk := range blocks {
+		if !blk.complete {
+			continue
+		}
+		region := blk.region
+		if region == "" && len(blk.regions) == 1 {
+			for r := range blk.regions {
+				region = r
+			}
+		}
+		if region == "" {
+			continue
+		}
+		if covered[blk.resourceType] == nil {
+			covered[blk.resourceType] = map[string]bool{}
+		}
+		covered[blk.resourceType][region] = true
+	}
+	n := 0
+	for _, node := range idx.nodes {
+		if matched[node.ID] || node.Status != graph.StatusManaged || node.Account != account || !covered[node.Type][node.Region] {
+			continue
+		}
+		g.Update(node.ID, func(n *graph.Node) { n.NotListed = true })
+		n++
+	}
+	return n
+}
+
+// accountOf returns the account, subscription or project in an identity.
+func accountOf(parts map[string]string) string {
+	for _, key := range accountKeys {
+		if parts[key] != "" {
+			return parts[key]
+		}
+	}
+	return ""
+}
+
+// regionOf returns the region in an identity. Azure calls it a location,
+// and Google may give a zone, which is a region with a suffix.
+func regionOf(parts map[string]string) string {
+	switch {
+	case parts["region"] != "":
+		return parts["region"]
+	case parts["location"] != "":
+		return parts["location"]
+	case parts["zone"] != "":
+		if i := strings.LastIndex(parts["zone"], "-"); i > 0 {
+			return parts["zone"][:i]
+		}
+	}
+	return ""
+}
+
+// accountKeys are the names under which providers put the account in a
+// resource's identity: AWS, Azure and Google in turn.
+var accountKeys = []string{"account_id", "subscription_id", "project"}
 
 // identity returns the parts of a listed resource's identity as strings.
 // name is the part that names the resource itself, as opposed to saying
@@ -124,16 +262,20 @@ func (f *found) identity() (parts map[string]string, name string) {
 	for k, v := range f.Identity {
 		if s := fmt.Sprint(v); v != nil && s != "" {
 			parts[k] = s
-			if k != "account_id" && k != "region" {
+			if k != "region" && !slices.Contains(accountKeys, k) {
 				keys = append(keys, k)
 			}
 		}
 	}
 	sort.Strings(keys)
-	switch {
-	case parts["id"] != "":
-		name = "id"
-	case len(keys) > 0:
+	// The part most likely to be unique comes first, so that few
+	// resources in state need a closer look.
+	for _, key := range []string{"id", "arn", "name"} {
+		if parts[key] != "" {
+			return parts, key
+		}
+	}
+	if len(keys) > 0 {
 		name = keys[0]
 	}
 	return parts, name
@@ -149,10 +291,10 @@ func (f *found) node(source string) graph.Node {
 	provider, _, _ := strings.Cut(f.ResourceType, "_")
 	account, region := tfstate.Partition(provider, f.ResourceType, f.ResourceObject)
 	if account == "" {
-		account = parts["account_id"]
+		account = accountOf(parts)
 	}
 	if region == "" {
-		region = parts["region"]
+		region = regionOf(parts)
 	}
 	cloudID := tfstate.CloudID(provider, f.ResourceObject)
 	if cloudID == "" {
@@ -242,30 +384,35 @@ func (idx *index) candidates(resourceType, key, value string) []int {
 	return values[value]
 }
 
-// matches reports whether some resource in state is the listed one.
-func (idx *index) matches(f *found) bool {
+// match returns the ID of the resource in state that is the listed one,
+// or "" if there is none. A resource with nothing in its identity but
+// where it is, of which there is one per account and region, is matched on
+// that alone.
+func (idx *index) match(f *found) string {
 	parts, name := f.identity()
+	var candidates []int
 	if name == "" {
-		return false
+		candidates = idx.byType[f.ResourceType]
+	} else {
+		candidates = idx.candidates(f.ResourceType, name, parts[name])
 	}
-	for _, i := range idx.candidates(f.ResourceType, name, parts[name]) {
+	for _, i := range candidates {
 		n := idx.nodes[i]
 		same := true
 		for k, want := range parts {
-			switch k {
-			case "account_id":
+			v, has := n.Attributes[k]
+			switch {
+			case has && v != nil:
+				same = same && fmt.Sprint(v) == want
+			case slices.Contains(accountKeys, k):
 				same = same && (n.Account == "" || n.Account == want)
-			case "region":
+			case k == "region":
 				same = same && (n.Region == "" || n.Region == graph.RegionGlobal || n.Region == want)
-			default:
-				if v, ok := n.Attributes[k]; ok && v != nil {
-					same = same && fmt.Sprint(v) == want
-				}
 			}
 		}
 		if same {
-			return true
+			return n.ID
 		}
 	}
-	return false
+	return ""
 }

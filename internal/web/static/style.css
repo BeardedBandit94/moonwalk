@@ -122,6 +122,7 @@ main { flex: 1; display: flex; min-height: 0; }
 .item.not-in-code { border-style: dotted; }
 /* Outside what the code governs: in the cloud but in no state, or changed behind its back. */
 .item.unmanaged { background: color-mix(in srgb, var(--warn) 14%, var(--bg)); border-color: var(--warn); }
+.item.not-listed { border-color: var(--danger); border-style: dashed; }
 .item.drifted { background: color-mix(in srgb, var(--danger) 12%, var(--bg)); border-color: var(--danger); }
 /* What a plan intends: a coloured edge, and a struck-out name for a delete. */
 .item.change-create { border-left: 4px solid var(--good); }

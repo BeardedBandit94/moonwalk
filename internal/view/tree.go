@@ -120,6 +120,7 @@ type Tree struct {
 	changes   map[string]string
 	drifts    map[string]string
 	notInCode map[string]bool
+	notListed map[string]bool
 	// perDepth[d] counts the groups and resources at depth d.
 	perDepth []int
 	inGroup  map[string]*Group // Node ID to the group it sits in directly.
@@ -143,6 +144,7 @@ func Build(g *graph.Graph, o Options) *Tree {
 		changes:   map[string]string{},
 		drifts:    map[string]string{},
 		notInCode: map[string]bool{},
+		notListed: map[string]bool{},
 		inGroup:   map[string]*Group{},
 	}
 	dims := o.Dimensions
@@ -249,6 +251,9 @@ func Build(g *graph.Graph, o Options) *Tree {
 		}
 		if n.NotInCode {
 			t.notInCode[n.ID] = true
+		}
+		if n.NotListed {
+			t.notListed[n.ID] = true
 		}
 	}
 	t.bound(t.root)

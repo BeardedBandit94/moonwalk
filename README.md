@@ -150,22 +150,24 @@ included. moonwalk reads neither.
 ### What is really in the cloud
 
 Terraform 1.14 and later can list what exists through the provider, with
-`terraform query`. Write a query file next to the configuration, for
-instance `discover.tfquery.hcl`:
+`terraform query`. moonwalk writes the query file for you, from the
+provider's own account of what it can list:
 
-```hcl
-list "aws_vpc" "all" {
-  provider         = aws
-  include_resource = true
-}
-
-list "aws_subnet" "all" {
-  provider         = aws
-  include_resource = true
-}
+```bash
+terraform providers schema -json > schema.json
 ```
 
-Run it, and give moonwalk the result along with the states:
+```bash
+go run ./cmd/moonwalk query-file -region us-east-1,eu-west-1 schema.json > discover.tfquery.hcl
+```
+
+```bash
+terraform validate -query
+```
+
+Delete any block that `validate` rejects: a few types need an argument that
+the schema does not mark as required. Then run the listing, and give
+moonwalk the result along with the states:
 
 ```bash
 terraform query -json > found.jsonl
@@ -180,17 +182,58 @@ Every listed resource that no loaded state holds appears with the status
 many it contains. Grouping without `source`, as above, puts them next to the
 managed resources they sit among.
 
-- `include_resource` makes Terraform return each resource's attributes,
-  which is what lets moonwalk place it in its network. They are used for
-  that and never shown: a listing does not say which are secret.
-- Resources the cloud makes by itself, such as default security groups and
-  service-linked roles, are left out.
-- If the listing reports an error, such as a type it may not list, moonwalk
-  warns that it is incomplete.
-- Only what you list is found. The AWS provider can list 280 of its 1,766
-  resource types (version 6.73), among them nearly all the common ones.
-- Listing needs read-only credentials only, and moonwalk itself never
-  touches the cloud.
+- **Set a limit.** A list block returns 100 resources and stops, without
+  saying so, unless it sets `limit`. The files moonwalk writes do. If you
+  write your own and a block returns exactly 100, moonwalk warns.
+- **Attributes are used, not shown.** `include_resource` makes Terraform
+  return each resource's attributes, which lets moonwalk place it in its
+  network. A listing does not say which are secret, so they are never
+  printed. `query-file -identity-only` leaves them out altogether.
+- **Cloud defaults are left out**: default security groups, service-linked
+  roles. The AWS provider itself leaves out default networks and subnets.
+- **Errors make it incomplete.** If the listing reports one, such as a type
+  it may not list, moonwalk warns.
+- **Only what is listed is found.** The AWS provider (6.73) can list 280 of
+  its 1,766 resource types, 196 of them without naming a parent resource;
+  Azure can list 126 and Google 154. `query-file -type` narrows the choice.
+- **Missing from the cloud.** A resource in state that the listing covered,
+  by type, account and region, and did not find is marked `not found in the
+  cloud listing`. It may be gone; it may also be one the provider leaves
+  out, such as a default network that the code has adopted.
+- **Import blocks** for what is unmanaged come from Terraform itself:
+  `terraform query -generate-config-out=generated.tf`.
+
+Listing needs credentials that can read, and nothing more; moonwalk itself
+never touches the cloud. On AWS, the managed policies `ViewOnlyAccess` and
+`SecurityAudit` are the usual pair for this, narrower than `ReadOnlyAccess`,
+which can also read the data inside buckets and tables. Which is enough
+depends on the types listed, and has not been tried here against a real
+account. A type the credentials may not list shows up as an error in the
+listing, which moonwalk reports.
+
+#### Without `terraform query`
+
+OpenTofu has no `query` command (as of 1.10), and Terraform before 1.14 has
+none either. Two ways round it:
+
+- Use a Terraform 1.14 binary for the listing alone. It needs only a
+  directory with the provider configuration and the query file; it does not
+  touch your state.
+- Give moonwalk a listing from the AWS CLI instead:
+
+```bash
+aws resourcegroupstaggingapi get-resources > found.json
+```
+
+```bash
+aws resource-explorer-2 search --query-string "*" > found.json
+```
+
+These name resources by ARN only. A resource is matched to state by its
+ARN, and an unmanaged one is placed in its account and region but not in a
+network. The first command knows only resources that have, or once had,
+tags; the second needs Resource Explorer switched on. Both page their
+results: make sure the file holds all of them.
 
 ### What moonwalk works out
 
