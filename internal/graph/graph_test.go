@@ -1,6 +1,10 @@
 package graph
 
-import "testing"
+import (
+	"encoding/json"
+	"strings"
+	"testing"
+)
 
 func TestAddNodeRejectsDuplicatesAndEmptyID(t *testing.T) {
 	g := New()
@@ -123,5 +127,26 @@ func TestIterators(t *testing.T) {
 	wantNodes, wantEdges := g.Len()
 	if nodes != 3 || edges != 2 || wantNodes != 3 || wantEdges != 2 {
 		t.Errorf("iterated %d nodes and %d edges; Len says %d and %d", nodes, edges, wantNodes, wantEdges)
+	}
+}
+
+func TestWithheldAttributesAreNeverSerialized(t *testing.T) {
+	shown := Node{ID: "a", Attributes: map[string]any{"password": "hunter2"}}
+	withheld := shown
+	withheld.AttributesWithheld = true
+
+	out, err := json.Marshal([]Node{shown, withheld})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Count(string(out), "hunter2"); got != 1 {
+		t.Errorf("the attributes appear %d times, want once, for the node that shows them: %s", got, out)
+	}
+	if withheld.Attributes == nil {
+		t.Error("serializing removed the attributes from the node itself")
+	}
+	var back []Node
+	if err := json.Unmarshal(out, &back); err != nil || !back[1].AttributesWithheld || back[1].Attributes != nil {
+		t.Errorf("round trip: %+v, %v", back, err)
 	}
 }

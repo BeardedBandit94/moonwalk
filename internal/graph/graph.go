@@ -5,6 +5,7 @@
 package graph
 
 import (
+	"encoding/json"
 	"fmt"
 	"iter"
 	"sort"
@@ -86,6 +87,21 @@ type Node struct {
 	// Attributes holds the resource's attribute values with secrets already
 	// redacted by the adapter. It may be nil.
 	Attributes map[string]any `json:"attributes,omitempty"`
+	// AttributesWithheld is true when the adapter could not tell which
+	// attributes are secret, so none may be shown. Attributes is still
+	// filled in, for working out relationships, but is never serialized.
+	AttributesWithheld bool `json:"attributes_withheld,omitempty"`
+}
+
+// MarshalJSON leaves out the attributes of a node that withholds them, so
+// that no way of writing a node out can leak them.
+func (n Node) MarshalJSON() ([]byte, error) {
+	type plain Node // Without this method, to avoid recursing.
+	p := plain(n)
+	if p.AttributesWithheld {
+		p.Attributes = nil
+	}
+	return json.Marshal(p)
 }
 
 // Edge is a directed relationship between two nodes, by ID.

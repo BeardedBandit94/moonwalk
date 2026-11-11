@@ -11,9 +11,10 @@ import (
 // rawState is the subset of a version 4 state file moonwalk reads, plus the
 // top-level fields that identify the other encodings.
 type rawState struct {
-	Version       *int            `json:"version"`
-	FormatVersion string          `json:"format_version"` // Set by show-json output.
-	EncryptedData json.RawMessage `json:"encrypted_data"` // Set by OpenTofu state encryption.
+	Version          *int            `json:"version"`
+	TerraformVersion string          `json:"terraform_version"`
+	FormatVersion    string          `json:"format_version"` // Set by show-json output.
+	EncryptedData    json.RawMessage `json:"encrypted_data"` // Set by OpenTofu state encryption.
 
 	Resources []struct {
 		Module    string `json:"module"`
@@ -33,7 +34,9 @@ type rawState struct {
 
 // parseRaw reads a decoded raw version 4 state file.
 func parseRaw(st rawState) (parsed, error) {
-	p := parsed{secrets: secretSet{}}
+	// Before 1.8.0, neither Terraform nor OpenTofu wrote down the attributes
+	// that the provider declares sensitive, such as a generated password.
+	p := parsed{secrets: secretSet{}, withheld: !versionAtLeast(st.TerraformVersion, 1, 8)}
 	for _, r := range st.Resources {
 		base := r.Type + "." + r.Name
 		if r.Mode == string(graph.ModeData) {

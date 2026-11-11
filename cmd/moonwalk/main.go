@@ -57,7 +57,7 @@ Options for graph:
 `
 
 func main() {
-	if err := run(os.Args[1:], os.Stdin, os.Stdout); err != nil {
+	if err := run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintln(os.Stderr, "moonwalk:", err)
 		os.Exit(1)
 	}
@@ -76,7 +76,7 @@ type options struct {
 	glue               bool
 }
 
-func run(args []string, stdin io.Reader, stdout io.Writer) error {
+func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	if len(args) == 0 || (args[0] != "graph" && args[0] != "view") {
 		return fmt.Errorf("expected the 'view' or 'graph' command\n\n%s", usage)
 	}
@@ -145,7 +145,10 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 		if !o.attributes {
 			for i := range d.Nodes {
 				d.Nodes[i].Attributes = nil
+				d.Nodes[i].AttributesWithheld = false // Nothing was asked for.
 			}
+		} else {
+			warnWithheld(stderr, d)
 		}
 		return writeJSON(stdout, d)
 	}
@@ -176,6 +179,21 @@ func run(args []string, stdin io.Reader, stdout io.Writer) error {
 		return writeView(stdout, doc)
 	}
 	return writeJSON(stdout, doc)
+}
+
+// warnWithheld says which sources' attributes are left out of the output,
+// and how to get them.
+func warnWithheld(stderr io.Writer, d graph.Document) {
+	var sources []string
+	for _, n := range d.Nodes {
+		if n.AttributesWithheld && !slices.Contains(sources, n.Source) {
+			sources = append(sources, n.Source)
+		}
+	}
+	for _, source := range sources {
+		fmt.Fprintf(stderr, "moonwalk: attribute values of %s are withheld: it was written by a version of Terraform or OpenTofu "+
+			"that did not record which attributes are sensitive. To see them, load the output of 'terraform show -json' from version 1.5 or later.\n", source)
+	}
 }
 
 // list splits a comma-separated flag value; an empty value gives no list.

@@ -1,6 +1,7 @@
 package tfstate
 
 import (
+	"encoding/json"
 	"os"
 	"reflect"
 	"strings"
@@ -262,6 +263,52 @@ func TestRegionInference(t *testing.T) {
 		}
 		if n.Region != c.region || n.RegionInferred != c.inferred {
 			t.Errorf("%s: region %q inferred %v, want %q %v", c.address, n.Region, n.RegionInferred, c.region, c.inferred)
+		}
+	}
+}
+
+// Attributes of a state that does not mark every secret stay available for
+// working out relationships, but are flagged and never serialized.
+func TestOldStatesWithholdAttributes(t *testing.T) {
+	for _, file := range []string{"unmarked.tfstate", "unmarked.show.json"} {
+		g := graph.New()
+		loadInto(t, g, "old", file)
+		n, ok := g.Node(NodeID("old", "random_password.db"))
+		if !ok {
+			t.Fatalf("%s: resource missing", file)
+		}
+		if !n.AttributesWithheld || n.Attributes["length"] == nil {
+			t.Errorf("%s: withheld %v, attributes %v", file, n.AttributesWithheld, n.Attributes)
+		}
+		out, err := json.Marshal(g.Document())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(string(out), `"attributes":`) || strings.Contains(string(out), `"result"`) {
+			t.Errorf("%s: attributes were serialized", file)
+		}
+	}
+	for _, file := range []string{"secrets.tfstate", "secrets.show.json", "raw.tfstate", "show.json", "network.tfstate"} {
+		for _, n := range load(t, file).Nodes {
+			if n.AttributesWithheld {
+				t.Errorf("%s: %s withholds its attributes", file, n.Address)
+			}
+		}
+	}
+}
+
+func TestVersionAtLeast(t *testing.T) {
+	cases := []struct {
+		version string
+		want    bool
+	}{
+		{"1.8.0", true}, {"1.8.0-rc1", true}, {"1.10.6", true}, {"2.0.0", true}, {"1.12", true},
+		{"1.7.5", false}, {"0.14.11", false}, {"1.5.7", false},
+		{"", false}, {"1", false}, {"one.eight.zero", false}, {"1.x.0", false},
+	}
+	for _, c := range cases {
+		if got := versionAtLeast(c.version, 1, 8); got != c.want {
+			t.Errorf("versionAtLeast(%q, 1, 8) = %v, want %v", c.version, got, c.want)
 		}
 	}
 }

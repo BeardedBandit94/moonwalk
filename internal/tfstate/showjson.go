@@ -16,7 +16,10 @@ func parseShowJSON(data []byte) (parsed, error) {
 	if err := json.Unmarshal(data, &st); err != nil {
 		return parsed{}, fmt.Errorf("parse show-json state: %w", err)
 	}
-	p := parsed{secrets: secretSet{}}
+	// Up to some 1.4 release, sensitive_values left out the attributes that
+	// the provider declares sensitive. 1.5.0 is the first minor version
+	// where every release includes them.
+	p := parsed{secrets: secretSet{}, withheld: !versionAtLeast(st.TerraformVersion, 1, 5)}
 	if st.Values != nil && st.Values.RootModule != nil { // An empty state has no values.
 		p.walkModule(st.Values.RootModule)
 	}

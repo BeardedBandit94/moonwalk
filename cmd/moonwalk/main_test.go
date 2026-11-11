@@ -15,9 +15,15 @@ const fixtures = "../../internal/tfstate/testdata/"
 
 func runCLI(t *testing.T, stdin string, args ...string) (string, error) {
 	t.Helper()
-	var out bytes.Buffer
-	err := run(args, strings.NewReader(stdin), &out)
-	return out.String(), err
+	out, _, err := runCLIWithWarnings(t, stdin, args...)
+	return out, err
+}
+
+func runCLIWithWarnings(t *testing.T, stdin string, args ...string) (stdout, stderr string, err error) {
+	t.Helper()
+	var out, warnings bytes.Buffer
+	err = run(args, strings.NewReader(stdin), &out, &warnings)
+	return out.String(), warnings.String(), err
 }
 
 // golden compares got with testdata/<name>, or rewrites it under -update.
@@ -89,13 +95,51 @@ func TestSecretsNeverPrinted(t *testing.T) {
 	}
 }
 
+// The unmarked fixtures are real output of Terraform 1.5.7 (the state file)
+// and 1.3.10 (show -json). Neither marks the generated password as
+// sensitive, so moonwalk cannot redact it and must not print any attribute
+// of those states.
+func TestUnmarkedStatesWithholdAttributes(t *testing.T) {
+	secrets := map[string][]string{
+		"unmarked.tfstate":   {"8%exVpqbOs%l", "$2a$10$Yh49MOe", "hunter2"},
+		"unmarked.show.json": {">p6)+4Lqi@J?", "$2a$10$NOV6SnY", "hunter2"},
+	}
+	for file, values := range secrets {
+		out, warnings, err := runCLIWithWarnings(t, "", "graph", "-format", "json", "-attributes", "old="+fixtures+file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, s := range values {
+			if strings.Contains(out, s) {
+				t.Errorf("%s: output contains the secret %q", file, s)
+			}
+		}
+		if strings.Contains(out, `"attributes":`) || !strings.Contains(out, `"attributes_withheld": true`) {
+			t.Errorf("%s: attributes should be withheld and marked as such:\n%s", file, out)
+		}
+		if !strings.Contains(warnings, "old") || !strings.Contains(warnings, "show -json") {
+			t.Errorf("%s: warning should name the source and the remedy, got %q", file, warnings)
+		}
+	}
+
+	// A state that does mark its secrets raises no warning.
+	_, warnings, err := runCLIWithWarnings(t, "", "graph", "-format", "json", "-attributes", fixtures+"secrets.tfstate")
+	if err != nil || warnings != "" {
+		t.Errorf("marked state: err %v, warnings %q", err, warnings)
+	}
+}
+
 func TestAttributesOmittedByDefault(t *testing.T) {
 	out, err := runCLI(t, "", "graph", "-format", "json", fixtures+"secrets.tfstate")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(out, `"attributes"`) {
+	if strings.Contains(out, `"attributes`) {
 		t.Error("attributes printed without -attributes")
+	}
+	out, warnings, err := runCLIWithWarnings(t, "", "graph", "-format", "json", fixtures+"unmarked.tfstate")
+	if err != nil || strings.Contains(out, `"attributes`) || warnings != "" {
+		t.Errorf("unmarked state without -attributes: err %v, warnings %q", err, warnings)
 	}
 }
 

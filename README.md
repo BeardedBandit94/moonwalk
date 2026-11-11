@@ -129,9 +129,15 @@ with `"(sensitive)"`:
   `private_key`, in case the version that wrote the file did not record
   every sensitive path.
 
-`show -json` output is the more reliable input, because it always carries
-the provider's own list of sensitive attributes. Treat redacted output as
-reduced risk, not as safe to publish.
+Older versions of Terraform and OpenTofu did not record the attributes that
+a provider declares sensitive, such as a generated password: state files
+written before version 1.8, and `show -json` output from before Terraform
+1.5. moonwalk cannot redact what is not marked, so it withholds every
+attribute value of such a state and says so. Relationships are still worked
+out from them. To see the attributes, load `show -json` output from version
+1.5 or later.
+
+Treat redacted output as reduced risk, not as safe to publish.
 
 An OpenTofu state encrypted at rest cannot be read directly; pipe
 `tofu show -json` into moonwalk instead.
