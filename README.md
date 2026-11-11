@@ -62,15 +62,18 @@ inferred from resource attributes. Where the attributes do not settle a
 question, nothing is changed.
 
 - **Containment.** A resource that names a subnet or network by ID sits
-  inside it; one that spans several subnets sits in their network. This
-  works across states. Only AWS networks and subnets are covered so far.
+  inside it; one that spans several subnets sits in their network. A
+  database or cache that names a subnet group sits where the group's
+  subnets put it. This works across states. Only AWS networks and subnets
+  are covered so far.
 - **Which instance is meant.** State records a dependency on a block with
   `count` or `for_each` as a dependency on every instance. Where a
   resource's attributes hold a value that only some instances have, such as
   one subnet's ID, the other dependencies are dropped.
 - **Glue.** A resource named as an association, attachment or membership
   that only joins two others is folded into a link between them, shown as
-  `--`. `-glue` shows such resources instead.
+  `--`. So is a security group rule between two groups. `-glue` shows such
+  resources instead.
 
 ### The full graph
 

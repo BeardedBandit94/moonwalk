@@ -188,19 +188,23 @@ func add(g *graph.Graph, source string, p parsed) error {
 		}
 	}
 
+	nw := newNarrower(rs)
 	for i := range rs {
-		from := rs[i].node
+		from := &rs[i].node
 		steps := tfaddr.ModuleSteps(from.Module)
+		var held map[string]struct{}
 		for _, dep := range rs[i].dependsOn {
 			// State records a dependency as a resource block, not an instance.
 			// A block can be reached only from inside the module instances the
 			// two sides share, so targets in other instances of those modules
-			// are ruled out. Among the rest state does not say which instance
-			// is meant, so an edge goes to each. Dependencies on resources
-			// absent from state are dropped.
+			// are ruled out. Among the rest, the instances that the resource's
+			// own attributes point at are kept; see narrower. Dependencies on
+			// resources absent from state are dropped.
 			cfg := tfaddr.ConfigAddress(dep)
 			shared := sharedModules(steps, tfaddr.ModuleNames(cfg))
-			for _, to := range targets[targetKey(cfg, steps[:shared])] {
+			var meant []string
+			meant, held = nw.narrow(from, targets[targetKey(cfg, steps[:shared])], held)
+			for _, to := range meant {
 				if to == from.ID {
 					continue
 				}

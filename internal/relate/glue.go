@@ -11,7 +11,8 @@ import (
 // It returns how many it marked.
 //
 // A resource counts as glue when its type is named as an association,
-// attachment or membership, nothing depends on it, and it depends directly
+// attachment or membership, or is a security group rule, nothing depends
+// on it, and it depends directly
 // on exactly two resources from different blocks. Anything less clear-cut
 // stays an ordinary resource.
 func MarkGlue(g *graph.Graph) int {
@@ -68,12 +69,18 @@ func MarkGlue(g *graph.Graph) int {
 }
 
 // glueType reports whether a resource type is named as something that
-// joins two others. The convention holds across providers.
+// joins two others. The convention holds across providers. A few types do
+// the same job under another name: a security group rule that names a
+// second group joins the two.
 func glueType(resourceType string) bool {
 	for _, suffix := range []string{"_association", "_attachment", "_membership"} {
 		if strings.HasSuffix(resourceType, suffix) {
 			return true
 		}
+	}
+	switch resourceType {
+	case "aws_security_group_rule", "aws_vpc_security_group_ingress_rule", "aws_vpc_security_group_egress_rule":
+		return true
 	}
 	return false
 }

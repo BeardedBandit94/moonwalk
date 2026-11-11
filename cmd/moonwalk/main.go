@@ -150,7 +150,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		} else {
 			warnWithheld(stderr, d)
 		}
-		return writeJSON(stdout, d)
+		return d.WriteJSON(stdout)
 	}
 
 	filter := view.Filter{

@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"bytes"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -148,5 +149,32 @@ func TestWithheldAttributesAreNeverSerialized(t *testing.T) {
 	var back []Node
 	if err := json.Unmarshal(out, &back); err != nil || !back[1].AttributesWithheld || back[1].Attributes != nil {
 		t.Errorf("round trip: %+v, %v", back, err)
+	}
+}
+
+// WriteJSON spells the layout out by hand, so it is checked against what
+// the standard encoder makes of the same document.
+func TestWriteJSONMatchesTheStandardEncoder(t *testing.T) {
+	full := build(t, "a>b", "b>c")
+	full.Update("a", func(n *Node) {
+		n.Attributes = map[string]any{"name": "<a & b>", "tags": map[string]any{"k": []any{1, "two"}}}
+	})
+	if err := full.AddEdge(Edge{From: "a", To: "c", Kind: EdgeLinks, Via: "b"}); err != nil {
+		t.Fatal(err)
+	}
+	for name, g := range map[string]*Graph{"full": full, "empty": New()} {
+		d := g.Document()
+		var want, got bytes.Buffer
+		enc := json.NewEncoder(&want)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(d); err != nil {
+			t.Fatal(err)
+		}
+		if err := d.WriteJSON(&got); err != nil {
+			t.Fatal(err)
+		}
+		if got.String() != want.String() {
+			t.Errorf("%s:\n--- WriteJSON\n%s--- encoding/json\n%s", name, got.String(), want.String())
+		}
 	}
 }

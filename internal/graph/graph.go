@@ -5,8 +5,10 @@
 package graph
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"iter"
 	"sort"
 )
@@ -312,6 +314,46 @@ type Document struct {
 	SchemaVersion int    `json:"schema_version"`
 	Nodes         []Node `json:"nodes"`
 	Edges         []Edge `json:"edges"`
+}
+
+// WriteJSON writes the document as indented JSON, one node or edge at a
+// time, so that a large graph is never held in memory a second time as
+// text. The output is what encoding/json would produce for the whole
+// document with a two-space indent.
+func (d Document) WriteJSON(w io.Writer) error {
+	bw := bufio.NewWriter(w)
+	fmt.Fprintf(bw, "{\n  \"schema_version\": %d,\n  \"nodes\": ", d.SchemaVersion)
+	if err := writeArray(bw, d.Nodes); err != nil {
+		return err
+	}
+	bw.WriteString(",\n  \"edges\": ")
+	if err := writeArray(bw, d.Edges); err != nil {
+		return err
+	}
+	bw.WriteString("\n}\n")
+	return bw.Flush()
+}
+
+// writeArray writes items as a JSON array nested one level deep.
+func writeArray[T any](bw *bufio.Writer, items []T) error {
+	if len(items) == 0 {
+		bw.WriteString("[]")
+		return nil
+	}
+	bw.WriteString("[")
+	for i, item := range items {
+		text, err := json.MarshalIndent(item, "    ", "  ")
+		if err != nil {
+			return err
+		}
+		if i > 0 {
+			bw.WriteString(",")
+		}
+		bw.WriteString("\n    ")
+		bw.Write(text)
+	}
+	bw.WriteString("\n  ]")
+	return nil
 }
 
 // Document returns the graph in deterministic order, ready to encode.
