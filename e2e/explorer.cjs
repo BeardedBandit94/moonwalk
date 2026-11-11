@@ -55,7 +55,8 @@ async function main() {
   fs.copyFileSync(path.join(fixtures, 'unmarked.tfstate'), path.join(dir, 'old.tfstate'));
   fs.writeFileSync(path.join(dir, 'crowd.tfstate'), crowdedState());
 
-  const server = spawn(bin, ['serve', '-addr', `127.0.0.1:${port}`,
+  const code = path.resolve(__dirname, '../internal/tfcode/testdata/network');
+  const server = spawn(bin, ['serve', '-addr', `127.0.0.1:${port}`, '-code', `net=${code}`,
     `net=${net}`, `lab=${path.join(dir, 'lab.tfstate')}`, `old=${path.join(dir, 'old.tfstate')}`, `crowd=${path.join(dir, 'crowd.tfstate')}`],
   { stdio: ['ignore', 'inherit', 'inherit'] });
   const browser = await chromium.launch();
@@ -73,12 +74,22 @@ async function main() {
     await page.goto(base + '#a=123456789012');
     await page.waitForSelector('.item');
     check('account filter from the address bar', (await page.inputValue('#account')) === '123456789012');
-    check('filtered to the one account', (await page.innerText('#summary')).includes('8 resources'), await page.innerText('#summary'));
+    check('filtered to the one account', (await page.innerText('#summary')).includes('14 resources'), await page.innerText('#summary'));
     await item('aws_instance.app').click();
     await page.waitForSelector('#panel h2');
     const panel = await page.innerText('#panel');
     check('panel names the resource', panel.includes('aws_instance.app') && panel.includes('us-east-1'));
-    check('panel lists what it depends on', panel.includes('Depends on (1)') && panel.includes('aws_subnet.private[1]'));
+    check('panel lists what it depends on', panel.includes('Depends on (3)') && panel.includes('aws_subnet.private[1]'), panel);
+    check('panel shows where the resource is declared', panel.includes('main.tf, line 29') && (await page.locator('#panel pre.code').innerText()).startsWith('resource "aws_instance" "app" {'));
+
+    // A resource that is in the code but not the state is drawn as such.
+    const declared = item('aws_security_group.app');
+    check('a resource only in code is marked declared', (await declared.getAttribute('class')).includes('declared'));
+    await declared.click();
+    await page.waitForFunction(() => document.querySelector('#panel h2')?.textContent === 'aws_security_group.app');
+    check('its panel says it is not applied yet', (await page.innerText('#panel')).includes('not applied yet'));
+    await item('aws_instance.app').click();
+    await page.waitForFunction(() => document.querySelector('#panel h2')?.textContent === 'aws_instance.app');
 
     // Following a reference selects it.
     await page.locator('#panel .ref', { hasText: 'aws_subnet.private[1]' }).first().click();
@@ -98,7 +109,7 @@ async function main() {
     await page.waitForFunction(() => document.querySelectorAll('.item.resource').length === 2);
     check('region filter', (await resources()).join() === 'aws_iam_policy.read,aws_iam_role.app', await resources());
     await page.selectOption('#region', '');
-    await page.waitForFunction(() => document.querySelectorAll('.item.resource').length === 8);
+    await page.waitForFunction(() => document.querySelectorAll('.item.resource').length === 14);
     await page.selectOption('#group-by', 'source,account,region,network');
     await page.waitForFunction(() => [...document.querySelectorAll('.title small')].some((e) => e.textContent.startsWith('network')));
     check('network grouping draws the network', await page.locator('.title', { hasText: 'aws_vpc.main' }).count() === 1);

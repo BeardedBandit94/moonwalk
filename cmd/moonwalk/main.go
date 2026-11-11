@@ -6,15 +6,18 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	iofs "io/fs"
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/BeardedBandit94/moonwalk/internal/graph"
 	"github.com/BeardedBandit94/moonwalk/internal/relate"
+	"github.com/BeardedBandit94/moonwalk/internal/tfcode"
 	"github.com/BeardedBandit94/moonwalk/internal/view"
 	"github.com/BeardedBandit94/moonwalk/internal/web"
 )
@@ -32,11 +35,20 @@ Reads Terraform or OpenTofu states ('terraform show -json' output or raw
          readable however large the states are
   graph  prints every resource and relationship
 
+Add the configuration with -code to see where each resource is declared and
+the resources that are written but not applied yet. With -code and no state,
+the graph is built from the configuration alone.
+
 Each <state> is one of:
   path         a state file, named after its path
   directory    every .tfstate file below it, hidden directories excluded
   -            standard input, named "stdin"
   name=<any of the above>   the same, under a name of your choosing
+
+Options for all three:
+  -code        [name=]directory of a root module's .tf or .tofu files. The
+               name says which state the code belongs to; it can be left
+               out when there is one state or none. May be given repeatedly.
 
 Options for serve:
   -addr        address to listen on (default 127.0.0.1:7878). The explorer
@@ -76,6 +88,7 @@ func main() {
 
 // options holds every flag; each command registers only its own.
 type options struct {
+	code               multiFlag
 	addr               string // serve
 	format             string
 	direct, attributes bool // graph
@@ -96,6 +109,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	var o options
 	fs := flag.NewFlagSet(command, flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
+	fs.Var(&o.code, "code", "")
 	switch command {
 	case "serve":
 		fs.StringVar(&o.addr, "addr", "127.0.0.1:7878", "")
@@ -120,8 +134,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	if err := fs.Parse(args[1:]); err != nil {
 		return fmt.Errorf("%w\n\n%s", err, usage)
 	}
-	if fs.NArg() == 0 {
-		return fmt.Errorf("expected at least one state\n\n%s", usage)
+	if fs.NArg() == 0 && len(o.code) == 0 {
+		return fmt.Errorf("expected at least one state or -code directory\n\n%s", usage)
 	}
 	if o.format != "text" && o.format != "json" {
 		return fmt.Errorf("unknown format %q (want text or json)", o.format)
@@ -137,14 +151,15 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		}
 	}
 
-	g, err := loadGraph(fs.Args(), stdin)
+	g, code, err := loadGraph(fs.Args(), o.code, stdin)
 	if err != nil {
 		return err
 	}
+	warnUnresolved(stderr, code)
 
 	if command == "serve" {
 		warnWithheld(stderr, g.Document())
-		return serve(g, fs.Args(), o.addr, stdout, stderr)
+		return serve(g, code, fs.Args(), o.code, o.addr, stdout, stderr)
 	}
 	if command == "graph" {
 		if o.direct {
@@ -208,33 +223,90 @@ func warnWithheld(stderr io.Writer, d graph.Document) {
 	}
 }
 
-// loadGraph reads the states the arguments name into one graph and works
-// out containment and glue.
-func loadGraph(args []string, stdin io.Reader) (*graph.Graph, error) {
+// multiFlag collects the values of a flag that may be given repeatedly.
+type multiFlag []string
+
+func (m *multiFlag) String() string     { return strings.Join(*m, ",") }
+func (m *multiFlag) Set(v string) error { *m = append(*m, v); return nil }
+
+// loadGraph reads the states the arguments name into one graph, joins the
+// configurations to them, and works out containment and glue. It returns
+// the configurations by the source each belongs to.
+func loadGraph(args, codeDirs []string, stdin io.Reader) (*graph.Graph, map[string]*tfcode.Config, error) {
 	inputs, err := resolveInputs(args)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	g := graph.New()
 	for _, in := range inputs {
 		if err := in.load(g, stdin); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
+
+	code := map[string]*tfcode.Config{}
+	for _, spec := range codeDirs {
+		source, dir := splitName(spec)
+		switch {
+		case source != "":
+		case len(inputs) == 1:
+			source = inputs[0].source
+		case len(inputs) == 0:
+			source = dir
+		default:
+			return nil, nil, fmt.Errorf("say which state the code in %s belongs to: -code <name>=%s", dir, dir)
+		}
+		if _, dup := code[source]; dup {
+			return nil, nil, fmt.Errorf("%s has more than one -code directory", source)
+		}
+		cfg, err := tfcode.Load(dir)
+		if err != nil {
+			return nil, nil, err
+		}
+		if _, err := cfg.Apply(g, source); err != nil {
+			return nil, nil, err
+		}
+		code[source] = cfg
+	}
 	relate.Enrich(g)
-	return g, nil
+	return g, code, nil
+}
+
+// warnUnresolved names the modules whose code could not be found.
+func warnUnresolved(stderr io.Writer, code map[string]*tfcode.Config) {
+	for _, cfg := range code {
+		for _, module := range cfg.Unresolved {
+			fmt.Fprintf(stderr, "moonwalk: the code of %s in %s was not found on disk, so its resources have no code location. "+
+				"Running 'terraform init' there fetches it.\n", module, cfg.Root)
+		}
+	}
+}
+
+// snippets returns the lookup the explorer uses to show a resource's block.
+func snippets(code map[string]*tfcode.Config) web.CodeLookup {
+	return func(source, configAddress string) (string, bool) {
+		cfg, ok := code[source]
+		if !ok {
+			return "", false
+		}
+		blk, ok := cfg.Blocks[configAddress]
+		if !ok {
+			return "", false
+		}
+		return blk.Text, true
+	}
 }
 
 // serve runs the explorer until the process is stopped, loading the states
 // again whenever one of their files changes.
-func serve(g *graph.Graph, args []string, addr string, stdout, stderr io.Writer) error {
+func serve(g *graph.Graph, code map[string]*tfcode.Config, args, codeDirs []string, addr string, stdout, stderr io.Writer) error {
 	// Views count what is there; indirect dependencies would inflate them.
 	g.ReduceTransitive(graph.EdgeDependsOn)
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
-	srv := web.New(g)
+	srv := web.New(g, snippets(code))
 	host, port, _ := net.SplitHostPort(ln.Addr().String())
 	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
 		srv.LocalOnly = true
@@ -247,16 +319,16 @@ func serve(g *graph.Graph, args []string, addr string, stdout, stderr io.Writer)
 	nodes, _ := g.Len()
 	fmt.Fprintf(stdout, "Serving %s at http://%s/ (Ctrl-C to stop)\n", plural(nodes, "resource"), net.JoinHostPort(host, port))
 
-	go watch(args, 2*time.Second, func() {
+	go watch(args, codeDirs, 2*time.Second, func() {
 		// Standard input was read once and cannot be read again; watch
 		// never calls back when it is among the states.
-		fresh, err := loadGraph(args, nil)
+		fresh, freshCode, err := loadGraph(args, codeDirs, nil)
 		if err != nil {
-			fmt.Fprintf(stderr, "moonwalk: a state changed but could not be loaded, so the explorer still shows the last good one: %v\n", err)
+			fmt.Fprintf(stderr, "moonwalk: a file changed but could not be loaded, so the explorer still shows the last good version: %v\n", err)
 			return
 		}
 		fresh.ReduceTransitive(graph.EdgeDependsOn)
-		srv.Replace(fresh)
+		srv.Replace(fresh, snippets(freshCode))
 		n, _ := fresh.Len()
 		fmt.Fprintf(stdout, "Reloaded: %s\n", plural(n, "resource"))
 	})
@@ -265,13 +337,13 @@ func serve(g *graph.Graph, args []string, addr string, stdout, stderr io.Writer)
 
 // watch calls changed each time the files behind the arguments change, and
 // never returns. It does nothing if they include standard input.
-func watch(args []string, every time.Duration, changed func()) {
-	last, ok := fingerprint(args)
+func watch(args, codeDirs []string, every time.Duration, changed func()) {
+	last, ok := fingerprint(args, codeDirs)
 	if !ok {
 		return
 	}
 	for range time.Tick(every) {
-		now, _ := fingerprint(args)
+		now, _ := fingerprint(args, codeDirs)
 		if now != last {
 			last = now
 			changed()
@@ -280,24 +352,49 @@ func watch(args []string, every time.Duration, changed func()) {
 }
 
 // fingerprint summarizes the files the arguments name: which there are,
-// and each one's size and modification time. ok is false if the arguments
-// include standard input, which cannot be watched.
-func fingerprint(args []string) (print string, ok bool) {
+// and each one's size and modification time. For a code directory those
+// are the configuration files below it, hidden directories excluded. ok is
+// false if the states include standard input, which cannot be watched.
+func fingerprint(args, codeDirs []string) (print string, ok bool) {
 	inputs, err := resolveInputs(args)
 	if err != nil {
 		return "unreadable: " + err.Error(), true
 	}
 	var b strings.Builder
+	stamp := func(path string) {
+		info, err := os.Stat(path)
+		if err != nil {
+			fmt.Fprintf(&b, "%s: %v\n", path, err)
+			return
+		}
+		fmt.Fprintf(&b, "%s %d %d\n", path, info.Size(), info.ModTime().UnixNano())
+	}
 	for _, in := range inputs {
 		if in.path == "-" {
 			return "", false
 		}
-		info, err := os.Stat(in.path)
+		stamp(in.path)
+	}
+	for _, spec := range codeDirs {
+		_, dir := splitName(spec)
+		err := filepath.WalkDir(dir, func(p string, d iofs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				if p != dir && strings.HasPrefix(d.Name(), ".") {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+			if strings.HasSuffix(p, ".tf") || strings.HasSuffix(p, ".tofu") {
+				stamp(p)
+			}
+			return nil
+		})
 		if err != nil {
-			fmt.Fprintf(&b, "%s: %v\n", in.path, err)
-			continue
+			fmt.Fprintf(&b, "%s: %v\n", dir, err)
 		}
-		fmt.Fprintf(&b, "%s %d %d\n", in.path, info.Size(), info.ModTime().UnixNano())
 	}
 	return b.String(), true
 }
@@ -393,6 +490,8 @@ func writeView(w io.Writer, d view.Document) error {
 	for _, it := range d.Items {
 		indent := strings.Repeat("  ", it.Depth-1)
 		switch {
+		case it.Kind == view.KindResource && it.Status != "":
+			fmt.Fprintf(&b, "%s%s  (%s)\n", indent, it.Label, it.Status)
 		case it.Kind == view.KindResource:
 			fmt.Fprintf(&b, "%s%s\n", indent, it.Label)
 		case it.Expanded:
@@ -475,7 +574,11 @@ func writeGraph(w io.Writer, d graph.Document) error {
 		fmt.Fprintf(&b, "\n%s\n", source)
 		for ; i < len(d.Nodes) && d.Nodes[i].Source == source; i++ {
 			n := d.Nodes[i]
-			fmt.Fprintf(&b, "  %s%s\n", n.Address, partitionLabel(n))
+			status := ""
+			if n.Status != graph.StatusManaged {
+				status = "  [" + string(n.Status) + "]"
+			}
+			fmt.Fprintf(&b, "  %s%s%s\n", n.Address, partitionLabel(n), status)
 			for _, e := range edges[n.ID] {
 				switch e.Kind {
 				case graph.EdgeDependsOn:

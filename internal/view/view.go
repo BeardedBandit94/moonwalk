@@ -30,6 +30,9 @@ type Item struct {
 	Resources int `json:"resources"`
 	// Expanded is true for a group whose contents are also in the view.
 	Expanded bool `json:"expanded,omitempty"`
+	// Status is set for a resource that is anything but managed, such as
+	// one declared in code and not applied yet.
+	Status graph.Status `json:"status,omitempty"`
 }
 
 // Link joins two items that stand for resources in a view: single resources
@@ -139,7 +142,7 @@ func (t *Tree) View(expanded func(*Group) bool) View {
 		for _, id := range grp.Nodes {
 			v.Items = append(v.Items, Item{
 				ID: id, Kind: KindResource, Label: t.labels[id], Parent: grp.ID,
-				Depth: grp.Depth + 1, Resources: 1,
+				Depth: grp.Depth + 1, Resources: 1, Status: t.statuses[id],
 			})
 			shownAs[id] = id
 		}

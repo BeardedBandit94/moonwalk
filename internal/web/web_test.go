@@ -39,7 +39,7 @@ func serveStates(t *testing.T, states map[string]string) *httptest.Server {
 	}
 	relate.Enrich(g)
 	g.ReduceTransitive(graph.EdgeDependsOn)
-	s := New(g)
+	s := New(g, nil)
 	s.LocalOnly = true
 	ts := httptest.NewServer(s.Handler())
 	t.Cleanup(ts.Close)
@@ -264,6 +264,48 @@ func TestResourceAttributesOfUnmarkedStatesAreWithheld(t *testing.T) {
 	}
 }
 
+func TestResourceCode(t *testing.T) {
+	g := graph.New()
+	loc := &graph.CodeLocation{File: "main.tf", Line: 3, EndLine: 5}
+	for _, n := range []graph.Node{
+		{ID: "s::t.coded", Source: "s", Address: "t.coded", ConfigAddress: "t.coded", Status: graph.StatusDeclared, Code: loc},
+		{ID: "s::t.plain", Source: "s", Address: "t.plain", ConfigAddress: "t.plain", Status: graph.StatusManaged},
+	} {
+		if err := g.AddNode(n); err != nil {
+			t.Fatal(err)
+		}
+	}
+	lookup := func(source, address string) (string, bool) {
+		return "resource \"t\" \"coded\" {}  # " + source + " " + address, true
+	}
+	ts := httptest.NewServer(New(g, lookup).Handler())
+	t.Cleanup(ts.Close)
+
+	var r resourceResponse
+	getJSON(t, ts, "/api/resource?id=s::t.coded", &r)
+	if r.Node.Code == nil || *r.Node.Code != *loc || r.CodeText != `resource "t" "coded" {}  # s t.coded` {
+		t.Errorf("code %+v, text %q", r.Node.Code, r.CodeText)
+	}
+	// A resource with no known block is not looked up at all.
+	var plain resourceResponse
+	getJSON(t, ts, "/api/resource?id=s::t.plain", &plain)
+	if plain.Node.Code != nil || plain.CodeText != "" {
+		t.Errorf("resource without code: %+v, %q", plain.Node.Code, plain.CodeText)
+	}
+
+	var d view.Document
+	getJSON(t, ts, "/api/view", &d)
+	statuses := map[string]graph.Status{}
+	for _, it := range d.Items {
+		if it.Kind == view.KindResource {
+			statuses[it.Label] = it.Status
+		}
+	}
+	if statuses["t.coded"] != graph.StatusDeclared || statuses["t.plain"] != "" {
+		t.Errorf("item statuses: %v", statuses)
+	}
+}
+
 func TestMetaListsFilterValues(t *testing.T) {
 	var m metaResponse
 	getJSON(t, serve(t), "/api/meta", &m)
@@ -328,7 +370,7 @@ func TestLink(t *testing.T) {
 // that a state file changed.
 func TestReplace(t *testing.T) {
 	g := graph.New()
-	s := New(g)
+	s := New(g, nil)
 	ts := httptest.NewServer(s.Handler())
 	t.Cleanup(ts.Close)
 
@@ -341,7 +383,7 @@ func TestReplace(t *testing.T) {
 	if err := fresh.AddNode(graph.Node{ID: "s::a", Source: "s", Address: "a"}); err != nil {
 		t.Fatal(err)
 	}
-	s.Replace(fresh)
+	s.Replace(fresh, nil)
 	res, err := http.Get(ts.URL + "/api/view")
 	if err != nil {
 		t.Fatal(err)

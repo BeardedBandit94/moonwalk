@@ -31,7 +31,19 @@ const (
 	StatusUnmanaged Status = "unmanaged"
 	// StatusDrifted means the resource is tracked but differs from reality.
 	StatusDrifted Status = "drifted"
+	// StatusDeclared means the resource is written in code but absent from
+	// state: not applied yet, or declared with a count of zero.
+	StatusDeclared Status = "declared"
 )
+
+// CodeLocation says where in the configuration a resource is declared.
+type CodeLocation struct {
+	// File is relative to the configuration's root directory, with forward
+	// slashes.
+	File    string `json:"file"`
+	Line    int    `json:"line"`
+	EndLine int    `json:"end_line"`
+}
 
 // EdgeKind names the relationship an edge represents.
 type EdgeKind string
@@ -86,6 +98,9 @@ type Node struct {
 	Name     string `json:"name"`
 	Provider string `json:"provider,omitempty"`
 	Status   Status `json:"status"`
+	// Code is where the resource's block is declared, if the configuration
+	// was loaded and has it.
+	Code *CodeLocation `json:"code,omitempty"`
 	// Attributes holds the resource's attribute values with secrets already
 	// redacted by the adapter. It may be nil.
 	Attributes map[string]any `json:"attributes,omitempty"`
