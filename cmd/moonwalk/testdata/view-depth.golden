@@ -1,0 +1,16 @@
+13 resources in 11 items, grouped by source, account, region, module
+Expanded to depth 3 of 7; groups marked + hold more (-depth 4)
+
+lab  (source, 8 resources)
+  module.net  (module, 6 resources)
+    + module.net["a"]  (module instance, 3 resources)
+    + module.net["b"]  (module instance, 3 resources)
+  random_password.db
+  terraform_data.cfg
+prod  (source, 5 resources)
+  123456789012  (account, 5 resources)
+    + module.net  (module, 1 resource)
+        -> us-east-1  (2 dependencies)
+    + us-east-1  (region, 3 resources)
+        -> data.aws_availability_zones.available  (2 dependencies)
+    data.aws_availability_zones.available

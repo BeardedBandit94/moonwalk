@@ -6,6 +6,7 @@ package graph
 
 import (
 	"fmt"
+	"iter"
 	"sort"
 )
 
@@ -154,6 +155,97 @@ func (g *Graph) Edges() []Edge {
 // SchemaVersion identifies the layout of Document. It increases whenever a
 // field is removed or changes meaning; adding a field does not change it.
 const SchemaVersion = 1
+
+// AllNodes iterates over the nodes in no particular order, without the
+// sorting and copying that Nodes does.
+func (g *Graph) AllNodes() iter.Seq[Node] {
+	return func(yield func(Node) bool) {
+		for _, n := range g.nodes {
+			if !yield(*n) {
+				return
+			}
+		}
+	}
+}
+
+// AllEdges iterates over the edges in no particular order.
+func (g *Graph) AllEdges() iter.Seq[Edge] {
+	return func(yield func(Edge) bool) {
+		for e := range g.edges {
+			if !yield(e) {
+				return
+			}
+		}
+	}
+}
+
+// Len returns the number of nodes and edges.
+func (g *Graph) Len() (nodes, edges int) {
+	return len(g.nodes), len(g.edges)
+}
+
+// ReduceTransitive removes every edge of the given kind that another path
+// already implies: if a→b and b→c exist, a→c is dropped. What can be reached
+// from each node stays the same. It returns the number of edges removed.
+//
+// Terraform state lists indirect dependencies alongside direct ones, so
+// this leaves the edges that say something. If the edges of that kind form
+// a cycle, nothing is removed, because the result would not be well defined.
+func (g *Graph) ReduceTransitive(kind EdgeKind) int {
+	next := map[string][]string{}
+	incoming := map[string]int{}
+	for e := range g.edges {
+		if e.Kind == kind {
+			next[e.From] = append(next[e.From], e.To)
+			incoming[e.To]++
+		}
+	}
+	if !acyclic(next, incoming) {
+		return 0
+	}
+
+	removed := 0
+	direct := map[string]struct{}{}
+	for from, tos := range next {
+		clear(direct)
+		for _, to := range tos {
+			direct[to] = struct{}{}
+		}
+		for _, via := range tos {
+			for _, to := range next[via] {
+				if _, ok := direct[to]; ok {
+					delete(direct, to)
+					delete(g.edges, Edge{From: from, To: to, Kind: kind})
+					removed++
+				}
+			}
+		}
+	}
+	return removed
+}
+
+// acyclic reports whether the edges in next contain no cycle, by repeatedly
+// removing nodes that nothing points at. It consumes incoming.
+func acyclic(next map[string][]string, incoming map[string]int) bool {
+	var ready []string
+	for from := range next {
+		if incoming[from] == 0 {
+			ready = append(ready, from)
+		}
+	}
+	remaining := len(incoming)
+	for len(ready) > 0 {
+		from := ready[len(ready)-1]
+		ready = ready[:len(ready)-1]
+		for _, to := range next[from] {
+			if incoming[to]--; incoming[to] == 0 {
+				remaining--
+				ready = append(ready, to)
+			}
+		}
+	}
+	return remaining == 0
+}
 
 // Document is the stable, serializable form of a graph.
 type Document struct {
