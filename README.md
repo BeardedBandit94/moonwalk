@@ -6,8 +6,30 @@ and the live cloud environment side by side in a single interactive view.
 
 ## Status
 
-Early. What works today: loading state and printing its resource graph,
-either collapsed into groups or in full.
+Early. What works today: loading state and exploring its resource graph in
+the browser, or printing it, either collapsed into groups or in full.
+
+### The explorer
+
+`serve` opens the graph in the browser:
+
+```bash
+go run ./cmd/moonwalk serve terraform.tfstate
+```
+
+It starts on the same collapsed view that `view` prints, as nested boxes
+with the dependencies drawn between them. Click a group to open or close it
+and a resource to see its details: where it sits, what it depends on, what
+depends on it, and its attributes with secrets redacted. The grouping, a
+search and a type filter are in the bar at the top, and the address bar
+always holds a link back to what is on screen.
+
+The explorer listens on `127.0.0.1:7878` and answers only requests
+addressed to this machine. `-addr` changes that; since the page shows
+attribute values, use another address only on a network you trust.
+
+The front end is plain HTML, CSS and JavaScript embedded in the binary, with
+no build step and no dependencies.
 
 ### A readable view
 
@@ -159,6 +181,7 @@ Both commands take `-format json`, and the output carries a
 | `internal/tfstate` | Adapter from Terraform and OpenTofu state to the graph |
 | `internal/relate` | Relationships inferred from attributes: containment, glue |
 | `internal/view` | Grouping of a graph, filters, and the collapsed views of it |
+| `internal/web` | The explorer: a JSON API over the graph and the browser front end |
 | `internal/tfaddr` | Parsing of Terraform resource addresses |
 
 New inputs (HCL, live discovery) are added as further adapters that produce a

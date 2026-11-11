@@ -30,6 +30,9 @@ var DefaultDimensions = []Dimension{BySource, ByAccount, ByRegion, ByModule}
 
 var allDimensions = []Dimension{BySource, ByAccount, ByRegion, ByModule, ByNetwork}
 
+// AllDimensions returns every dimension a tree can be grouped by.
+func AllDimensions() []Dimension { return slices.Clone(allDimensions) }
+
 // ParseDimensions reads a comma-separated list such as "account,module".
 func ParseDimensions(s string) ([]Dimension, error) {
 	var dims []Dimension
@@ -73,7 +76,7 @@ type Group struct {
 	ID     string
 	Kind   Kind
 	Name   string
-	Parent *Group // nil for a top-level group.
+	Parent *Group // For a top-level group, the tree's unnamed root.
 	Groups []*Group
 	Nodes  []string // IDs of the resources directly inside, in display order.
 	// Resources counts every resource inside, at any depth.
@@ -108,8 +111,9 @@ type Tree struct {
 	types  map[string]string // Node ID to resource type.
 	// perDepth[d] counts the groups and resources at depth d.
 	perDepth []int
-	total    int // Resources in the graph, glue included.
-	glue     int // Glue resources left out.
+	inGroup  map[string]*Group // Node ID to the group it sits in directly.
+	total    int               // Resources in the graph, glue included.
+	glue     int               // Glue resources left out.
 }
 
 // Build arranges g as the options say. Below the chosen dimensions,
@@ -117,13 +121,14 @@ type Tree struct {
 // lacks a property, such as a region, skips that level.
 func Build(g *graph.Graph, o Options) *Tree {
 	t := &Tree{
-		g:      g,
-		opts:   o,
-		root:   &Group{},
-		groups: map[string]*Group{},
-		byName: map[childKey]*Group{},
-		labels: map[string]string{},
-		types:  map[string]string{},
+		g:       g,
+		opts:    o,
+		root:    &Group{},
+		groups:  map[string]*Group{},
+		byName:  map[childKey]*Group{},
+		labels:  map[string]string{},
+		types:   map[string]string{},
+		inGroup: map[string]*Group{},
 	}
 	dims := o.Dimensions
 	byModule, bySource := slices.Contains(dims, ByModule), slices.Contains(dims, BySource)
@@ -369,8 +374,9 @@ func (t *Tree) finish(grp *Group, depth int) {
 	}
 	grp.Resources = len(grp.Nodes)
 	t.count(depth)
-	for range grp.Nodes {
+	for _, id := range grp.Nodes {
 		t.count(depth + 1)
+		t.inGroup[id] = grp
 	}
 	for _, c := range grp.Groups {
 		t.finish(c, depth+1)
@@ -402,6 +408,21 @@ func (t *Tree) Top() []*Group { return t.root.Groups }
 func (t *Tree) Group(id string) (*Group, bool) {
 	grp, ok := t.groups[id]
 	return grp, ok
+}
+
+// GroupOf returns the ID of the group a resource sits in directly. It is
+// empty if the tree does not show the resource, or shows it at the top level.
+func (t *Tree) GroupOf(nodeID string) string {
+	if grp := t.inGroup[nodeID]; grp != nil {
+		return grp.ID
+	}
+	return ""
+}
+
+// Shows reports whether the tree shows the resource.
+func (t *Tree) Shows(nodeID string) bool {
+	_, ok := t.inGroup[nodeID]
+	return ok
 }
 
 // Label returns the name a resource is shown under: its address, without

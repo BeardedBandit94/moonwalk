@@ -6,22 +6,28 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net"
+	"net/http"
 	"os"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/BeardedBandit94/moonwalk/internal/graph"
 	"github.com/BeardedBandit94/moonwalk/internal/relate"
 	"github.com/BeardedBandit94/moonwalk/internal/view"
+	"github.com/BeardedBandit94/moonwalk/internal/web"
 )
 
 const usage = `Usage:
+  moonwalk serve [options] <state>...
   moonwalk view  [options] <state>...
   moonwalk graph [options] <state>...
 
 Reads Terraform or OpenTofu states ('terraform show -json' output or raw
 .tfstate files) into a single resource graph.
 
+  serve  opens the graph as an interactive explorer in the browser
   view   prints the graph collapsed into nested groups, sized to stay
          readable however large the states are
   graph  prints every resource and relationship
@@ -32,7 +38,12 @@ Each <state> is one of:
   -            standard input, named "stdin"
   name=<any of the above>   the same, under a name of your choosing
 
-Options for both:
+Options for serve:
+  -addr        address to listen on (default 127.0.0.1:7878). The explorer
+               shows attribute values, so listen on another address only
+               on a network you trust.
+
+Options for view and graph:
   -format      text (default) or json
 
 Options for view:
@@ -65,6 +76,7 @@ func main() {
 
 // options holds every flag; each command registers only its own.
 type options struct {
+	addr               string // serve
 	format             string
 	direct, attributes bool // graph
 	groupBy            string
@@ -77,18 +89,23 @@ type options struct {
 }
 
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
-	if len(args) == 0 || (args[0] != "graph" && args[0] != "view") {
-		return fmt.Errorf("expected the 'view' or 'graph' command\n\n%s", usage)
+	if len(args) == 0 || !slices.Contains([]string{"serve", "view", "graph"}, args[0]) {
+		return fmt.Errorf("expected the 'serve', 'view' or 'graph' command\n\n%s", usage)
 	}
 	command := args[0]
 	var o options
 	fs := flag.NewFlagSet(command, flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
-	fs.StringVar(&o.format, "format", "text", "")
-	if command == "graph" {
+	switch command {
+	case "serve":
+		fs.StringVar(&o.addr, "addr", "127.0.0.1:7878", "")
+		o.format = "text"
+	case "graph":
+		fs.StringVar(&o.format, "format", "text", "")
 		fs.BoolVar(&o.direct, "direct", false, "")
 		fs.BoolVar(&o.attributes, "attributes", false, "")
-	} else {
+	default:
+		fs.StringVar(&o.format, "format", "text", "")
 		fs.StringVar(&o.groupBy, "group-by", "source,account,region,module", "")
 		fs.IntVar(&o.depth, "depth", 0, "")
 		fs.StringVar(&o.types, "type", "", "")
@@ -134,6 +151,10 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	// evidently not meant, and find the glue.
 	relate.Enrich(g)
 
+	if command == "serve" {
+		warnWithheld(stderr, g.Document())
+		return serve(g, o.addr, stdout)
+	}
 	if command == "graph" {
 		if o.direct {
 			g.ReduceTransitive(graph.EdgeDependsOn)
@@ -194,6 +215,29 @@ func warnWithheld(stderr io.Writer, d graph.Document) {
 		fmt.Fprintf(stderr, "moonwalk: attribute values of %s are withheld: it was written by a version of Terraform or OpenTofu "+
 			"that did not record which attributes are sensitive. To see them, load the output of 'terraform show -json' from version 1.5 or later.\n", source)
 	}
+}
+
+// serve runs the explorer until the process is stopped.
+func serve(g *graph.Graph, addr string, stdout io.Writer) error {
+	// Views count what is there; indirect dependencies would inflate them.
+	g.ReduceTransitive(graph.EdgeDependsOn)
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+	srv := web.New(g)
+	host, port, _ := net.SplitHostPort(ln.Addr().String())
+	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+		srv.LocalOnly = true
+	} else {
+		fmt.Fprintln(stdout, "Warning: listening beyond this machine. Anyone who can reach this address can read the loaded state's attribute values.")
+		if ip != nil && ip.IsUnspecified() {
+			host = "localhost"
+		}
+	}
+	nodes, _ := g.Len()
+	fmt.Fprintf(stdout, "Serving %s at http://%s/ (Ctrl-C to stop)\n", plural(nodes, "resource"), net.JoinHostPort(host, port))
+	return (&http.Server{Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second}).Serve(ln)
 }
 
 // list splits a comma-separated flag value; an empty value gives no list.
