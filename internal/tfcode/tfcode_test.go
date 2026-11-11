@@ -231,6 +231,75 @@ func TestWhichFilesAreRead(t *testing.T) {
 	}
 }
 
+// Syntax that OpenTofu accepts and Terraform does not. Only structure is
+// read, so none of it should get in the way.
+func TestOpenTofuOnlySyntax(t *testing.T) {
+	dir := t.TempDir()
+	write(t, dir, map[string]string{"main.tofu": `
+terraform {
+  encryption {
+    key_provider "pbkdf2" "k" {
+      passphrase = var.passphrase
+    }
+    method "aes_gcm" "m" {
+      keys = key_provider.pbkdf2.k
+    }
+    state {
+      method = method.aes_gcm.m
+    }
+  }
+}
+
+variable "regions" {
+  type = set(string)
+}
+
+provider "aws" {
+  alias    = "by_region"
+  for_each = var.regions
+  region   = each.value
+}
+
+resource "aws_vpc" "main" {
+  for_each = var.regions
+  provider = aws.by_region[each.key]
+  cidr_block = "10.0.0.0/16"
+
+  lifecycle {
+    enabled = each.key != "us-west-2"
+  }
+}
+
+resource "aws_subnet" "a" {
+  for_each = aws_vpc.main
+  vpc_id   = each.value.id
+}
+
+module "regional" {
+  source   = "./regional"
+  for_each = var.regions
+  providers = {
+    aws = aws.by_region[each.key]
+  }
+}
+`, "regional/main.tofu": `resource "aws_s3_bucket" "b" {}`})
+	c, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"aws_subnet.a", "aws_vpc.main", "module.regional.aws_s3_bucket.b"}
+	if got := addresses(c); !reflect.DeepEqual(got, want) {
+		t.Errorf("blocks %q, want %q", got, want)
+	}
+	if got := c.Blocks["aws_subnet.a"].DependsOn; !reflect.DeepEqual(got, []string{"aws_vpc.main"}) {
+		t.Errorf("aws_subnet.a depends on %q", got)
+	}
+	// A provider reference is not a resource reference.
+	if got := c.Blocks["aws_vpc.main"].DependsOn; len(got) != 0 {
+		t.Errorf("aws_vpc.main depends on %q", got)
+	}
+}
+
 func TestLoadErrors(t *testing.T) {
 	if _, err := Load(t.TempDir()); err == nil {
 		t.Error("an empty directory was accepted")
