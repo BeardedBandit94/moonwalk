@@ -101,10 +101,16 @@ type resource struct {
 func add(g *graph.Graph, source string, p parsed) error {
 	rs := p.resources
 
-	// Accounts stated by managed resources, per provider configuration.
-	// Data sources are not evidence: they often describe things owned by
-	// someone else, such as a public machine image.
-	stated := map[string]map[string]struct{}{}
+	// Accounts and regions stated by managed resources, per provider
+	// configuration. Data sources are not evidence: they often describe
+	// things owned by someone else, such as a public machine image.
+	accounts, regions := map[string]map[string]struct{}{}, map[string]map[string]struct{}{}
+	note := func(seen map[string]map[string]struct{}, key, value string) {
+		if seen[key] == nil {
+			seen[key] = map[string]struct{}{}
+		}
+		seen[key][value] = struct{}{}
+	}
 	for i := range rs {
 		n := &rs[i].node
 		n.Source = source
@@ -112,14 +118,27 @@ func add(g *graph.Graph, source string, p parsed) error {
 		n.ConfigAddress = tfaddr.ConfigAddress(n.Address)
 		n.Status = graph.StatusManaged
 		p.secrets.scrub(n.Attributes)
-		n.Account, n.Region = partition(n.Provider, n.Attributes)
-		if n.Account != "" && n.Mode == graph.ModeManaged {
-			key := rs[i].providerKey
-			if stated[key] == nil {
-				stated[key] = map[string]struct{}{}
-			}
-			stated[key][n.Account] = struct{}{}
+		n.Account, n.Region = partition(n.Provider, n.Type, n.Attributes)
+		if n.Mode != graph.ModeManaged {
+			continue
 		}
+		if n.Account != "" {
+			note(accounts, rs[i].providerKey, n.Account)
+		}
+		if n.Region != "" && n.Region != graph.RegionGlobal {
+			note(regions, rs[i].providerKey, n.Region)
+		}
+	}
+	// only returns the single value seen for a provider configuration, or ""
+	// if there were none or several.
+	only := func(seen map[string]map[string]struct{}, key string) string {
+		if len(seen[key]) != 1 {
+			return ""
+		}
+		for v := range seen[key] {
+			return v
+		}
+		return ""
 	}
 
 	// Targets are indexed by config address plus the instance keys of their
@@ -130,10 +149,11 @@ func add(g *graph.Graph, source string, p parsed) error {
 		n := &rs[i].node
 		// A provider configuration signs in to one account, so when its
 		// managed resources all state the same one, the rest are in it too.
-		if accounts := stated[rs[i].providerKey]; n.Account == "" && len(accounts) == 1 {
-			for a := range accounts {
-				n.Account, n.AccountInferred = a, true
-			}
+		if a := only(accounts, rs[i].providerKey); n.Account == "" && a != "" {
+			n.Account, n.AccountInferred = a, true
+		}
+		if r := only(regions, rs[i].providerKey); n.Region == "" && r != "" && infersRegion(n.Provider) {
+			n.Region, n.RegionInferred = r, true
 		}
 		if err := g.AddNode(*n); err != nil {
 			return err

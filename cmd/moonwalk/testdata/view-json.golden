@@ -9,6 +9,8 @@
   "depth": 3,
   "max_depth": 7,
   "resources": 5,
+  "total": 5,
+  "glue_folded": 0,
   "items": [
     {
       "id": "source:prod",
@@ -28,40 +30,13 @@
       "expanded": true
     },
     {
-      "id": "source:prod/account:123456789012/module:module.net",
-      "kind": "module",
-      "label": "module.net",
-      "parent": "source:prod/account:123456789012",
-      "depth": 3,
-      "resources": 1
-    },
-    {
       "id": "source:prod/account:123456789012/region:us-east-1",
       "kind": "region",
       "label": "us-east-1",
       "parent": "source:prod/account:123456789012",
       "depth": 3,
-      "resources": 3
-    },
-    {
-      "id": "prod::data.aws_availability_zones.available",
-      "kind": "resource",
-      "label": "data.aws_availability_zones.available",
-      "parent": "source:prod/account:123456789012",
-      "depth": 3,
-      "resources": 1
+      "resources": 5
     }
   ],
-  "links": [
-    {
-      "from": "source:prod/account:123456789012/module:module.net",
-      "to": "source:prod/account:123456789012/region:us-east-1",
-      "count": 2
-    },
-    {
-      "from": "source:prod/account:123456789012/region:us-east-1",
-      "to": "prod::data.aws_availability_zones.available",
-      "count": 2
-    }
-  ]
+  "links": []
 }

@@ -16,8 +16,8 @@ lab
 
 prod
   aws_vpc.main  (123456789012, us-east-1)
-  data.aws_availability_zones.available  (123456789012)
-  module.net["a.b"].aws_route_table_association.private["x]y"]  (123456789012)
+  data.aws_availability_zones.available  (123456789012, us-east-1)
+  module.net["a.b"].aws_route_table_association.private["x]y"]  (123456789012, us-east-1)
     -> module.net["a.b"].aws_subnet.private[0]
     -> module.net["a.b"].aws_subnet.private[1]
   module.net["a.b"].aws_subnet.private[0]  (123456789012, us-east-1)

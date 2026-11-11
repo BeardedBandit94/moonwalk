@@ -1,4 +1,4 @@
-13 resources in 11 items, grouped by source, account, region, module
+13 resources in 9 items, grouped by source, account, region, module
 Expanded to depth 3 of 7; groups marked + hold more (-depth 4)
 
 lab  (source, 8 resources)
@@ -9,8 +9,4 @@ lab  (source, 8 resources)
   terraform_data.cfg
 prod  (source, 5 resources)
   123456789012  (account, 5 resources)
-    + module.net  (module, 1 resource)
-        -> us-east-1  (2 dependencies)
-    + us-east-1  (region, 3 resources)
-        -> data.aws_availability_zones.available  (2 dependencies)
-    data.aws_availability_zones.available
+    + us-east-1  (region, 5 resources)

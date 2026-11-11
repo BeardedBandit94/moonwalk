@@ -1,0 +1,28 @@
+8 resources in 13 items, grouped by source, account, region, module
+3 glue resources folded into links marked -- (-glue shows them)
+
+net  (source, 8 resources)
+  123456789012  (account, 8 resources)
+    global  (region, 2 resources)
+      aws_iam_policy.read
+          -- aws_iam_role.app
+      aws_iam_role.app
+          -- aws_iam_policy.read
+    us-east-1  (region, 6 resources)
+      aws_subnet.private  (block, 2 resources)
+        aws_subnet.private[0]
+            -- aws_route_table.private
+            -> aws_vpc.main
+        aws_subnet.private[1]
+            -- aws_route_table.private
+            -> aws_vpc.main
+      aws_instance.app
+          -> aws_subnet.private / aws_subnet.private[1]
+      aws_lb.web
+          -> aws_subnet.private / aws_subnet.private[0]
+          -> aws_subnet.private / aws_subnet.private[1]
+      aws_route_table.private
+          -- aws_subnet.private / aws_subnet.private[0]
+          -- aws_subnet.private / aws_subnet.private[1]
+          -> aws_vpc.main
+      aws_vpc.main

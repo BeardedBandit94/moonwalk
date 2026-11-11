@@ -51,6 +51,11 @@ func TestGraphGolden(t *testing.T) {
 		{"view-depth.golden", []string{"view", "-depth", "3", "prod=" + fixtures + "raw.tfstate", "lab=" + fixtures + "secrets.tfstate"}},
 		{"view-by-module.golden", []string{"view", "-group-by", "module", "prod=" + fixtures + "raw.tfstate", "lab=" + fixtures + "secrets.tfstate"}},
 		{"view-json.golden", []string{"view", "-format", "json", "-depth", "3", "prod=" + fixtures + "show.json"}},
+		{"network-graph.golden", []string{"graph", "net=" + fixtures + "network.tfstate"}},
+		{"network-view.golden", []string{"view", "net=" + fixtures + "network.tfstate"}},
+		{"network-view-by-network.golden", []string{"view", "-group-by", "source,region,network", "-glue", "net=" + fixtures + "network.tfstate"}},
+		{"network-view-around.golden", []string{"view", "-group-by", "source", "-around", "aws_route_table.private", "net=" + fixtures + "network.tfstate"}},
+		{"network-view-filter.golden", []string{"view", "-format", "json", "-type", "aws_iam_*,aws_vpc", "-region", "global", "net=" + fixtures + "network.tfstate"}},
 	}
 	for _, c := range cases {
 		got, err := runCLI(t, "", c.args...)
@@ -216,6 +221,8 @@ func TestErrors(t *testing.T) {
 		"same name twice":  {"graph", "a=" + fixtures + "raw.tfstate", "a=" + fixtures + "show.json"},
 		"not a state":      {"graph", "main.go"},
 		"unknown grouping": {"view", "-group-by", "zone", fixtures + "raw.tfstate"},
+		"around nothing":   {"view", "-around", "aws_vpc.nope", fixtures + "raw.tfstate"},
+		"around ambiguous": {"view", "-around", "aws_vpc.main", "a=" + fixtures + "raw.tfstate", "b=" + fixtures + "show.json"},
 		"negative depth":   {"view", "-depth", "-1", fixtures + "raw.tfstate"},
 		"graph-only flag":  {"view", "-attributes", fixtures + "raw.tfstate"},
 		"view-only flag":   {"graph", "-depth", "2", fixtures + "raw.tfstate"},
