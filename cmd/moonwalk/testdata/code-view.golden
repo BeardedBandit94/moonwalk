@@ -1,0 +1,43 @@
+14 resources in 20 items, grouped by source, account, region, module
+3 glue resources folded into links marked -- (-glue shows them)
+
+net  (source, 14 resources)
+  123456789012  (account, 14 resources)
+    global  (region, 2 resources)
+      aws_iam_policy.read
+          -- aws_iam_role.app
+      aws_iam_role.app
+          -- aws_iam_policy.read
+    us-east-1  (region, 12 resources)
+      aws_subnet.private  (block, 2 resources)
+        aws_subnet.private[0]
+            -- aws_route_table.private
+            -> aws_vpc.main
+        aws_subnet.private[1]
+            -- aws_route_table.private
+            -> aws_vpc.main
+      module.logs  (module, 2 resources)
+        aws_cloudwatch_log_group.flow  (declared)
+        aws_flow_log.vpc  (declared)
+            -> aws_vpc.main
+            -> aws_cloudwatch_log_group.flow
+      aws_cloudwatch_log_metric_filter.errors  (declared)
+          -> aws_lb.web
+          -> module.logs / aws_cloudwatch_log_group.flow
+      aws_instance.app
+          -> aws_security_group.app
+          -> aws_subnet.private / aws_subnet.private[1]
+          -> data.aws_ami.linux
+      aws_lb.web
+          -> aws_subnet.private / aws_subnet.private[0]
+          -> aws_subnet.private / aws_subnet.private[1]
+      aws_route_table.private
+          -- aws_subnet.private / aws_subnet.private[0]
+          -- aws_subnet.private / aws_subnet.private[1]
+          -> aws_vpc.main
+      aws_security_group.app  (declared)
+          -> aws_security_group.lb
+      aws_security_group.lb  (declared)
+          -> aws_vpc.main
+      aws_vpc.main
+      data.aws_ami.linux  (declared)

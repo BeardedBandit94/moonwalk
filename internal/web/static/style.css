@@ -114,6 +114,7 @@ main { flex: 1; display: flex; min-height: 0; }
   white-space: nowrap;
 }
 .item.collapsed { background: var(--accent-soft); border-color: var(--accent); }
+.item.declared { border-style: dashed; font-style: italic; }
 .item.collapsed::before { content: "▸ "; color: var(--muted); }
 .item:hover, .title:hover { border-color: var(--accent); color: var(--accent); }
 .item.selected { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -172,6 +173,8 @@ main { flex: 1; display: flex; min-height: 0; }
 #panel .actions { margin: 12px 0 0; }
 #panel .close { float: right; background: none; border: 0; cursor: pointer; color: var(--muted); font-size: 16px; line-height: 1; }
 #panel .more, #panel .note { color: var(--muted); }
+#panel .where { margin: 0; overflow-wrap: anywhere; }
+#panel pre.code { white-space: pre; overflow-wrap: normal; }
 #panel pre {
   margin: 6px 0 0;
   padding: 8px;

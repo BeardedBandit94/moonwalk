@@ -14,6 +14,10 @@ var update = flag.Bool("update", false, "rewrite the golden files with current o
 
 const fixtures = "../../internal/tfstate/testdata/"
 
+// code is a configuration that matches the network fixture and declares a
+// few resources more.
+const code = "../../internal/tfcode/testdata/network"
+
 func runCLI(t *testing.T, stdin string, args ...string) (string, error) {
 	t.Helper()
 	out, _, err := runCLIWithWarnings(t, stdin, args...)
@@ -62,6 +66,9 @@ func TestGraphGolden(t *testing.T) {
 		{"network-view.golden", []string{"view", "net=" + fixtures + "network.tfstate"}},
 		{"network-view-by-network.golden", []string{"view", "-group-by", "source,region,network", "-glue", "net=" + fixtures + "network.tfstate"}},
 		{"network-view-around.golden", []string{"view", "-group-by", "source", "-around", "aws_route_table.private", "net=" + fixtures + "network.tfstate"}},
+		{"code-view.golden", []string{"view", "-code", code, "net=" + fixtures + "network.tfstate"}},
+		{"code-declared.golden", []string{"view", "-format", "json", "-status", "declared", "-group-by", "source", "-code", "net=" + code, "net=" + fixtures + "network.tfstate"}},
+		{"code-only.golden", []string{"graph", "-code", "plan=" + code}},
 		{"network-view-filter.golden", []string{"view", "-format", "json", "-type", "aws_iam_*,aws_vpc", "-region", "global", "net=" + fixtures + "network.tfstate"}},
 	}
 	for _, c := range cases {
@@ -254,6 +261,38 @@ func TestExistingPathWithEqualsSign(t *testing.T) {
 	}
 }
 
+func TestCodeFlag(t *testing.T) {
+	// With one state the code needs no name; with two it does.
+	if _, err := runCLI(t, "", "view", "-code", code, "a="+fixtures+"network.tfstate", "b="+fixtures+"raw.tfstate"); err == nil {
+		t.Error("code without a name was accepted alongside two states")
+	}
+	out, err := runCLI(t, "", "view", "-code", "a="+code, "a="+fixtures+"network.tfstate", "b="+fixtures+"raw.tfstate")
+	if err != nil || !strings.Contains(out, "aws_security_group.app  (declared)") {
+		t.Errorf("named code: %v\n%s", err, out)
+	}
+	if _, err := runCLI(t, "", "view", "-code", "a="+code, "-code", "a="+code, "a="+fixtures+"network.tfstate"); err == nil {
+		t.Error("two code directories for one state were accepted")
+	}
+	if _, err := runCLI(t, "", "view", "-code", "no-such-directory"); err == nil {
+		t.Error("a missing code directory was accepted")
+	}
+
+	// The location is in the JSON, and a module that cannot be found is
+	// reported without failing the command.
+	out, err = runCLI(t, "", "graph", "-format", "json", "-code", code, fixtures+"network.tfstate")
+	if err != nil || !strings.Contains(out, `"file": "modules/logs/main.tf"`) {
+		t.Errorf("code location missing from JSON: %v", err)
+	}
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "main.tf"), []byte(`module "vpc" { source = "example/vpc/aws" }`+"\n"+`resource "t" "x" {}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, warnings, err := runCLIWithWarnings(t, "", "view", "-code", "c="+dir)
+	if err != nil || !strings.Contains(out, "x  (declared)") || !strings.Contains(warnings, "module.vpc") || !strings.Contains(warnings, "terraform init") {
+		t.Errorf("unresolved module: err %v, warnings %q\n%s", err, warnings, out)
+	}
+}
+
 func TestFingerprintFollowsTheFiles(t *testing.T) {
 	data, err := os.ReadFile(fixtures + "raw.tfstate")
 	if err != nil {
@@ -265,11 +304,11 @@ func TestFingerprintFollowsTheFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	args := []string{"live=" + dir}
-	before, ok := fingerprint(args)
+	before, ok := fingerprint(args, nil)
 	if !ok {
 		t.Fatal("a directory should be watchable")
 	}
-	if again, _ := fingerprint(args); again != before {
+	if again, _ := fingerprint(args, nil); again != before {
 		t.Error("fingerprint changed although nothing did")
 	}
 
@@ -278,7 +317,7 @@ func TestFingerprintFollowsTheFiles(t *testing.T) {
 	if err := os.Chtimes(first, later, later); err != nil {
 		t.Fatal(err)
 	}
-	touched, _ := fingerprint(args)
+	touched, _ := fingerprint(args, nil)
 	if touched == before {
 		t.Error("fingerprint missed a modified file")
 	}
@@ -286,7 +325,7 @@ func TestFingerprintFollowsTheFiles(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "b.tfstate"), data, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if added, _ := fingerprint(args); added == touched {
+	if added, _ := fingerprint(args, nil); added == touched {
 		t.Error("fingerprint missed a new file")
 	}
 	// And a file that disappears, which leaves the directory unreadable as
@@ -294,12 +333,37 @@ func TestFingerprintFollowsTheFiles(t *testing.T) {
 	if err := os.Remove(first); err != nil {
 		t.Fatal(err)
 	}
-	removed, _ := fingerprint(args)
+	removed, _ := fingerprint(args, nil)
 	if removed == touched {
 		t.Error("fingerprint missed a removed file")
 	}
 
-	if _, ok := fingerprint([]string{filepath.Join(dir, "b.tfstate"), "-"}); ok {
+	// Code is watched too: its configuration files, at any depth.
+	codeDir := t.TempDir()
+	module := filepath.Join(codeDir, "modules", "m")
+	if err := os.MkdirAll(module, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range []string{filepath.Join(codeDir, "main.tf"), filepath.Join(module, "main.tofu"), filepath.Join(codeDir, "notes.txt")} {
+		if err := os.WriteFile(f, []byte("# x\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	withCode, _ := fingerprint(nil, []string{"c=" + codeDir})
+	if err := os.Chtimes(filepath.Join(codeDir, "notes.txt"), later, later); err != nil {
+		t.Fatal(err)
+	}
+	if again, _ := fingerprint(nil, []string{"c=" + codeDir}); again != withCode {
+		t.Error("a file that is not configuration changed the fingerprint")
+	}
+	if err := os.Chtimes(filepath.Join(module, "main.tofu"), later, later); err != nil {
+		t.Fatal(err)
+	}
+	if again, _ := fingerprint(nil, []string{"c=" + codeDir}); again == withCode {
+		t.Error("fingerprint missed a changed file in a module")
+	}
+
+	if _, ok := fingerprint([]string{filepath.Join(dir, "b.tfstate"), "-"}, nil); ok {
 		t.Error("standard input cannot be watched")
 	}
 }

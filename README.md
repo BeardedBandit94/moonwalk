@@ -28,7 +28,8 @@ with the dependencies drawn between them.
 - The bar at the top holds the grouping, a search, and filters by type,
   account, region and status.
 - The address bar always holds a link back to what is on screen.
-- When a state file changes on disk, the explorer loads it again.
+- When a state file or the code changes on disk, the explorer loads it
+  again.
 
 The explorer listens on `127.0.0.1:7878` and answers only requests
 addressed to this machine. `-addr` changes that; since the page shows
@@ -82,6 +83,32 @@ go run ./cmd/moonwalk view -search bastion terraform.tfstate
 ```bash
 go run ./cmd/moonwalk view -around aws_instance.app terraform.tfstate
 ```
+
+### Code alongside state
+
+Point `-code` at a root module's directory to join the configuration to the
+state. It works with all three commands:
+
+```bash
+go run ./cmd/moonwalk serve -code ./infra terraform.tfstate
+```
+
+- Every resource gains the file and line where its block is written, and
+  the explorer shows the block itself.
+- A resource that is written in the code but absent from the state appears
+  with the status `declared`, drawn with a dashed border, with dependencies
+  worked out from its expressions: through locals, variables and module
+  outputs. `-status declared` shows only those.
+- With `-code` and no state, the graph is built from the code alone.
+- With several states, name the one the code belongs to:
+  `-code network=./infra/network`.
+
+The code is read for its structure only; nothing is evaluated, so no
+variables, providers or credentials are needed. `.tf` and `.tofu` files are
+read. Modules are followed when their source is a relative path, or when
+`terraform init` has fetched them into `.terraform/modules`; moonwalk says
+which it could not find. Override files and the JSON syntax are not read
+yet.
 
 ### What moonwalk works out
 
@@ -185,6 +212,7 @@ Both commands take `-format json`, and the output carries a
 | `cmd/moonwalk` | The command-line entry point |
 | `internal/graph` | The normalized graph model every input is translated into |
 | `internal/tfstate` | Adapter from Terraform and OpenTofu state to the graph |
+| `internal/tfcode` | Adapter from Terraform and OpenTofu configuration to the graph |
 | `internal/relate` | Relationships inferred from attributes: containment, glue |
 | `internal/view` | Grouping of a graph, filters, and the collapsed views of it |
 | `internal/web` | The explorer: a JSON API over the graph and the browser front end |

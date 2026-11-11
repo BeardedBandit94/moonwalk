@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "group_by": [
+    "source"
+  ],
+  "depth": 2,
+  "max_depth": 2,
+  "resources": 6,
+  "total": 17,
+  "glue_folded": 3,
+  "items": [
+    {
+      "id": "source:net",
+      "kind": "source",
+      "label": "net",
+      "depth": 1,
+      "resources": 6,
+      "expanded": true
+    },
+    {
+      "id": "net::aws_cloudwatch_log_metric_filter.errors",
+      "kind": "resource",
+      "label": "aws_cloudwatch_log_metric_filter.errors",
+      "parent": "source:net",
+      "depth": 2,
+      "resources": 1,
+      "status": "declared"
+    },
+    {
+      "id": "net::aws_security_group.app",
+      "kind": "resource",
+      "label": "aws_security_group.app",
+      "parent": "source:net",
+      "depth": 2,
+      "resources": 1,
+      "status": "declared"
+    },
+    {
+      "id": "net::aws_security_group.lb",
+      "kind": "resource",
+      "label": "aws_security_group.lb",
+      "parent": "source:net",
+      "depth": 2,
+      "resources": 1,
+      "status": "declared"
+    },
+    {
+      "id": "net::data.aws_ami.linux",
+      "kind": "resource",
+      "label": "data.aws_ami.linux",
+      "parent": "source:net",
+      "depth": 2,
+      "resources": 1,
+      "status": "declared"
+    },
+    {
+      "id": "net::module.logs.aws_cloudwatch_log_group.flow",
+      "kind": "resource",
+      "label": "module.logs.aws_cloudwatch_log_group.flow",
+      "parent": "source:net",
+      "depth": 2,
+      "resources": 1,
+      "status": "declared"
+    },
+    {
+      "id": "net::module.logs.aws_flow_log.vpc",
+      "kind": "resource",
+      "label": "module.logs.aws_flow_log.vpc",
+      "parent": "source:net",
+      "depth": 2,
+      "resources": 1,
+      "status": "declared"
+    }
+  ],
+  "links": [
+    {
+      "from": "net::aws_cloudwatch_log_metric_filter.errors",
+      "to": "net::module.logs.aws_cloudwatch_log_group.flow",
+      "kind": "depends_on",
+      "count": 1
+    },
+    {
+      "from": "net::aws_security_group.app",
+      "to": "net::aws_security_group.lb",
+      "kind": "depends_on",
+      "count": 1
+    },
+    {
+      "from": "net::module.logs.aws_flow_log.vpc",
+      "to": "net::module.logs.aws_cloudwatch_log_group.flow",
+      "kind": "depends_on",
+      "count": 1
+    }
+  ]
+}

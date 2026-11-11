@@ -210,6 +210,13 @@ function el(tag, className, text) {
 }
 
 const kindName = (kind) => kind.replace('_', ' ');
+
+// What each status other than "managed" means, for tooltips and the panel.
+const STATUS_NOTES = {
+  declared: 'Written in the code but not in the state: not applied yet, or declared with a count of zero.',
+  unmanaged: 'Exists in the cloud but is not in any state.',
+  drifted: 'In the state, but differs from what is in the cloud.',
+};
 const plural = (n, noun) => `${n.toLocaleString()} ${noun}${n === 1 ? '' : 's'}`;
 
 function render() {
@@ -231,6 +238,10 @@ function render() {
       holders.set(item.id, children);
     } else if (item.kind === 'resource') {
       node = el('button', 'item resource', item.label);
+      if (item.status) {
+        node.classList.add(item.status);
+        node.title = STATUS_NOTES[item.status] || item.status;
+      }
       node.addEventListener('click', () => select(item.id));
     } else {
       node = el('button', 'item collapsed', item.label);
@@ -473,6 +484,7 @@ async function showResource(id) {
   fact('Module', n.module);
   panel.append(facts);
 
+  if (STATUS_NOTES[n.status]) panel.append(el('p', 'note', STATUS_NOTES[n.status]));
   if (!r.shown) {
     panel.append(el('p', 'note', n.glue && !state.glue
       ? 'Not drawn: this glue resource is folded into a link between what it joins.'
@@ -491,6 +503,10 @@ async function showResource(id) {
   refList(panel, 'Attached to', r.linked_to);
   refList(panel, 'Contains', r.contains);
 
+  if (n.code) {
+    panel.append(el('h3', '', 'Declared in'), el('p', 'where', `${n.code.file}, line ${n.code.line}`));
+    if (r.code_text) panel.append(el('pre', 'code', r.code_text));
+  }
   if (n.attributes_withheld) {
     panel.append(el('h3', '', 'Attributes'), el('p', 'note',
       'Withheld. This state was written by a version of Terraform or OpenTofu that did not record ' +

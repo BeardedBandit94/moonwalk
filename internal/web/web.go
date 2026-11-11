@@ -27,6 +27,10 @@ var static embed.FS
 // A network can contain thousands; the response says how many there are.
 const maxRelated = 200
 
+// CodeLookup returns the text of the block that declares a resource, given
+// the resource's source and config address.
+type CodeLookup func(source, configAddress string) (text string, ok bool)
+
 // snapshot is one loaded graph and what was worked out from it. It is never
 // changed once built; reloading makes a new one.
 type snapshot struct {
@@ -34,6 +38,7 @@ type snapshot struct {
 	// out and in hold each node's edges by the end the node is at; via
 	// holds, for a glue resource, the link that stands for it.
 	out, in, via map[string][]graph.Edge
+	code         CodeLookup // May be nil.
 	// generation counts the graphs this server has been given, so that the
 	// page can tell when what it shows is out of date.
 	generation int
@@ -42,9 +47,10 @@ type snapshot struct {
 	trees map[string]*view.Tree // Built trees, by the options that shaped them.
 }
 
-func newSnapshot(g *graph.Graph, generation int) *snapshot {
+func newSnapshot(g *graph.Graph, code CodeLookup, generation int) *snapshot {
 	s := &snapshot{
 		g:          g,
+		code:       code,
 		out:        map[string][]graph.Edge{},
 		in:         map[string][]graph.Edge{},
 		via:        map[string][]graph.Edge{},
@@ -74,17 +80,18 @@ type Server struct {
 
 // New returns a server for g. Relationships should already be derived and
 // indirect dependencies removed, as the views count what is there. The
-// graph must not change once handed over.
-func New(g *graph.Graph) *Server {
+// graph must not change once handed over. code finds the text of a
+// resource's block; pass nil if no configuration was loaded.
+func New(g *graph.Graph, code CodeLookup) *Server {
 	s := &Server{}
-	s.current.Store(newSnapshot(g, 1))
+	s.current.Store(newSnapshot(g, code, 1))
 	return s
 }
 
-// Replace makes the server answer from g from now on, as after a state
+// Replace makes the server answer from g and code from now on, as after a
 // file has changed. Requests already under way finish on the old graph.
-func (s *Server) Replace(g *graph.Graph) {
-	s.current.Store(newSnapshot(g, s.current.Load().generation+1))
+func (s *Server) Replace(g *graph.Graph, code CodeLookup) {
+	s.current.Store(newSnapshot(g, code, s.current.Load().generation+1))
 }
 
 // Handler returns the HTTP handler for the API and the front end.
@@ -294,6 +301,9 @@ type resourceResponse struct {
 	// a filter or glue folding can leave it out.
 	Group string `json:"group"`
 	Shown bool   `json:"shown"`
+	// CodeText is the block that declares the resource, as written, when
+	// the configuration was loaded and has it.
+	CodeText string `json:"code_text,omitempty"`
 
 	DependsOn    related `json:"depends_on"`
 	DependedOnBy related `json:"depended_on_by"`
@@ -321,6 +331,9 @@ func (s *snapshot) resource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resp := resourceResponse{Node: n, Group: t.GroupOf(id), Shown: t.Shows(id)}
+	if s.code != nil && n.Code != nil {
+		resp.CodeText, _ = s.code(n.Source, n.ConfigAddress)
+	}
 	add := func(to *related, id, via string) {
 		to.Total++
 		if len(to.Items) < maxRelated {
