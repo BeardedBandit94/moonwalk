@@ -1,0 +1,8 @@
+{
+  "name": "moonwalk-e2e",
+  "private": true,
+  "description": "Browser test for the moonwalk explorer. Not part of the build.",
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

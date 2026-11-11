@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 var update = flag.Bool("update", false, "rewrite the golden files with current output")
@@ -250,6 +251,56 @@ func TestExistingPathWithEqualsSign(t *testing.T) {
 	}
 	if !strings.Contains(out, "\n"+path+"\n") {
 		t.Errorf("path was not used as the source name:\n%s", out)
+	}
+}
+
+func TestFingerprintFollowsTheFiles(t *testing.T) {
+	data, err := os.ReadFile(fixtures + "raw.tfstate")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	first := filepath.Join(dir, "a.tfstate")
+	if err := os.WriteFile(first, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	args := []string{"live=" + dir}
+	before, ok := fingerprint(args)
+	if !ok {
+		t.Fatal("a directory should be watchable")
+	}
+	if again, _ := fingerprint(args); again != before {
+		t.Error("fingerprint changed although nothing did")
+	}
+
+	// A change of content, even to the same length, shows.
+	later := time.Now().Add(time.Hour)
+	if err := os.Chtimes(first, later, later); err != nil {
+		t.Fatal(err)
+	}
+	touched, _ := fingerprint(args)
+	if touched == before {
+		t.Error("fingerprint missed a modified file")
+	}
+	// So does a new state in a watched directory.
+	if err := os.WriteFile(filepath.Join(dir, "b.tfstate"), data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if added, _ := fingerprint(args); added == touched {
+		t.Error("fingerprint missed a new file")
+	}
+	// And a file that disappears, which leaves the directory unreadable as
+	// a set of states only once it is empty.
+	if err := os.Remove(first); err != nil {
+		t.Fatal(err)
+	}
+	removed, _ := fingerprint(args)
+	if removed == touched {
+		t.Error("fingerprint missed a removed file")
+	}
+
+	if _, ok := fingerprint([]string{filepath.Join(dir, "b.tfstate"), "-"}); ok {
+		t.Error("standard input cannot be watched")
 	}
 }
 

@@ -21,3 +21,21 @@ jobs:
         run: go vet ./...
       - name: Test
         run: go test -race ./...
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build
+        run: go build -o moonwalk ./cmd/moonwalk
+      - name: Install the browser
+        working-directory: e2e
+        run: npm install && npx playwright install --with-deps chromium
+      - name: Drive the explorer
+        run: MOONWALK_BIN=./moonwalk node e2e/explorer.cjs

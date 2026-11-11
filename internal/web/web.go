@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/BeardedBandit94/moonwalk/internal/graph"
 	"github.com/BeardedBandit94/moonwalk/internal/view"
@@ -26,32 +27,29 @@ var static embed.FS
 // A network can contain thousands; the response says how many there are.
 const maxRelated = 200
 
-// Server answers the explorer's requests from one graph. The graph must not
-// change once the server is in use.
-type Server struct {
+// snapshot is one loaded graph and what was worked out from it. It is never
+// changed once built; reloading makes a new one.
+type snapshot struct {
 	g *graph.Graph
 	// out and in hold each node's edges by the end the node is at; via
 	// holds, for a glue resource, the link that stands for it.
 	out, in, via map[string][]graph.Edge
-	// LocalOnly makes the server refuse requests addressed to any host name
-	// but this machine's. A server bound to the loopback address needs it:
-	// otherwise a web page elsewhere could reach it through a DNS name that
-	// points back at 127.0.0.1.
-	LocalOnly bool
+	// generation counts the graphs this server has been given, so that the
+	// page can tell when what it shows is out of date.
+	generation int
 
 	mu    sync.Mutex
 	trees map[string]*view.Tree // Built trees, by the options that shaped them.
 }
 
-// New returns a server for g. Relationships should already be derived and
-// indirect dependencies removed, as the views count what is there.
-func New(g *graph.Graph) *Server {
-	s := &Server{
-		g:     g,
-		out:   map[string][]graph.Edge{},
-		in:    map[string][]graph.Edge{},
-		via:   map[string][]graph.Edge{},
-		trees: map[string]*view.Tree{},
+func newSnapshot(g *graph.Graph, generation int) *snapshot {
+	s := &snapshot{
+		g:          g,
+		out:        map[string][]graph.Edge{},
+		in:         map[string][]graph.Edge{},
+		via:        map[string][]graph.Edge{},
+		generation: generation,
+		trees:      map[string]*view.Tree{},
 	}
 	for _, e := range g.Edges() { // Sorted, so the lists come out in a stable order.
 		s.out[e.From] = append(s.out[e.From], e)
@@ -63,12 +61,46 @@ func New(g *graph.Graph) *Server {
 	return s
 }
 
+// Server answers the explorer's requests.
+type Server struct {
+	// LocalOnly makes the server refuse requests addressed to any host name
+	// but this machine's. A server bound to the loopback address needs it:
+	// otherwise a web page elsewhere could reach it through a DNS name that
+	// points back at 127.0.0.1.
+	LocalOnly bool
+
+	current atomic.Pointer[snapshot]
+}
+
+// New returns a server for g. Relationships should already be derived and
+// indirect dependencies removed, as the views count what is there. The
+// graph must not change once handed over.
+func New(g *graph.Graph) *Server {
+	s := &Server{}
+	s.current.Store(newSnapshot(g, 1))
+	return s
+}
+
+// Replace makes the server answer from g from now on, as after a state
+// file has changed. Requests already under way finish on the old graph.
+func (s *Server) Replace(g *graph.Graph) {
+	s.current.Store(newSnapshot(g, s.current.Load().generation+1))
+}
+
 // Handler returns the HTTP handler for the API and the front end.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/meta", s.meta)
-	mux.HandleFunc("GET /api/view", s.view)
-	mux.HandleFunc("GET /api/resource", s.resource)
+	api := func(pattern string, h func(*snapshot, http.ResponseWriter, *http.Request)) {
+		mux.HandleFunc(pattern, func(w http.ResponseWriter, r *http.Request) {
+			snap := s.current.Load()
+			w.Header().Set("X-Moonwalk-Generation", strconv.Itoa(snap.generation))
+			h(snap, w, r)
+		})
+	}
+	api("GET /api/meta", (*snapshot).meta)
+	api("GET /api/view", (*snapshot).view)
+	api("GET /api/resource", (*snapshot).resource)
+	api("GET /api/link", (*snapshot).link)
 	files, err := fs.Sub(static, "static")
 	if err != nil {
 		panic(err) // The directory is embedded at build time.
@@ -108,37 +140,57 @@ func writeJSON(w http.ResponseWriter, v any) {
 }
 
 type metaResponse struct {
-	Resources      int              `json:"resources"`
-	Sources        []string         `json:"sources"`
+	// Generation changes whenever the server loads its states afresh.
+	Generation int      `json:"generation"`
+	Resources  int      `json:"resources"`
+	Sources    []string `json:"sources"`
+	// Accounts, Regions and Statuses list the values present, for filters.
+	Accounts       []string         `json:"accounts"`
+	Regions        []string         `json:"regions"`
+	Statuses       []string         `json:"statuses"`
 	Dimensions     []view.Dimension `json:"dimensions"`
 	DefaultGroupBy []view.Dimension `json:"default_group_by"`
 	Budget         int              `json:"budget"`
 }
 
-func (s *Server) meta(w http.ResponseWriter, _ *http.Request) {
-	seen := map[string]bool{}
+func (s *snapshot) meta(w http.ResponseWriter, _ *http.Request) {
+	sources, accounts, regions, statuses := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
 	resources := 0
 	for n := range s.g.AllNodes() {
 		resources++
-		seen[n.Source] = true
+		sources[n.Source] = true
+		accounts[n.Account] = true
+		regions[n.Region] = true
+		statuses[string(n.Status)] = true
 	}
-	sources := make([]string, 0, len(seen))
-	for src := range seen {
-		sources = append(sources, src)
-	}
-	slices.Sort(sources)
 	writeJSON(w, metaResponse{
+		Generation:     s.generation,
 		Resources:      resources,
-		Sources:        sources,
+		Sources:        sortedKeys(sources),
+		Accounts:       sortedKeys(accounts),
+		Regions:        sortedKeys(regions),
+		Statuses:       sortedKeys(statuses),
 		Dimensions:     view.AllDimensions(),
 		DefaultGroupBy: view.DefaultDimensions,
 		Budget:         view.Budget,
 	})
 }
 
+// sortedKeys returns the non-empty keys of set in order.
+func sortedKeys(set map[string]bool) []string {
+	keys := make([]string, 0, len(set))
+	for k := range set {
+		if k != "" {
+			keys = append(keys, k)
+		}
+	}
+	slices.Sort(keys)
+	return keys
+}
+
 // tree returns the tree for the grouping and filters in the query, building
 // it on first use.
-func (s *Server) tree(q url.Values) (*view.Tree, error) {
+func (s *snapshot) tree(q url.Values) (*view.Tree, error) {
 	dims := view.DefaultDimensions
 	if v := q.Get("group_by"); v != "" {
 		var err error
@@ -197,7 +249,7 @@ func list(v string) []string {
 // view answers GET /api/view. Besides the grouping and filter parameters it
 // takes either "depth", or any number of "open" parameters naming groups to
 // expand; with neither, it expands as far as the budget allows.
-func (s *Server) view(w http.ResponseWriter, r *http.Request) {
+func (s *snapshot) view(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	t, err := s.tree(q)
 	if err != nil {
@@ -255,7 +307,7 @@ type resourceResponse struct {
 // resource answers GET /api/resource?id=<node ID>, with the same grouping
 // and filter parameters as the view so that it can say where the resource
 // is shown.
-func (s *Server) resource(w http.ResponseWriter, r *http.Request) {
+func (s *snapshot) resource(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	id := q.Get("id")
 	n, ok := s.g.Node(id)
@@ -313,7 +365,76 @@ func (s *Server) resource(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, resp)
 }
 
-func (s *Server) ref(id string) ref {
+func (s *snapshot) ref(id string) ref {
 	n, _ := s.g.Node(id)
 	return ref{ID: id, Address: n.Address, Source: n.Source, Type: n.Type}
+}
+
+// linkedPair is one edge behind a link between two items of a view.
+type linkedPair struct {
+	From ref            `json:"from"`
+	To   ref            `json:"to"`
+	Kind graph.EdgeKind `json:"kind"`
+	Via  *ref           `json:"via,omitempty"`
+}
+
+type linkResponse struct {
+	Total int          `json:"total"`
+	Pairs []linkedPair `json:"pairs"`
+}
+
+// link answers GET /api/link?from=<item ID>&to=<item ID>: the dependencies
+// and glue links that run between the resources two items of a view stand
+// for, which is what a link drawn between them counts. It takes the same
+// grouping and filter parameters as the view.
+func (s *snapshot) link(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	t, err := s.tree(q)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	from, to := t.NodesUnder(q.Get("from")), t.NodesUnder(q.Get("to"))
+	if from == nil || to == nil {
+		http.Error(w, "from and to must each name an item of the view", http.StatusNotFound)
+		return
+	}
+	inTo := make(map[string]bool, len(to))
+	for _, id := range to {
+		inTo[id] = true
+	}
+	inFrom := make(map[string]bool, len(from))
+	for _, id := range from {
+		inFrom[id] = true
+	}
+	resp := linkResponse{Pairs: []linkedPair{}}
+	add := func(e graph.Edge) {
+		resp.Total++
+		if len(resp.Pairs) >= maxRelated {
+			return
+		}
+		pair := linkedPair{From: s.ref(e.From), To: s.ref(e.To), Kind: e.Kind}
+		if e.Via != "" {
+			v := s.ref(e.Via)
+			pair.Via = &v
+		}
+		resp.Pairs = append(resp.Pairs, pair)
+	}
+	glueShown := q.Get("glue") == "1"
+	for _, id := range from {
+		for _, e := range s.out[id] {
+			switch {
+			case e.Kind == graph.EdgeDependsOn && inTo[e.To],
+				e.Kind == graph.EdgeLinks && !glueShown && inTo[e.To]:
+				add(e)
+			}
+		}
+		// A glue link has no direction, so it may be stored the other way.
+		for _, e := range s.in[id] {
+			if e.Kind == graph.EdgeLinks && !glueShown && inTo[e.From] && !inFrom[e.From] {
+				add(e)
+			}
+		}
+	}
+	writeJSON(w, resp)
 }
