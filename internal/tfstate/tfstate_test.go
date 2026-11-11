@@ -326,41 +326,6 @@ func TestPartition(t *testing.T) {
 	}
 }
 
-func TestConfigAddress(t *testing.T) {
-	cases := map[string]string{
-		`aws_vpc.main`:                        `aws_vpc.main`,
-		`aws_subnet.s[3]`:                     `aws_subnet.s`,
-		`module.a["x"].module.b[0].aws_s3.b`:  `module.a.module.b.aws_s3.b`,
-		`aws_s3.b["we]ird.\"key"]`:            `aws_s3.b`,
-		`module.m["a.b"].data.aws_ami.u["k"]`: `module.m.data.aws_ami.u`,
-	}
-	for in, want := range cases {
-		if got := configAddress(in); got != want {
-			t.Errorf("configAddress(%q) = %q, want %q", in, got, want)
-		}
-	}
-}
-
-func TestModuleSteps(t *testing.T) {
-	cases := map[string][]moduleStep{
-		``:                            nil,
-		`module.a`:                    {{"a", ""}},
-		`module.a["x.y"].module.b[0]`: {{"a", `["x.y"]`}, {"b", "[0]"}},
-		`module.a["]\""].module.b`:    {{"a", `["]\""]`}, {"b", ""}},
-	}
-	for in, want := range cases {
-		if got := moduleSteps(in); !reflect.DeepEqual(got, want) {
-			t.Errorf("moduleSteps(%q) = %q, want %q", in, got, want)
-		}
-	}
-	if got, want := moduleNames("module.a.module.b.data.aws_ami.u"), []string{"a", "b"}; !reflect.DeepEqual(got, want) {
-		t.Errorf("moduleNames = %q, want %q", got, want)
-	}
-	if got := moduleNames("aws_vpc.main"); got != nil {
-		t.Errorf("moduleNames for a root resource = %q", got)
-	}
-}
-
 func TestProviderSource(t *testing.T) {
 	cases := map[string]string{
 		`provider["registry.terraform.io/hashicorp/aws"]`:               awsSrc,

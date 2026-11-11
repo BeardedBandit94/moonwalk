@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "group_by": [
+    "source",
+    "account",
+    "region",
+    "module"
+  ],
+  "depth": 3,
+  "max_depth": 7,
+  "resources": 5,
+  "items": [
+    {
+      "id": "source:prod",
+      "kind": "source",
+      "label": "prod",
+      "depth": 1,
+      "resources": 5,
+      "expanded": true
+    },
+    {
+      "id": "source:prod/account:123456789012",
+      "kind": "account",
+      "label": "123456789012",
+      "parent": "source:prod",
+      "depth": 2,
+      "resources": 5,
+      "expanded": true
+    },
+    {
+      "id": "source:prod/account:123456789012/module:module.net",
+      "kind": "module",
+      "label": "module.net",
+      "parent": "source:prod/account:123456789012",
+      "depth": 3,
+      "resources": 1
+    },
+    {
+      "id": "source:prod/account:123456789012/region:us-east-1",
+      "kind": "region",
+      "label": "us-east-1",
+      "parent": "source:prod/account:123456789012",
+      "depth": 3,
+      "resources": 3
+    },
+    {
+      "id": "prod::data.aws_availability_zones.available",
+      "kind": "resource",
+      "label": "data.aws_availability_zones.available",
+      "parent": "source:prod/account:123456789012",
+      "depth": 3,
+      "resources": 1
+    }
+  ],
+  "links": [
+    {
+      "from": "source:prod/account:123456789012/module:module.net",
+      "to": "source:prod/account:123456789012/region:us-east-1",
+      "count": 2
+    },
+    {
+      "from": "source:prod/account:123456789012/region:us-east-1",
+      "to": "prod::data.aws_availability_zones.available",
+      "count": 2
+    }
+  ]
+}

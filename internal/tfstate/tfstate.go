@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/BeardedBandit94/moonwalk/internal/graph"
+	"github.com/BeardedBandit94/moonwalk/internal/tfaddr"
 )
 
 // Load reads one state from r and adds its resources to g under the given
@@ -108,7 +109,7 @@ func add(g *graph.Graph, source string, p parsed) error {
 		n := &rs[i].node
 		n.Source = source
 		n.ID = NodeID(source, n.Address)
-		n.ConfigAddress = configAddress(n.Address)
+		n.ConfigAddress = tfaddr.ConfigAddress(n.Address)
 		n.Status = graph.StatusManaged
 		p.secrets.scrub(n.Attributes)
 		n.Account, n.Region = partition(n.Provider, n.Attributes)
@@ -137,7 +138,7 @@ func add(g *graph.Graph, source string, p parsed) error {
 		if err := g.AddNode(*n); err != nil {
 			return err
 		}
-		steps := moduleSteps(n.Module)
+		steps := tfaddr.ModuleSteps(n.Module)
 		for k := 0; k <= len(steps); k++ {
 			key := targetKey(n.ConfigAddress, steps[:k])
 			targets[key] = append(targets[key], n.ID)
@@ -146,7 +147,7 @@ func add(g *graph.Graph, source string, p parsed) error {
 
 	for i := range rs {
 		from := rs[i].node
-		steps := moduleSteps(from.Module)
+		steps := tfaddr.ModuleSteps(from.Module)
 		for _, dep := range rs[i].dependsOn {
 			// State records a dependency as a resource block, not an instance.
 			// A block can be reached only from inside the module instances the
@@ -154,8 +155,8 @@ func add(g *graph.Graph, source string, p parsed) error {
 			// are ruled out. Among the rest state does not say which instance
 			// is meant, so an edge goes to each. Dependencies on resources
 			// absent from state are dropped.
-			cfg := configAddress(dep)
-			shared := sharedModules(steps, moduleNames(cfg))
+			cfg := tfaddr.ConfigAddress(dep)
+			shared := sharedModules(steps, tfaddr.ModuleNames(cfg))
 			for _, to := range targets[targetKey(cfg, steps[:shared])] {
 				if to == from.ID {
 					continue
@@ -171,21 +172,21 @@ func add(g *graph.Graph, source string, p parsed) error {
 
 // targetKey names the resources at a config address that sit inside the
 // given module instances.
-func targetKey(configAddr string, steps []moduleStep) string {
+func targetKey(configAddr string, steps []tfaddr.ModuleStep) string {
 	var b strings.Builder
 	b.WriteString(configAddr)
 	for _, s := range steps {
 		b.WriteByte(0)
-		b.WriteString(s.key)
+		b.WriteString(s.Key)
 	}
 	return b.String()
 }
 
 // sharedModules counts the leading module calls that a resource's module
 // path has in common with the module names of one of its dependencies.
-func sharedModules(steps []moduleStep, names []string) int {
+func sharedModules(steps []tfaddr.ModuleStep, names []string) int {
 	n := 0
-	for n < len(steps) && n < len(names) && steps[n].name == names[n] {
+	for n < len(steps) && n < len(names) && steps[n].Name == names[n] {
 		n++
 	}
 	return n

@@ -47,6 +47,10 @@ func TestGraphGolden(t *testing.T) {
 		{"text.golden", []string{"graph", "prod=" + fixtures + "raw.tfstate", "lab=" + fixtures + "secrets.tfstate"}},
 		{"json.golden", []string{"graph", "-format", "json", "prod=" + fixtures + "show.json"}},
 		{"attributes.golden", []string{"graph", "-format", "json", "-attributes", "lab=" + fixtures + "secrets.show.json"}},
+		{"view.golden", []string{"view", "prod=" + fixtures + "raw.tfstate", "lab=" + fixtures + "secrets.tfstate"}},
+		{"view-depth.golden", []string{"view", "-depth", "3", "prod=" + fixtures + "raw.tfstate", "lab=" + fixtures + "secrets.tfstate"}},
+		{"view-by-module.golden", []string{"view", "-group-by", "module", "prod=" + fixtures + "raw.tfstate", "lab=" + fixtures + "secrets.tfstate"}},
+		{"view-json.golden", []string{"view", "-format", "json", "-depth", "3", "prod=" + fixtures + "show.json"}},
 	}
 	for _, c := range cases {
 		got, err := runCLI(t, "", c.args...)
@@ -87,6 +91,38 @@ func TestAttributesOmittedByDefault(t *testing.T) {
 	}
 	if strings.Contains(out, `"attributes"`) {
 		t.Error("attributes printed without -attributes")
+	}
+}
+
+// The subnets in the fixture depend on the network directly, and the
+// association depends on the subnets; nothing there is implied by the rest.
+// A state with a shortcut loses it under -direct.
+func TestDirect(t *testing.T) {
+	const state = `{"version":4,"resources":[
+	  {"mode":"managed","type":"t","name":"a","provider":"p","instances":[{}]},
+	  {"mode":"managed","type":"t","name":"b","provider":"p","instances":[{"dependencies":["t.a"]}]},
+	  {"mode":"managed","type":"t","name":"c","provider":"p","instances":[{"dependencies":["t.a","t.b"]}]}]}`
+	all, err := runCLI(t, state, "graph", "-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	direct, err := runCLI(t, state, "graph", "-direct", "-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(all, "3 resources, 3 dependencies") || !strings.Contains(direct, "3 resources, 2 dependencies") {
+		t.Errorf("want 3 dependencies without -direct and 2 with it:\n%s\n%s", all, direct)
+	}
+}
+
+// A depth beyond the deepest level shows everything rather than failing.
+func TestViewDepthIsCapped(t *testing.T) {
+	deep, err := runCLI(t, "", "view", "-depth", "99", fixtures+"raw.tfstate")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(deep, "Expanded to depth") || !strings.Contains(deep, "aws_subnet.private[1]") {
+		t.Errorf("view at depth 99 is not fully expanded:\n%s", deep)
 	}
 }
 
@@ -171,7 +207,7 @@ func TestExistingPathWithEqualsSign(t *testing.T) {
 func TestErrors(t *testing.T) {
 	cases := map[string][]string{
 		"no command":       {},
-		"unknown command":  {"serve"},
+		"unknown command":  {"explore"},
 		"no state":         {"graph"},
 		"unknown format":   {"graph", "-format", "dot", fixtures + "raw.tfstate"},
 		"unknown flag":     {"graph", "-nope", fixtures + "raw.tfstate"},
@@ -179,6 +215,10 @@ func TestErrors(t *testing.T) {
 		"same state twice": {"graph", fixtures + "raw.tfstate", fixtures + "raw.tfstate"},
 		"same name twice":  {"graph", "a=" + fixtures + "raw.tfstate", "a=" + fixtures + "show.json"},
 		"not a state":      {"graph", "main.go"},
+		"unknown grouping": {"view", "-group-by", "zone", fixtures + "raw.tfstate"},
+		"negative depth":   {"view", "-depth", "-1", fixtures + "raw.tfstate"},
+		"graph-only flag":  {"view", "-attributes", fixtures + "raw.tfstate"},
+		"view-only flag":   {"graph", "-depth", "2", fixtures + "raw.tfstate"},
 	}
 	for name, args := range cases {
 		if _, err := runCLI(t, "", args...); err == nil {

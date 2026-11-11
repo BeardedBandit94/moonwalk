@@ -1,0 +1,34 @@
+13 resources in 22 items, grouped by module
+
+lab::module.net  (module, 6 resources)
+  lab::module.net["a"]  (module instance, 3 resources)
+    terraform_data.subnet  (block, 2 resources)
+      terraform_data.subnet[0]
+          -> terraform_data.vpc
+      terraform_data.subnet[1]
+          -> terraform_data.vpc
+    terraform_data.vpc
+  lab::module.net["b"]  (module instance, 3 resources)
+    terraform_data.subnet  (block, 2 resources)
+      terraform_data.subnet[0]
+          -> terraform_data.vpc
+      terraform_data.subnet[1]
+          -> terraform_data.vpc
+    terraform_data.vpc
+prod::module.net  (module, 3 resources)
+  prod::module.net["a.b"]  (module instance, 3 resources)
+    aws_route_table_association.private  (block, 1 resource)
+      aws_route_table_association.private["x]y"]
+          -> aws_subnet.private / aws_subnet.private[0]
+          -> aws_subnet.private / aws_subnet.private[1]
+    aws_subnet.private  (block, 2 resources)
+      aws_subnet.private[0]
+          -> prod::aws_vpc.main
+          -> prod::data.aws_availability_zones.available
+      aws_subnet.private[1]
+          -> prod::aws_vpc.main
+          -> prod::data.aws_availability_zones.available
+lab::random_password.db
+lab::terraform_data.cfg
+prod::aws_vpc.main
+prod::data.aws_availability_zones.available

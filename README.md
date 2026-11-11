@@ -6,7 +6,34 @@ and the live cloud environment side by side in a single interactive view.
 
 ## Status
 
-Early. What works today: loading state and printing its resource graph.
+Early. What works today: loading state and printing its resource graph,
+either collapsed into groups or in full.
+
+### A readable view
+
+`view` arranges the resources into nested groups (state, account, region,
+module, then the instances of each resource block) and expands as many
+levels as fit in 300 items, whatever the size of the estate:
+
+```bash
+go run ./cmd/moonwalk view terraform.tfstate
+```
+
+A group marked `+` is collapsed. Dependencies are shown between the visible
+items, so resources hidden inside a collapsed group count towards one link
+from that group. Go deeper with `-depth`, or change the levels and their
+order with `-group-by`:
+
+```bash
+go run ./cmd/moonwalk view -depth 5 -group-by account,module terraform.tfstate
+```
+
+No group ever has more than 100 children: a crowded group is split by
+resource type, and then into ranges.
+
+### The full graph
+
+`graph` prints every resource and dependency:
 
 ```bash
 go run ./cmd/moonwalk graph terraform.tfstate
@@ -15,6 +42,9 @@ go run ./cmd/moonwalk graph terraform.tfstate
 ```bash
 terraform show -json | go run ./cmd/moonwalk graph -format json -
 ```
+
+State lists indirect dependencies next to direct ones; `-direct` leaves out
+those that others already imply. `view` always does.
 
 Both raw version 4 state files and `terraform show -json` / `tofu show -json`
 output are accepted, and produce the same graph.
@@ -46,7 +76,7 @@ is marked `account_inferred` in JSON output.
 ### Attributes and secrets
 
 State stores secrets in plain text. moonwalk prints attribute values only
-when asked, with `-format json -attributes`, and replaces sensitive values
+when asked, with `graph -format json -attributes`, and replaces sensitive values
 with `"(sensitive)"`:
 
 - values the state marks as sensitive;
@@ -65,8 +95,8 @@ An OpenTofu state encrypted at rest cannot be read directly; pipe
 
 ### JSON output
 
-JSON output carries a `schema_version`. It changes only when a field is
-removed or changes meaning.
+Both commands take `-format json`, and the output carries a
+`schema_version`. It changes only when a field is removed or changes meaning.
 
 ## Layout
 
@@ -75,6 +105,8 @@ removed or changes meaning.
 | `cmd/moonwalk` | The command-line entry point |
 | `internal/graph` | The normalized graph model every input is translated into |
 | `internal/tfstate` | Adapter from Terraform and OpenTofu state to the graph |
+| `internal/view` | Grouping of a graph and the collapsed views of it |
+| `internal/tfaddr` | Parsing of Terraform resource addresses |
 
 New inputs (HCL, live discovery) are added as further adapters that produce a
 `graph.Graph`; nothing outside an adapter should know its source format.

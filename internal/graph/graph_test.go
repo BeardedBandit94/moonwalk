@@ -44,3 +44,83 @@ func TestDocumentIsSortedAndDeduplicated(t *testing.T) {
 		t.Errorf("edges not sorted or deduplicated: %+v", d.Edges)
 	}
 }
+
+func edgeList(g *Graph) []string {
+	var out []string
+	for _, e := range g.Edges() {
+		out = append(out, e.From+">"+e.To)
+	}
+	return out
+}
+
+func build(t *testing.T, edges ...string) *Graph {
+	t.Helper()
+	g := New()
+	for _, e := range edges {
+		from, to := e[:1], e[2:]
+		for _, id := range []string{from, to} {
+			if _, ok := g.Node(id); !ok {
+				_ = g.AddNode(Node{ID: id})
+			}
+		}
+		if err := g.AddEdge(Edge{From: from, To: to, Kind: EdgeDependsOn}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return g
+}
+
+func TestReduceTransitive(t *testing.T) {
+	cases := []struct {
+		name    string
+		edges   []string
+		want    []string
+		removed int
+	}{
+		{"chain with shortcuts", []string{"a>b", "b>c", "c>d", "a>c", "a>d", "b>d"}, []string{"a>b", "b>c", "c>d"}, 3},
+		{"diamond keeps both sides", []string{"a>b", "a>c", "b>d", "c>d"}, []string{"a>b", "a>c", "b>d", "c>d"}, 0},
+		{"diamond with shortcut", []string{"a>b", "a>c", "b>d", "c>d", "a>d"}, []string{"a>b", "a>c", "b>d", "c>d"}, 1},
+		{"cycle is left alone", []string{"a>b", "b>c", "c>a", "a>c"}, []string{"a>b", "a>c", "b>c", "c>a"}, 0},
+		{"nothing to do", []string{"a>b"}, []string{"a>b"}, 0},
+	}
+	for _, c := range cases {
+		g := build(t, c.edges...)
+		removed := g.ReduceTransitive(EdgeDependsOn)
+		got := edgeList(g)
+		if removed != c.removed || len(got) != len(c.want) {
+			t.Errorf("%s: removed %d, left %v; want %d, %v", c.name, removed, got, c.removed, c.want)
+			continue
+		}
+		for i := range got {
+			if got[i] != c.want[i] {
+				t.Errorf("%s: left %v, want %v", c.name, got, c.want)
+				break
+			}
+		}
+	}
+}
+
+func TestReduceTransitiveIgnoresOtherKinds(t *testing.T) {
+	g := build(t, "a>b", "b>c")
+	if err := g.AddEdge(Edge{From: "a", To: "c", Kind: "other"}); err != nil {
+		t.Fatal(err)
+	}
+	if removed := g.ReduceTransitive(EdgeDependsOn); removed != 0 {
+		t.Errorf("removed %d edges of another kind", removed)
+	}
+}
+
+func TestIterators(t *testing.T) {
+	g := build(t, "a>b", "b>c")
+	nodes, edges := 0, 0
+	for range g.AllNodes() {
+		nodes++
+	}
+	for range g.AllEdges() {
+		edges++
+	}
+	wantNodes, wantEdges := g.Len()
+	if nodes != 3 || edges != 2 || wantNodes != 3 || wantEdges != 2 {
+		t.Errorf("iterated %d nodes and %d edges; Len says %d and %d", nodes, edges, wantNodes, wantEdges)
+	}
+}

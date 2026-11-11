@@ -1,0 +1,40 @@
+13 resources in 28 items, grouped by source, account, region, module
+
+lab  (source, 8 resources)
+  module.net  (module, 6 resources)
+    module.net["a"]  (module instance, 3 resources)
+      terraform_data.subnet  (block, 2 resources)
+        terraform_data.subnet[0]
+            -> terraform_data.vpc
+        terraform_data.subnet[1]
+            -> terraform_data.vpc
+      terraform_data.vpc
+    module.net["b"]  (module instance, 3 resources)
+      terraform_data.subnet  (block, 2 resources)
+        terraform_data.subnet[0]
+            -> terraform_data.vpc
+        terraform_data.subnet[1]
+            -> terraform_data.vpc
+      terraform_data.vpc
+  random_password.db
+  terraform_data.cfg
+prod  (source, 5 resources)
+  123456789012  (account, 5 resources)
+    module.net  (module, 1 resource)
+      module.net["a.b"]  (module instance, 1 resource)
+        aws_route_table_association.private  (block, 1 resource)
+          aws_route_table_association.private["x]y"]
+              -> us-east-1 / module.net / module.net["a.b"] / aws_subnet.private / aws_subnet.private[0]
+              -> us-east-1 / module.net / module.net["a.b"] / aws_subnet.private / aws_subnet.private[1]
+    us-east-1  (region, 3 resources)
+      module.net  (module, 2 resources)
+        module.net["a.b"]  (module instance, 2 resources)
+          aws_subnet.private  (block, 2 resources)
+            aws_subnet.private[0]
+                -> aws_vpc.main
+                -> data.aws_availability_zones.available
+            aws_subnet.private[1]
+                -> aws_vpc.main
+                -> data.aws_availability_zones.available
+      aws_vpc.main
+    data.aws_availability_zones.available
