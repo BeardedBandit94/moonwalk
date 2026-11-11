@@ -1,0 +1,8 @@
+/moonwalk
+/dist/
+*.test
+*.out
+# Never commit real state: it routinely contains secrets.
+*.tfstate
+*.tfstate.backup
+!internal/**/testdata/*.tfstate

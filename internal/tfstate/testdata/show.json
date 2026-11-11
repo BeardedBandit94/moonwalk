@@ -1,0 +1,85 @@
+{
+  "format_version": "1.0",
+  "terraform_version": "1.9.5",
+  "values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "data.aws_availability_zones.available",
+          "mode": "data",
+          "type": "aws_availability_zones",
+          "name": "available",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {"id": "us-east-1"},
+          "sensitive_values": {}
+        },
+        {
+          "address": "aws_vpc.main",
+          "mode": "managed",
+          "type": "aws_vpc",
+          "name": "main",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 1,
+          "values": {"id": "vpc-1", "arn": "arn:aws:ec2:us-east-1:123456789012:vpc/vpc-1"},
+          "sensitive_values": {}
+        }
+      ],
+      "child_modules": [
+        {
+          "address": "module.net[\"a.b\"]",
+          "resources": [
+            {
+              "address": "module.net[\"a.b\"].aws_subnet.private[0]",
+              "mode": "managed",
+              "type": "aws_subnet",
+              "name": "private",
+              "index": 0,
+              "provider_name": "registry.terraform.io/hashicorp/aws",
+              "schema_version": 1,
+              "values": {"id": "subnet-0", "arn": "arn:aws:ec2:us-east-1:123456789012:subnet/subnet-0"},
+              "sensitive_values": {},
+              "depends_on": ["aws_vpc.main", "data.aws_availability_zones.available"]
+            },
+            {
+              "address": "module.net[\"a.b\"].aws_subnet.private[1]",
+              "mode": "managed",
+              "type": "aws_subnet",
+              "name": "private",
+              "index": 1,
+              "provider_name": "registry.terraform.io/hashicorp/aws",
+              "schema_version": 1,
+              "values": {"id": "subnet-1", "arn": "arn:aws:ec2:us-east-1:123456789012:subnet/subnet-1"},
+              "sensitive_values": {},
+              "depends_on": ["aws_vpc.main", "data.aws_availability_zones.available"]
+            },
+            {
+              "address": "module.net[\"a.b\"].aws_route_table_association.private[\"x]y\"]",
+              "mode": "managed",
+              "type": "aws_route_table_association",
+              "name": "private",
+              "index": "x]y",
+              "provider_name": "registry.terraform.io/hashicorp/aws",
+              "schema_version": 0,
+              "values": {"id": "rtbassoc-1"},
+              "sensitive_values": {},
+              "depends_on": ["module.net.aws_subnet.private", "aws_internet_gateway.gone"]
+            },
+            {
+              "address": "module.net[\"a.b\"].aws_route_table_association.private[\"x]y\"]",
+              "mode": "managed",
+              "type": "aws_route_table_association",
+              "name": "private",
+              "index": "x]y",
+              "provider_name": "registry.terraform.io/hashicorp/aws",
+              "schema_version": 0,
+              "values": {"id": "rtbassoc-0"},
+              "sensitive_values": {},
+              "deposed_key": "abcd1234"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
