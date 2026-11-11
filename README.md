@@ -62,15 +62,18 @@ inferred from resource attributes. Where the attributes do not settle a
 question, nothing is changed.
 
 - **Containment.** A resource that names a subnet or network by ID sits
-  inside it; one that spans several subnets sits in their network. This
-  works across states. Only AWS networks and subnets are covered so far.
+  inside it; one that spans several subnets sits in their network. A
+  database or cache that names a subnet group sits where the group's
+  subnets put it. This works across states. Only AWS networks and subnets
+  are covered so far.
 - **Which instance is meant.** State records a dependency on a block with
   `count` or `for_each` as a dependency on every instance. Where a
   resource's attributes hold a value that only some instances have, such as
   one subnet's ID, the other dependencies are dropped.
 - **Glue.** A resource named as an association, attachment or membership
   that only joins two others is folded into a link between them, shown as
-  `--`. `-glue` shows such resources instead.
+  `--`. So is a security group rule between two groups. `-glue` shows such
+  resources instead.
 
 ### The full graph
 
@@ -129,9 +132,15 @@ with `"(sensitive)"`:
   `private_key`, in case the version that wrote the file did not record
   every sensitive path.
 
-`show -json` output is the more reliable input, because it always carries
-the provider's own list of sensitive attributes. Treat redacted output as
-reduced risk, not as safe to publish.
+Older versions of Terraform and OpenTofu did not record the attributes that
+a provider declares sensitive, such as a generated password: state files
+written before version 1.8, and `show -json` output from before Terraform
+1.5. moonwalk cannot redact what is not marked, so it withholds every
+attribute value of such a state and says so. Relationships are still worked
+out from them. To see the attributes, load `show -json` output from version
+1.5 or later.
+
+Treat redacted output as reduced risk, not as safe to publish.
 
 An OpenTofu state encrypted at rest cannot be read directly; pipe
 `tofu show -json` into moonwalk instead.

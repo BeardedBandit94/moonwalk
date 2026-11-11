@@ -8,7 +8,9 @@
 //     backends actually store.
 //
 // State holds secrets in plain text. Attribute values are redacted before
-// they reach the graph; see redact.go for the rules.
+// they reach the graph; see redact.go for the rules. Older versions of
+// Terraform and OpenTofu did not record every sensitive attribute; nodes
+// from such a state are marked so that their attributes are never shown.
 package tfstate
 
 import (
@@ -16,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/BeardedBandit94/moonwalk/internal/graph"
@@ -83,6 +86,25 @@ type parsed struct {
 	// secrets holds the strings the parser redacted using the state's own
 	// sensitivity marks.
 	secrets secretSet
+	// withheld is true when the state comes from a version of Terraform or
+	// OpenTofu that did not record every sensitive attribute. Redaction is
+	// then incomplete, and the attributes must not be shown.
+	withheld bool
+}
+
+// versionAtLeast reports whether version, such as "1.9.5" or "1.10.0-rc1",
+// is at least major.minor. A version that cannot be read is not.
+func versionAtLeast(version string, major, minor int) bool {
+	parts := strings.SplitN(version, ".", 3)
+	if len(parts) < 2 {
+		return false
+	}
+	gotMajor, err1 := strconv.Atoi(parts[0])
+	gotMinor, err2 := strconv.Atoi(parts[1])
+	if err1 != nil || err2 != nil {
+		return false
+	}
+	return gotMajor > major || (gotMajor == major && gotMinor >= minor)
 }
 
 // resource is one resource instance. The parser fills every node field that
@@ -117,6 +139,7 @@ func add(g *graph.Graph, source string, p parsed) error {
 		n.ID = NodeID(source, n.Address)
 		n.ConfigAddress = tfaddr.ConfigAddress(n.Address)
 		n.Status = graph.StatusManaged
+		n.AttributesWithheld = p.withheld && len(n.Attributes) > 0
 		p.secrets.scrub(n.Attributes)
 		n.Account, n.Region = partition(n.Provider, n.Type, n.Attributes)
 		if n.Mode != graph.ModeManaged {
@@ -165,19 +188,23 @@ func add(g *graph.Graph, source string, p parsed) error {
 		}
 	}
 
+	nw := newNarrower(rs)
 	for i := range rs {
-		from := rs[i].node
+		from := &rs[i].node
 		steps := tfaddr.ModuleSteps(from.Module)
+		var held map[string]struct{}
 		for _, dep := range rs[i].dependsOn {
 			// State records a dependency as a resource block, not an instance.
 			// A block can be reached only from inside the module instances the
 			// two sides share, so targets in other instances of those modules
-			// are ruled out. Among the rest state does not say which instance
-			// is meant, so an edge goes to each. Dependencies on resources
-			// absent from state are dropped.
+			// are ruled out. Among the rest, the instances that the resource's
+			// own attributes point at are kept; see narrower. Dependencies on
+			// resources absent from state are dropped.
 			cfg := tfaddr.ConfigAddress(dep)
 			shared := sharedModules(steps, tfaddr.ModuleNames(cfg))
-			for _, to := range targets[targetKey(cfg, steps[:shared])] {
+			var meant []string
+			meant, held = nw.narrow(from, targets[targetKey(cfg, steps[:shared])], held)
+			for _, to := range meant {
 				if to == from.ID {
 					continue
 				}

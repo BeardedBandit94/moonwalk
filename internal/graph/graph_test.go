@@ -1,6 +1,11 @@
 package graph
 
-import "testing"
+import (
+	"bytes"
+	"encoding/json"
+	"strings"
+	"testing"
+)
 
 func TestAddNodeRejectsDuplicatesAndEmptyID(t *testing.T) {
 	g := New()
@@ -123,5 +128,53 @@ func TestIterators(t *testing.T) {
 	wantNodes, wantEdges := g.Len()
 	if nodes != 3 || edges != 2 || wantNodes != 3 || wantEdges != 2 {
 		t.Errorf("iterated %d nodes and %d edges; Len says %d and %d", nodes, edges, wantNodes, wantEdges)
+	}
+}
+
+func TestWithheldAttributesAreNeverSerialized(t *testing.T) {
+	shown := Node{ID: "a", Attributes: map[string]any{"password": "hunter2"}}
+	withheld := shown
+	withheld.AttributesWithheld = true
+
+	out, err := json.Marshal([]Node{shown, withheld})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Count(string(out), "hunter2"); got != 1 {
+		t.Errorf("the attributes appear %d times, want once, for the node that shows them: %s", got, out)
+	}
+	if withheld.Attributes == nil {
+		t.Error("serializing removed the attributes from the node itself")
+	}
+	var back []Node
+	if err := json.Unmarshal(out, &back); err != nil || !back[1].AttributesWithheld || back[1].Attributes != nil {
+		t.Errorf("round trip: %+v, %v", back, err)
+	}
+}
+
+// WriteJSON spells the layout out by hand, so it is checked against what
+// the standard encoder makes of the same document.
+func TestWriteJSONMatchesTheStandardEncoder(t *testing.T) {
+	full := build(t, "a>b", "b>c")
+	full.Update("a", func(n *Node) {
+		n.Attributes = map[string]any{"name": "<a & b>", "tags": map[string]any{"k": []any{1, "two"}}}
+	})
+	if err := full.AddEdge(Edge{From: "a", To: "c", Kind: EdgeLinks, Via: "b"}); err != nil {
+		t.Fatal(err)
+	}
+	for name, g := range map[string]*Graph{"full": full, "empty": New()} {
+		d := g.Document()
+		var want, got bytes.Buffer
+		enc := json.NewEncoder(&want)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(d); err != nil {
+			t.Fatal(err)
+		}
+		if err := d.WriteJSON(&got); err != nil {
+			t.Fatal(err)
+		}
+		if got.String() != want.String() {
+			t.Errorf("%s:\n--- WriteJSON\n%s--- encoding/json\n%s", name, got.String(), want.String())
+		}
 	}
 }

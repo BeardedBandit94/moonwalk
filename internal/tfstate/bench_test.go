@@ -61,14 +61,15 @@ func TestSyntheticStateShape(t *testing.T) {
 	if err := Load(g, "synthetic", bytes.NewReader(syntheticState(3))); err != nil {
 		t.Fatal(err)
 	}
-	// Per module: 9 subnets → network, 90 machines → network and 9 subnets.
-	if nodes, edges := len(g.Nodes()), len(g.Edges()); nodes != 300 || edges != 3*(9+90*10) {
-		t.Errorf("got %d nodes and %d edges, want 300 and %d", nodes, edges, 3*(9+90*10))
+	// Per module: 9 subnets → network, 90 machines → network and the one
+	// subnet each machine names.
+	if nodes, edges := len(g.Nodes()), len(g.Edges()); nodes != 300 || edges != 3*(9+90*2) {
+		t.Errorf("got %d nodes and %d edges, want 300 and %d", nodes, edges, 3*(9+90*2))
 	}
 }
 
-// BenchmarkLoad100k loads a state of 100,000 resources and about 900,000
-// dependencies.
+// BenchmarkLoad100k loads a state of 100,000 resources whose 900,000
+// recorded dependencies narrow down to 189,000.
 func BenchmarkLoad100k(b *testing.B) {
 	data := syntheticState(1000)
 	b.SetBytes(int64(len(data)))
