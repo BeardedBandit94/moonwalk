@@ -51,8 +51,10 @@ type Result struct {
 // is not authorized to perform: ec2:DescribeVpcs because no
 // identity-based policy allows ...". Azure: "... does not have
 // authorization to perform action 'Microsoft.Network/virtualNetworks/read'
-// over scope ...".
-var denied = regexp.MustCompile(`not authorized to perform: ([a-z0-9-]+:[A-Za-z0-9]+)|authorization to perform action '([A-Za-z0-9./_@-]+)'`)
+// over scope ...". Google Cloud: "Required 'compute.subnetworks.list'
+// permission for ..." or "Permission 'pubsub.topics.list' denied on ...".
+var denied = regexp.MustCompile(`not authorized to perform: ([a-z0-9-]+:[A-Za-z0-9]+)|authorization to perform action '([A-Za-z0-9./_@-]+)'|` +
+	`Required '([a-z][A-Za-z0-9]*\.[A-Za-z0-9]+\.[A-Za-z0-9]+)' permission|Permission '([a-z][A-Za-z0-9]*\.[A-Za-z0-9]+\.[A-Za-z0-9]+)' denied`)
 
 // defaultLimit is how many resources a list block returns unless it sets
 // a limit. Terraform stops there without saying so.
@@ -131,7 +133,7 @@ func Load(g *graph.Graph, source string, r io.Reader) (Result, error) {
 		if d := m.Diagnostic; d != nil && d.Severity == "error" {
 			res.Errors = append(res.Errors, strings.TrimSpace(d.Summary+": "+d.Detail))
 			for _, match := range denied.FindAllStringSubmatch(d.Summary+" "+d.Detail, -1) {
-				if action := match[1] + match[2]; !slices.Contains(res.Denied, action) {
+				if action := strings.Join(match[1:], ""); !slices.Contains(res.Denied, action) {
 					res.Denied = append(res.Denied, action)
 					sort.Strings(res.Denied)
 				}

@@ -12,6 +12,7 @@ import (
 
 	"github.com/BeardedBandit94/moonwalk/internal/awsiam"
 	"github.com/BeardedBandit94/moonwalk/internal/azurerbac"
+	"github.com/BeardedBandit94/moonwalk/internal/gcprole"
 )
 
 // listLimit is the limit written into every list block. Without one a
@@ -42,9 +43,12 @@ type queryFileOptions struct {
 	// azurerm provider what regions are to the aws one: a list block
 	// covers one, the provider's own unless it names another.
 	subscriptions []string
-	types         []string // Patterns of resource types to list; none means all.
-	provider      string   // Local name of the one provider to write for; "" means all.
-	identityOnly  bool     // Leave out include_resource.
+	// projects and zones are for Google Cloud, where a list block covers
+	// one project and, according to the type, one region, zone or location.
+	projects, zones []string
+	types           []string // Patterns of resource types to list; none means all.
+	provider        string   // Local name of the one provider to write for; "" means all.
+	identityOnly    bool     // Leave out include_resource.
 	// allow names the AWS actions that are withheld from a policy by
 	// default and wanted all the same; see awsiam.Withheld.
 	allow []string
@@ -116,6 +120,15 @@ func writeQueryFile(w io.Writer, schema []byte, o queryFileOptions) error {
 			leftOut, identityBecause = plan.LeftOut, plan.IdentityBecause
 			leftOutNote = "Left out, because listing them takes more than reading, which the role from\n" +
 				"# 'moonwalk azure-role' does not allow:"
+		case "google":
+			perms, err := gcprole.Load()
+			if err != nil {
+				return err
+			}
+			plan := perms.Plan(gcprole.Options{Types: listable, IdentityOnly: o.identityOnly})
+			leftOut, identityBecause = plan.LeftOut, plan.IdentityBecause
+			leftOutNote = "Left out, because the role from 'moonwalk gcp-role' does not cover them: listing\n" +
+				"# them takes more than reading, or something that could not be worked out:"
 		}
 		listable = slices.DeleteFunc(listable, func(t string) bool { return leftOut[t] != "" })
 
@@ -149,22 +162,51 @@ func writeQueryFile(w io.Writer, schema []byte, o queryFileOptions) error {
 		withheld("Listed without attributes, for the same reason:", identityBecause)
 		b.WriteByte('\n')
 		for _, t := range listable {
-			// The argument that says where to list, and the places asked for.
-			argument, places, prefix := "", []string(nil), ""
-			if _, takes := lists[t].Block.Attributes["region"]; takes {
-				argument, places = "region", o.regions
-			} else if _, takes := lists[t].Block.Attributes["subscription_id"]; takes {
-				// A subscription ID can start with a digit; a block name cannot.
-				argument, places, prefix = "subscription_id", o.subscriptions, "sub_"
+			// The arguments that say where to list, and the places asked
+			// for. A block covers one place of each kind, so there is a
+			// block for every combination.
+			takes := func(argument string) bool {
+				_, ok := lists[t].Block.Attributes[argument]
+				return ok
+			}
+			type setting struct{ argument, place, label string }
+			combinations := [][]setting{nil}
+			spread := func(argument string, places []string, prefix string) {
+				if !takes(argument) || len(places) == 0 {
+					return
+				}
+				var next [][]setting
+				for _, c := range combinations {
+					for _, place := range places {
+						next = append(next, append(slices.Clone(c), setting{argument, place, prefix + label(place)}))
+					}
+				}
+				combinations = next
+			}
+			// A subscription ID can start with a digit; a block name cannot.
+			spread("subscription_id", o.subscriptions, "sub_")
+			spread("project", o.projects, "")
+			switch {
+			case takes("region"):
+				spread("region", o.regions, "")
+			case takes("zone"):
+				spread("zone", o.zones, "")
+			case name == "google":
+				// What Google calls a location is, for these, a region.
+				spread("location", o.regions, "")
 			}
 			identityOnly := o.identityOnly || identityBecause[t] != ""
-			if len(places) == 0 {
-				writeListBlock(&b, t, "all", name, "", "", identityOnly)
-				written++
-				continue
-			}
-			for _, place := range places {
-				writeListBlock(&b, t, prefix+label(place), name, argument, place, identityOnly)
+			for _, c := range combinations {
+				blockName, settings := "all", [][2]string(nil)
+				if len(c) > 0 {
+					var labels []string
+					for _, s := range c {
+						labels = append(labels, s.label)
+						settings = append(settings, [2]string{s.argument, s.place})
+					}
+					blockName = strings.Join(labels, "_")
+				}
+				writeListBlock(&b, t, blockName, name, settings, identityOnly)
 				written++
 			}
 		}
@@ -196,15 +238,23 @@ func needsArgument(attributes map[string]struct {
 	return false
 }
 
-func writeListBlock(b *strings.Builder, resourceType, name, provider, argument, place string, identityOnly bool) {
+func writeListBlock(b *strings.Builder, resourceType, name, provider string, settings [][2]string, identityOnly bool) {
 	fmt.Fprintf(b, "list %q %q {\n", resourceType, name)
 	if identityOnly {
 		fmt.Fprintf(b, "  provider = %s\n  limit    = %d\n", provider, listLimit)
 	} else {
 		fmt.Fprintf(b, "  provider         = %s\n  include_resource = true\n  limit            = %d\n", provider, listLimit)
 	}
-	if argument != "" {
-		fmt.Fprintf(b, "\n  config {\n    %s = %q\n  }\n", argument, place)
+	if len(settings) > 0 {
+		width := 0
+		for _, s := range settings {
+			width = max(width, len(s[0]))
+		}
+		b.WriteString("\n  config {\n")
+		for _, s := range settings {
+			fmt.Fprintf(b, "    %-*s = %q\n", width, s[0], s[1])
+		}
+		b.WriteString("  }\n")
 	}
 	b.WriteString("}\n\n")
 }

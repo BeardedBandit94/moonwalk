@@ -37,6 +37,7 @@ const usage = `Usage:
   moonwalk query-file [options] <schema>
   moonwalk iam-policy [options] [<schema>]
   moonwalk azure-role [options] [<schema>]
+  moonwalk gcp-role   [options] [<schema>]
   moonwalk version
 
 Reads Terraform or OpenTofu states ('terraform show -json' output or raw
@@ -62,6 +63,9 @@ Reads Terraform or OpenTofu states ('terraform show -json' output or raw
   azure-role  writes the Azure custom role that running that query file
               takes: every permission named in full, reads only, no data
               actions, assignable only at the subscriptions named
+  gcp-role    writes the Google Cloud custom role that running that query
+              file takes: every permission named in full, each a list or
+              a get
 
 Add the configuration with -code to see where each resource is declared and
 the resources that are written but not applied yet. With -code and no state,
@@ -117,6 +121,11 @@ Options for query-file:
                listed in the provider's own region
   -subscription  comma-separated Azure subscription IDs to list in; without
                it, each type is listed in the provider's own subscription
+  -project, -zone  comma-separated Google Cloud projects and zones to list
+               in. A Google list block covers one project and one region,
+               zone or location, the provider's own unless it names
+               others; -region covers the types listed by region or
+               location, and -zone those listed by zone.
   -type        comma-separated patterns of resource types to list, such as
                'aws_iam_*'; without it, every type the provider can list
   -provider    write for this provider only, such as aws
@@ -150,6 +159,11 @@ Options for azure-role:
   -type, -identity-only   as for query-file, so that the role matches the
                query file written with the same options
   -name        the role's name (default: moonwalk discovery)
+
+Options for gcp-role:
+  -type, -identity-only   as for query-file, so that the role matches the
+               query file written with the same options
+  -title       the role's title (default: moonwalk discovery)
 
 Options for graph:
   -direct      leave out dependencies that others already imply
@@ -210,8 +224,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		_, err := fmt.Fprintln(stdout, "moonwalk", buildVersion())
 		return err
 	}
-	if len(args) == 0 || !slices.Contains([]string{"serve", "view", "graph", "collect", "diff", "query-file", "iam-policy", "azure-role"}, args[0]) {
-		return fmt.Errorf("expected one of the commands serve, view, graph, collect, diff, query-file, iam-policy or azure-role\n\n%s", usage)
+	if len(args) == 0 || !slices.Contains([]string{"serve", "view", "graph", "collect", "diff", "query-file", "iam-policy", "azure-role", "gcp-role"}, args[0]) {
+		return fmt.Errorf("expected one of the commands serve, view, graph, collect, diff, query-file, iam-policy, azure-role or gcp-role\n\n%s", usage)
 	}
 	command := args[0]
 	switch command {
@@ -223,6 +237,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		return runIAMPolicy(args[1:], stdin, stdout, stderr)
 	case "azure-role":
 		return runAzureRole(args[1:], stdin, stdout, stderr)
+	case "gcp-role":
+		return runGCPRole(args[1:], stdin, stdout, stderr)
 	}
 	var o options
 	fs := flag.NewFlagSet(command, flag.ContinueOnError)
@@ -431,6 +447,8 @@ func runQueryFile(args []string, stdin io.Reader, stdout io.Writer) error {
 	fs.SetOutput(io.Discard)
 	regions := fs.String("region", "", "")
 	subscriptions := fs.String("subscription", "", "")
+	projects := fs.String("project", "", "")
+	zones := fs.String("zone", "", "")
 	types := fs.String("type", "", "")
 	provider := fs.String("provider", "", "")
 	identityOnly := fs.Bool("identity-only", false, "")
@@ -452,7 +470,7 @@ func runQueryFile(args []string, stdin io.Reader, stdout io.Writer) error {
 		return err
 	}
 	return writeQueryFile(stdout, schema, queryFileOptions{
-		regions: list(*regions), subscriptions: list(*subscriptions), types: list(*types), provider: *provider, identityOnly: *identityOnly, allow: list(*allow),
+		regions: list(*regions), subscriptions: list(*subscriptions), projects: list(*projects), zones: list(*zones), types: list(*types), provider: *provider, identityOnly: *identityOnly, allow: list(*allow),
 	})
 }
 
