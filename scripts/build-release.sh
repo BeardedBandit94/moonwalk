@@ -3,8 +3,8 @@
 #
 #   scripts/build-release.sh 0.1.0 dist
 #
-# An archive holds the binary, the licence, the README and the licences of
-# what the binary is built from. Nothing is published; the release workflow
+# An archive holds the binary, the licence and notice, the README and the
+# licences of what the binary is built from. Nothing is published; the release workflow
 # does that with what this leaves behind.
 set -euo pipefail
 
@@ -32,11 +32,11 @@ for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 wi
   mkdir "$dir"
   CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -trimpath \
     -ldflags "-s -w -X main.version=$version" -o "$dir/$binary" ./cmd/moonwalk
-  cp LICENSE README.md "$work/THIRD_PARTY_LICENSES" "$dir/"
+  cp LICENSE NOTICE README.md "$work/THIRD_PARTY_LICENSES" "$dir/"
   if [ "$os" = windows ]; then
-    (cd "$dir" && zip -q "$out/$name.zip" "$binary" LICENSE README.md THIRD_PARTY_LICENSES)
+    (cd "$dir" && zip -q "$out/$name.zip" "$binary" LICENSE NOTICE README.md THIRD_PARTY_LICENSES)
   else
-    tar -C "$dir" -czf "$out/$name.tar.gz" "$binary" LICENSE README.md THIRD_PARTY_LICENSES
+    tar -C "$dir" -czf "$out/$name.tar.gz" "$binary" LICENSE NOTICE README.md THIRD_PARTY_LICENSES
   fi
   echo "built $name"
 done

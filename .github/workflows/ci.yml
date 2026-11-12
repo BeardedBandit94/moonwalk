@@ -57,7 +57,7 @@ jobs:
           test "$(ls moonwalk_0.0.0-ci_*.tar.gz moonwalk_0.0.0-ci_*.zip | wc -l)" = 6
           tar -xzf moonwalk_0.0.0-ci_linux_amd64.tar.gz
           test "$(./moonwalk version)" = "moonwalk 0.0.0-ci"
-          test -s THIRD_PARTY_LICENSES
+          test -s THIRD_PARTY_LICENSES && test -s NOTICE && test -s LICENSE
       - name: Check the Homebrew formula
         run: scripts/homebrew-formula.sh 0.0.0-ci dist > moonwalk.rb && ruby -c moonwalk.rb
       - name: Build the container image

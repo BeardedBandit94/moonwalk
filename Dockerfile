@@ -22,7 +22,7 @@ FROM scratch
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build /out/moonwalk /moonwalk
 COPY --from=build /out/THIRD_PARTY_LICENSES /THIRD_PARTY_LICENSES
-COPY LICENSE /LICENSE
+COPY LICENSE NOTICE /
 # Not root: moonwalk only reads what it is given.
 USER 65532:65532
 EXPOSE 7878
