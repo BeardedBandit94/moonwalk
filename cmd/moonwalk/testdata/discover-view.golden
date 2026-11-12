@@ -7,5 +7,6 @@
         prod::aws_subnet.private[0]
             -> prod::aws_vpc.main
       cloud::aws_subnet.subnet-0aa000000000000b2  (unmanaged)
+          -> prod::aws_vpc.main
       prod::aws_vpc.main
     cloud::aws_subnet.subnet-0aa000000000000c3  (unmanaged)
