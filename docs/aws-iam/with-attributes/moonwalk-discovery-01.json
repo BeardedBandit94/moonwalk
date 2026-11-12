@@ -1,0 +1,382 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "MoonwalkAccountAccess",
+      "Effect": "Allow",
+      "Action": [
+        "account-access:ListApplications"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkAccountAccessLimited",
+      "Effect": "Allow",
+      "Action": [
+        "account-access:GetApplication",
+        "account-access:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:account-access:*:111122223333:application/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkAcm",
+      "Effect": "Allow",
+      "Action": [
+        "acm:ListCertificates"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkAcmLimited",
+      "Effect": "Allow",
+      "Action": [
+        "acm:DescribeCertificate",
+        "acm:ListTagsForCertificate"
+      ],
+      "Resource": [
+        "arn:aws:acm:*:111122223333:certificate/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkAgentRegistry",
+      "Effect": "Allow",
+      "Action": [
+        "agent-registry:ListRegistries"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkAgentRegistryLimited",
+      "Effect": "Allow",
+      "Action": [
+        "agent-registry:GetRegistry",
+        "agent-registry:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:agent-registry:*:111122223333:registry/*",
+        "arn:aws:agent-registry:*:111122223333:registry/*/record/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkAidevops",
+      "Effect": "Allow",
+      "Action": [
+        "aidevops:ListAgentSpaces"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkAidevopsLimited",
+      "Effect": "Allow",
+      "Action": [
+        "aidevops:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:aidevops:*:111122223333:agentspace/*",
+        "arn:aws:aidevops:*:111122223333:private-connection/*",
+        "arn:aws:aidevops:*:111122223333:service/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkAoss",
+      "Effect": "Allow",
+      "Action": [
+        "aoss:BatchGetCollection",
+        "aoss:BatchGetCollectionGroup",
+        "aoss:BatchGetVpcEndpoint",
+        "aoss:ListCollectionGroups",
+        "aoss:ListCollections",
+        "aoss:ListVpcEndpoints"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkAossLimited",
+      "Effect": "Allow",
+      "Action": [
+        "aoss:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:aoss:*:111122223333:collection-group/*",
+        "arn:aws:aoss:*:111122223333:collection/*",
+        "arn:aws:aoss:*:111122223333:collection/*/ingestion-job/*",
+        "arn:aws:aoss:*:111122223333:collection/*/ingestion-stream/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkApigatewayLimited",
+      "Effect": "Allow",
+      "Action": [
+        "apigateway:GET"
+      ],
+      "Resource": [
+        "arn:aws:apigateway:*:111122223333:*",
+        "arn:aws:apigateway:*::*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkAppflow",
+      "Effect": "Allow",
+      "Action": [
+        "appflow:DescribeConnectorProfiles"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkAppflowLimited",
+      "Effect": "Allow",
+      "Action": [
+        "appflow:DescribeFlow",
+        "appflow:ListFlows"
+      ],
+      "Resource": [
+        "arn:aws:appflow:*:111122223333:flow/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkAps",
+      "Effect": "Allow",
+      "Action": [
+        "aps:ListScrapers"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkApsLimited",
+      "Effect": "Allow",
+      "Action": [
+        "aps:DescribeScraper",
+        "aps:DescribeScraperLoggingConfiguration"
+      ],
+      "Resource": [
+        "arn:aws:aps:*:111122223333:scraper/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkArcZonalShift",
+      "Effect": "Allow",
+      "Action": [
+        "arc-zonal-shift:ListManagedResources"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkArcZonalShiftLimited",
+      "Effect": "Allow",
+      "Action": [
+        "arc-zonal-shift:GetManagedResource"
+      ],
+      "Resource": [
+        "arn:aws:elasticloadbalancing:*:111122223333:loadbalancer/app/*",
+        "arn:aws:elasticloadbalancing:*:111122223333:loadbalancer/net/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkAutoscaling",
+      "Effect": "Allow",
+      "Action": [
+        "autoscaling:DescribeAutoScalingGroups"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkBackup",
+      "Effect": "Allow",
+      "Action": [
+        "backup:ListBackupPlans",
+        "backup:ListBackupVaults",
+        "backup:ListTags"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkBackupLimited",
+      "Effect": "Allow",
+      "Action": [
+        "backup:DescribeBackupVault",
+        "backup:GetBackupPlan",
+        "backup:GetBackupSelection",
+        "backup:ListBackupSelections"
+      ],
+      "Resource": [
+        "arn:aws:backup:*:111122223333:backup-plan:*",
+        "arn:aws:backup:*:111122223333:backup-vault:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkBatch",
+      "Effect": "Allow",
+      "Action": [
+        "batch:DescribeJobDefinitions",
+        "batch:DescribeJobQueues"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkBedrock",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:ListEvaluationJobs",
+        "bedrock:ListModelInvocationJobs"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkBedrockLimited",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:GetBlueprint",
+        "bedrock:GetDataAutomationLibrary",
+        "bedrock:GetDataAutomationProject",
+        "bedrock:GetEvaluationJob",
+        "bedrock:GetModelInvocationJob",
+        "bedrock:GetResourcePolicy",
+        "bedrock:ListBlueprints",
+        "bedrock:ListDataAutomationLibraries",
+        "bedrock:ListDataAutomationProjects",
+        "bedrock:ListGuardrails",
+        "bedrock:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:bedrock:*:111122223333:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkBedrockAgentcore",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock-agentcore:ListAgentRuntimeEndpoints",
+        "bedrock-agentcore:ListAgentRuntimes",
+        "bedrock-agentcore:ListBrowserProfiles",
+        "bedrock-agentcore:ListEvaluators",
+        "bedrock-agentcore:ListGateways",
+        "bedrock-agentcore:ListHarnesses",
+        "bedrock-agentcore:ListOnlineEvaluationConfigs",
+        "bedrock-agentcore:ListPolicyEngines",
+        "bedrock-agentcore:ListRegistries"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkBedrockAgentcoreLimited",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock-agentcore:GetGateway",
+        "bedrock-agentcore:GetHarness",
+        "bedrock-agentcore:GetOnlineEvaluationConfig",
+        "bedrock-agentcore:GetPolicyEngine",
+        "bedrock-agentcore:GetRegistry",
+        "bedrock-agentcore:GetResourcePolicy",
+        "bedrock-agentcore:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:bedrock-agentcore:*:111122223333:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkCleanrooms",
+      "Effect": "Allow",
+      "Action": [
+        "cleanrooms:ListCollaborations",
+        "cleanrooms:ListConfiguredTables",
+        "cleanrooms:ListMemberships"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkCleanroomsLimited",
+      "Effect": "Allow",
+      "Action": [
+        "cleanrooms:GetCollaboration",
+        "cleanrooms:GetConfiguredTable",
+        "cleanrooms:GetMembership",
+        "cleanrooms:ListMembers",
+        "cleanrooms:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:cleanrooms:*:111122223333:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkCloudfront",
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:ListDistributions",
+        "cloudfront:ListKeyValueStores"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkCloudwatch",
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:ListAccessGrants",
+        "cloudwatch:ListDomains",
+        "cloudwatch:ListSpaces",
+        "cloudwatch:ListViews"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkCloudwatchLimited",
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:DescribeAlarms",
+        "cloudwatch:GetAlarmMuteRule",
+        "cloudwatch:GetDomain",
+        "cloudwatch:GetSpace",
+        "cloudwatch:GetView",
+        "cloudwatch:ListAlarmMuteRules",
+        "cloudwatch:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:cloudwatch:*:111122223333:*",
+        "arn:aws:cloudwatch::111122223333:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkCodebuild",
+      "Effect": "Allow",
+      "Action": [
+        "codebuild:ListProjects"
+      ],
+      "Resource": [
+        "*"
+      ]
+    }
+  ]
+}

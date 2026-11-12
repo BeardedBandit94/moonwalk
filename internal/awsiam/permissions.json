@@ -250,6 +250,7 @@
    "list": [
     "cloudfront:ListDistributions"
    ],
+   "global": true,
    "list_unconfirmed": true,
    "read_unconfirmed": true
   },
@@ -257,6 +258,7 @@
    "list": [
     "cloudfront:ListKeyValueStores"
    ],
+   "global": true,
    "list_unconfirmed": true,
    "read_unconfirmed": true
   },
@@ -577,18 +579,21 @@
    "list": [
     "iam:ListAccessKeys",
     "iam:ListUsers"
-   ]
+   ],
+   "global": true
   },
   "aws_iam_group": {
    "list": [
     "iam:ListGroups"
-   ]
+   ],
+   "global": true
   },
   "aws_iam_group_policy_attachment": {
    "list": [
     "iam:ListAttachedGroupPolicies",
     "iam:ListGroups"
-   ]
+   ],
+   "global": true
   },
   "aws_iam_instance_profile": {
    "list": [
@@ -596,7 +601,8 @@
    ],
    "read": [
     "iam:GetInstanceProfile"
-   ]
+   ],
+   "global": true
   },
   "aws_iam_openid_connect_provider": {
    "list": [
@@ -604,7 +610,8 @@
    ],
    "read": [
     "iam:GetOpenIDConnectProvider"
-   ]
+   ],
+   "global": true
   },
   "aws_iam_policy": {
    "list": [
@@ -612,18 +619,21 @@
    ],
    "read": [
     "iam:GetPolicyVersion"
-   ]
+   ],
+   "global": true
   },
   "aws_iam_role": {
    "list": [
     "iam:ListRoles"
-   ]
+   ],
+   "global": true
   },
   "aws_iam_role_policy_attachment": {
    "list": [
     "iam:ListAttachedRolePolicies",
     "iam:ListRoles"
-   ]
+   ],
+   "global": true
   },
   "aws_iam_user": {
    "list": [
@@ -631,13 +641,15 @@
    ],
    "read": [
     "iam:ListUserTags"
-   ]
+   ],
+   "global": true
   },
   "aws_iam_user_policy_attachment": {
    "list": [
     "iam:ListAttachedUserPolicies",
     "iam:ListUsers"
-   ]
+   ],
+   "global": true
   },
   "aws_instance": {
    "list": [
@@ -981,7 +993,8 @@
   "aws_organizations_aws_service_access": {
    "list": [
     "organizations:ListAWSServiceAccessForOrganization"
-   ]
+   ],
+   "global": true
   },
   "aws_osis_pipeline": {
    "list": [
@@ -1032,7 +1045,8 @@
    ],
    "read": [
     "pricingplanmanager:GetSubscription"
-   ]
+   ],
+   "global": true
   },
   "aws_prometheus_scraper": {
    "list": [
@@ -1132,7 +1146,8 @@
    "read": [
     "route53:GetHostedZone",
     "route53:ListTagsForResource"
-   ]
+   ],
+   "global": true
   },
   "aws_route_table": {
    "list": [

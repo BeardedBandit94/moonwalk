@@ -35,8 +35,8 @@ func runIAMPolicy(args []string, stdin io.Reader, stdout, stderr io.Writer) erro
 	if err := fs.Parse(args); err != nil {
 		return fmt.Errorf("%w\n\n%s", err, usage)
 	}
-	if fs.NArg() > 1 || (fs.NArg() == 0 && len(states) == 0) {
-		return fmt.Errorf("expected a schema file (or - for standard input), -state, or both\n\n%s", usage)
+	if fs.NArg() > 1 {
+		return fmt.Errorf("expected one schema file at most, or - for standard input\n\n%s", usage)
 	}
 	if len(keys) > 0 && len(states) == 0 {
 		return fmt.Errorf("-kms-key goes with -state: it is the key the states are encrypted with")
@@ -48,24 +48,40 @@ func runIAMPolicy(args []string, stdin io.Reader, stdout, stderr io.Writer) erro
 	}
 	var files []file
 
-	if fs.NArg() == 1 {
-		var schema []byte
-		var err error
-		if fs.Arg(0) == "-" {
-			schema, err = io.ReadAll(stdin)
-		} else {
-			schema, err = os.ReadFile(fs.Arg(0))
-		}
-		if err != nil {
-			return err
-		}
-		listed, global, err := awsListTypes(schema, list(*types))
-		if err != nil {
-			return err
-		}
+	// With a schema, the policy is for what that provider can list. With
+	// none, it is for what the recorded provider can, unless only states
+	// were asked about.
+	if fs.NArg() == 1 || len(states) == 0 || *types != "" {
 		perms, err := awsiam.Load()
 		if err != nil {
 			return err
+		}
+		var listed []string
+		var global map[string]bool
+		if fs.NArg() == 1 {
+			var schema []byte
+			if fs.Arg(0) == "-" {
+				schema, err = io.ReadAll(stdin)
+			} else {
+				schema, err = os.ReadFile(fs.Arg(0))
+			}
+			if err != nil {
+				return err
+			}
+			if listed, global, err = awsListTypes(schema, list(*types)); err != nil {
+				return err
+			}
+		} else {
+			for t := range perms.Types {
+				if *types == "" || matchesAnyPattern(list(*types), t) {
+					listed = append(listed, t)
+				}
+			}
+			if len(listed) == 0 {
+				return fmt.Errorf("no resource type recorded from %s matches %s", perms.Provider, *types)
+			}
+			fmt.Fprintf(stderr, "moonwalk: no provider schema was given, so this is for what %s can list. "+
+				"Give the schema of the provider in use to match its query file exactly.\n", perms.Provider)
 		}
 		docs, plan, err := perms.Policies(awsiam.Options{
 			Types: listed, IdentityOnly: *identityOnly, Regions: list(*regions), Global: global,

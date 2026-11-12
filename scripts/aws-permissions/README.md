@@ -18,11 +18,15 @@ the build.
   ```
 
 - A moonwalk binary, for the query files.
-- Python 3 with `botocore`, `cbor2` and `policy_sentry`:
+- Python 3 with `botocore` and `cbor2`:
 
   ```bash
-  python3 -m venv venv && venv/bin/pip install botocore cbor2 policy_sentry
+  python3 -m venv venv && venv/bin/pip install botocore cbor2
   ```
+
+- Access to `servicereference.us-east-1.amazonaws.com`, where AWS
+  publishes what authorizes each API operation. `derive.py` downloads it
+  once into the directory given as `--cache`.
 
 ## Running it
 
@@ -32,12 +36,14 @@ venv/bin/python probe.py --terraform terraform --moonwalk moonwalk \
 ```
 
 ```bash
-venv/bin/python derive.py --calls calls.json --provider "hashicorp/aws <version>" \
+venv/bin/python derive.py --calls calls.json --schema schema.json \
+  --provider "hashicorp/aws <version>" --cache reference \
   --out ../../internal/awsiam/permissions.json
 ```
 
-Then `go test ./internal/awsiam ./cmd/moonwalk -update` to rewrite the
-example policies, and read the difference before committing it.
+Then `go test ./cmd/moonwalk -update` to rewrite the example policies in
+`docs/aws-iam`, and read the difference before committing it: it is the
+change in what moonwalk asks an account for.
 
 ## How it works
 
@@ -49,10 +55,11 @@ provider finds one resource of each type and reads it as it would a real
 one. The access key of each run says which type and which way, so every
 recorded call is known to belong to it.
 
-`derive.py` names the IAM action for each call (the service it was signed
-for and the operation, with the few exceptions it lists), and refuses to
-write anything unless every action exists in AWS's catalogue and is of
-access level List or Read.
+`derive.py` looks each call up in AWS's Service Reference, which says which
+actions authorize an operation, whether an action writes, manages
+permissions or only tags, and which kinds of resource it can be limited
+to. A type is written out only if every call it made is answered there and
+every action is a plain read; the rest are reported and left out.
 
 ## What it cannot see
 

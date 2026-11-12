@@ -2,8 +2,8 @@
 """Turns what probe.py recorded into the IAM actions each resource type
 needs, by AWS's own account of them.
 
-    derive.py --calls calls.json [--calls more.json] --provider "hashicorp/aws 6.73.0" \\
-              --cache <directory> --out permissions.json
+    derive.py --calls calls.json [--calls more.json] --schema schema.json \\
+              --provider "hashicorp/aws 6.73.0" --cache <directory> --out permissions.json
 
 AWS publishes, for every service, which actions each API operation is
 authorized by, what each action is (a write, a listing, permission
@@ -49,6 +49,7 @@ def load_reference(cache):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--calls", required=True, action="append", help="later files replace the types they hold")
+    p.add_argument("--schema", required=True, help="the provider schema the calls were recorded with")
     p.add_argument("--provider", required=True)
     p.add_argument("--cache", required=True)
     p.add_argument("--out", required=True)
@@ -75,6 +76,9 @@ def main():
     recorded = {}
     for path in args.calls:
         recorded.update(json.load(open(path)))
+    # A type whose list block takes no region belongs to a global service.
+    lists = json.load(open(args.schema))["provider_schemas"]["registry.terraform.io/hashicorp/aws"]["list_resource_schemas"]
+    is_global = {t: "region" not in s.get("block", {}).get("attributes", {}) for t, s in lists.items()}
 
     actions = {}
     types = {}
@@ -134,6 +138,8 @@ def main():
         read = sorted(sets["resource"] - sets["identity"])
         if read:
             entry["read"] = read
+        if is_global.get(resource_type):
+            entry["global"] = True
         # Whether the stand-in's made-up answers took the provider all the
         # way through. Where they did not, a real account may show calls
         # that are not recorded here.

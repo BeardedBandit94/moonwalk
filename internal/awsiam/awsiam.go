@@ -52,6 +52,9 @@ type TypePermissions struct {
 	// a real account may show more.
 	ListUnconfirmed bool `json:"list_unconfirmed,omitempty"`
 	ReadUnconfirmed bool `json:"read_unconfirmed,omitempty"`
+	// Global is true for a type that has no region: its service answers
+	// from one region for all of them.
+	Global bool `json:"global,omitempty"`
 }
 
 // Action is what AWS's catalogue says of one action.
@@ -110,8 +113,10 @@ type Options struct {
 	// takes, for list blocks without include_resource.
 	IdentityOnly bool
 	// Regions limits every action of a regional service to these
-	// regions. Global lists the types that have no region, whose actions
-	// are left alone: their service answers from one region for all.
+	// regions. The actions of types that have no region are left alone:
+	// their service answers from one region for all. Global says which
+	// those are, for a provider that differs from the one recorded; nil
+	// means as recorded.
 	Regions []string
 	Global  map[string]bool
 	// Account limits resources to one account where an action can be
@@ -205,9 +210,13 @@ func (p *Permissions) Policies(o Options) (docs []Document, plan Plan, err error
 	used, global := map[string]bool{}, map[string]bool{}
 	use := func(types []string, actions func(TypePermissions) []string) {
 		for _, t := range types {
+			isGlobal := p.Types[t].Global
+			if o.Global != nil {
+				isGlobal = o.Global[t]
+			}
 			for _, a := range actions(p.Types[t]) {
 				used[a] = true
-				global[a] = global[a] || o.Global[t]
+				global[a] = global[a] || isGlobal
 			}
 		}
 	}
