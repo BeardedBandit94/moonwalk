@@ -8,8 +8,10 @@ and the live cloud environment side by side in a single interactive view.
 
 Early. What works today: loading state, code, plans and listings of the
 cloud into one graph and exploring it in the browser, or printing it, either
-collapsed into groups or in full; collecting that graph into snapshots to
-look at together; and comparing two of them.
+collapsed into groups or in full; reading states straight from S3;
+collecting the graph into snapshots to look at together; and comparing two
+of them. AWS is covered best, Azure second; Google resources load, with
+their project and region, and nothing more is worked out about them yet.
 
 ### The explorer
 
@@ -193,6 +195,9 @@ managed resources they sit among.
   printed. `query-file -identity-only` leaves them out altogether.
 - **Cloud defaults are left out**: default security groups, service-linked
   roles. The AWS provider itself leaves out default networks and subnets.
+- **Azure subscriptions.** A list block of the `azurerm` provider covers one
+  subscription, the provider's own unless it names another:
+  `query-file -subscription <id>,<id>` writes a block for each.
 - **Errors make it incomplete.** If the listing reports one, such as a type
   it may not list, moonwalk warns.
 - **Only what is listed is found.** The AWS provider (6.73) can list 280 of
@@ -206,7 +211,8 @@ managed resources they sit among.
   `terraform query -generate-config-out=generated.tf`.
 
 Listing needs credentials that can read, and nothing more; moonwalk itself
-never touches the cloud. On AWS, the managed policies `ViewOnlyAccess` and
+never touches the cloud, unless it is given the address of a state in S3,
+and then it reads that and nothing else. On AWS, the managed policies `ViewOnlyAccess` and
 `SecurityAudit` are the usual pair for this, narrower than `ReadOnlyAccess`,
 which can also read the data inside buckets and tables. Which is enough
 depends on the types listed, and has not been tried here against a real
@@ -237,6 +243,28 @@ network. The first command knows only resources that have, or once had,
 tags; the second needs Resource Explorer switched on. Both page their
 results: make sure the file holds all of them.
 
+For Azure, any of these works the same way:
+
+```bash
+az resource list > found.json
+```
+
+```bash
+az group list > groups.json
+```
+
+```bash
+az graph query -q "Resources" --first 1000 > found.json
+```
+
+A resource is matched to state by its ID, compared without regard to case,
+as Azure compares IDs. An unmanaged one is placed in its subscription,
+resource group and region, but not in a network. Left out as Azure's own:
+network watchers, the resource group a Kubernetes cluster keeps its nodes
+in (`MC_...`) and what is in it. A listing does not say whether a virtual
+machine runs Linux or Windows, so an unmanaged one shows as
+`azurerm_virtual_machine`. Resource Graph pages its results too.
+
 ### What moonwalk works out
 
 State does not record everything worth showing, so some of the graph is
@@ -244,25 +272,33 @@ inferred from resource attributes. Where the attributes do not settle a
 question, nothing is changed.
 
 - **Containment.** A resource that names a subnet or network by ID sits
-  inside it; one that spans several subnets sits in their network. A
+  inside it; one that spans several subnets sits in their network. This
+  works across states, for AWS and Azure networks and subnets. On AWS, a
   database or cache that names a subnet group sits where the group's
-  subnets put it. This works across states. Only AWS networks and subnets
-  are covered so far.
+  subnets put it. On Azure, a virtual machine sits where its network
+  interfaces do, and a subnet or peering is part of the network its ID
+  starts with.
 - **Which instance is meant.** State records a dependency on a block with
   `count` or `for_each` as a dependency on every instance. Where a
   resource's attributes hold a value that only some instances have, such as
-  one subnet's ID, the other dependencies are dropped.
+  one subnet's ID, the other dependencies are dropped. Where they hold
+  none, as a virtual machine holds only its network interface's ID and
+  state still lists the subnets, the instances kept are the ones that the
+  resource's other dependencies depend on.
+- **Region by parent.** An Azure subnet states no location, nor does a
+  database on a server. Each takes the region of the resource its ID says
+  it is part of, marked `region_inferred`.
 - **Links between states.** A resource that holds the ID or ARN of a
   resource in another state depends on it. The value has to appear where a
   reference would: under an attribute named like one (`vpc_id`,
   `role_arn`, `subnet_ids`), as a path such as an ARN, among the outputs
   of a `terraform_remote_state` data source, or as the ID of a data
   source that looked the resource up. An ID that two resources claim
-  links nothing.
+  links nothing. Azure IDs are compared without regard to case.
 - **Glue.** A resource named as an association, attachment or membership
   that only joins two others is folded into a link between them, shown as
-  `--`. So is a security group rule between two groups. `-glue` shows such
-  resources instead.
+  `--`. So is a security group rule between two groups, and an Azure
+  peering between two networks. `-glue` shows such resources instead.
 
 ### The full graph
 
@@ -286,8 +322,8 @@ plan; see below.
 ### Several states
 
 Any number of states load into one graph, each as its own source. A state is
-a file, a directory (every `.tfstate` file below it), or `-` for standard
-input, optionally given a shorter name:
+a file, a directory (every `.tfstate` file below it), an address in S3
+(see below), or `-` for standard input, optionally given a shorter name:
 
 ```bash
 go run ./cmd/moonwalk graph network=network.tfstate app=app.tfstate
@@ -300,8 +336,39 @@ go run ./cmd/moonwalk graph live=./environments
 A resource that names one in another state is linked to it; see
 [what moonwalk works out](#what-moonwalk-works-out).
 
-State kept in a remote backend, such as an S3 bucket, is read through
-Terraform, which already knows where it is and how to get at it:
+### States in S3
+
+A state that the `s3` backend keeps in a bucket is read where it is:
+
+```bash
+go run ./cmd/moonwalk serve prod=s3://acme-terraform-state/prod/network/terraform.tfstate
+```
+
+An address that ends in `/`, or names only the bucket, loads every object
+below it whose key ends in `.tfstate`, each named by the rest of its key.
+That is a whole organization's states in one command, workspaces included,
+since the backend keeps those under `env:/<workspace>/`:
+
+```bash
+go run ./cmd/moonwalk serve live=s3://acme-terraform-state/
+```
+
+Credentials and the region come from where the AWS command line and
+Terraform take them: the environment, `~/.aws` and its profiles
+(`AWS_PROFILE`), single sign-on, an assumed role, or the machine moonwalk
+runs on. A bucket in another region than the configured one is found.
+Reading needs `s3:GetObject` on the states and, for an address ending in
+`/`, `s3:ListBucket` on the bucket; if the bucket is encrypted with a KMS
+key, `kms:Decrypt` on that key as well. Nothing is written and no lock is
+taken. Another store that speaks the S3 protocol is reached by setting
+`AWS_ENDPOINT_URL_S3`.
+
+States in S3 are read once: the explorer does not reload them when they
+change, as it does files on disk. To keep a copy for later, or to compare
+one day with the next, `collect` them into a snapshot (below).
+
+State kept in any other backend is read through Terraform, which already
+knows where it is and how to get at it:
 
 ```bash
 terraform state pull | go run ./cmd/moonwalk view prod=-
@@ -394,6 +461,14 @@ is marked `account_inferred` in JSON output. The same goes for the region of
 an AWS resource (`region_inferred`). AWS resources of services without
 regions, such as IAM, get the region `global`.
 
+An Azure resource also records its resource group, taken from its
+`resource_group_name` or its ID. `-group-by` takes `resource_group` as a
+level, and the explorer offers it when there are any:
+
+```bash
+go run ./cmd/moonwalk view -group-by account,resource_group,network terraform.tfstate
+```
+
 ### Attributes and secrets
 
 State stores secrets in plain text. moonwalk prints attribute values only
@@ -433,7 +508,9 @@ and a snapshot, carry a `schema_version`. It changes only when a field is remove
 | `internal/graph` | The normalized graph model every input is translated into |
 | `internal/tfstate` | Adapter from Terraform and OpenTofu state to the graph |
 | `internal/tfcode` | Adapter from Terraform and OpenTofu configuration to the graph |
-| `internal/discover` | Adapter from `terraform query` output to the graph |
+| `internal/discover` | Adapter from `terraform query` output, and from AWS and Azure CLI listings, to the graph |
+| `internal/s3state` | Reads states from S3; `s3test` is a stand-in for S3 to test against |
+| `internal/azureid` | Parsing and comparison of Azure resource IDs |
 | `internal/relate` | Relationships inferred from attributes: containment, glue, links between states |
 | `internal/snapshot` | A graph written to a file and read back, and the comparison of two |
 | `internal/view` | Grouping of a graph, filters, and the collapsed views of it |

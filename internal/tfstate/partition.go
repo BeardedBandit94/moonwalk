@@ -3,6 +3,7 @@ package tfstate
 import (
 	"strings"
 
+	"github.com/BeardedBandit94/moonwalk/internal/azureid"
 	"github.com/BeardedBandit94/moonwalk/internal/graph"
 )
 
@@ -42,6 +43,19 @@ func CloudID(provider string, attrs map[string]any) string {
 		return ""
 	}
 	return str(attrs, "id")
+}
+
+// ResourceGroup returns the Azure resource group a resource is in: the one
+// it names, or failing that the one in its ID. It is empty for other
+// providers, which have nothing of the kind.
+func ResourceGroup(provider string, attrs map[string]any) string {
+	if lastSegment(provider) != "azurerm" {
+		return ""
+	}
+	if name := str(attrs, "resource_group_name"); name != "" {
+		return name
+	}
+	return azureid.Part(str(attrs, "id"), "resourceGroups")
 }
 
 // infersRegion reports whether a resource of this provider that states no
@@ -112,11 +126,7 @@ func isAWSAccountID(s string) bool {
 // azurePartition takes the subscription from the resource ID
 // (/subscriptions/<id>/resourceGroups/...) and the region from location.
 func azurePartition(attrs map[string]any) (account, region string) {
-	parts := strings.Split(str(attrs, "id"), "/")
-	if len(parts) >= 3 && parts[0] == "" && strings.EqualFold(parts[1], "subscriptions") {
-		account = parts[2]
-	}
-	return account, str(attrs, "location")
+	return azureid.Part(str(attrs, "id"), "subscriptions"), str(attrs, "location")
 }
 
 // googlePartition uses project as the account. Region comes from region,

@@ -71,7 +71,7 @@ func MarkGlue(g *graph.Graph) int {
 // glueType reports whether a resource type is named as something that
 // joins two others. The convention holds across providers. A few types do
 // the same job under another name: a security group rule that names a
-// second group joins the two.
+// second group joins the two, and a peering joins two networks.
 func glueType(resourceType string) bool {
 	for _, suffix := range []string{"_association", "_attachment", "_membership"} {
 		if strings.HasSuffix(resourceType, suffix) {
@@ -81,6 +81,8 @@ func glueType(resourceType string) bool {
 	switch resourceType {
 	case "aws_security_group_rule", "aws_vpc_security_group_ingress_rule", "aws_vpc_security_group_egress_rule":
 		return true
+	case "azurerm_virtual_network_peering":
+		return true // Joins two networks, one resource for each direction.
 	}
 	return false
 }

@@ -82,6 +82,10 @@ type Node struct {
 	// empty when unknown, and Region is also empty for global resources.
 	Account string `json:"account,omitempty"`
 	Region  string `json:"region,omitempty"`
+	// ResourceGroup is the named group within the account that the
+	// resource belongs to, where the cloud has such a thing: an Azure
+	// resource group. It is empty otherwise.
+	ResourceGroup string `json:"resource_group,omitempty"`
 	// AccountInferred is true when Account was not stated by the resource
 	// itself but taken from other resources that share its provider.
 	AccountInferred bool `json:"account_inferred,omitempty"`

@@ -347,6 +347,10 @@ func TestParseDimensions(t *testing.T) {
 	if err != nil || !reflect.DeepEqual(got, []Dimension{ByModule, ByAccount}) {
 		t.Errorf("got %v, %v", got, err)
 	}
+	got, err = ParseDimensions("account,resource_group,network")
+	if err != nil || !reflect.DeepEqual(got, []Dimension{ByAccount, ByResourceGroup, ByNetwork}) {
+		t.Errorf("got %v, %v", got, err)
+	}
 	for _, bad := range []string{"", "zone", "account,account", "account,"} {
 		if _, err := ParseDimensions(bad); err == nil {
 			t.Errorf("%q accepted", bad)
@@ -505,5 +509,40 @@ func BenchmarkBuildAndView100k(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		tree := Build(g, Options{Dimensions: DefaultDimensions})
 		tree.AtDepth(tree.AutoDepth(Budget))
+	}
+}
+
+// Resources with a resource group sit in a group named after it; the rest
+// stay where the levels above put them.
+func TestResourceGroupLevel(t *testing.T) {
+	g := graph.New()
+	for _, n := range []graph.Node{
+		{ID: "s::a", Source: "s", Address: "azurerm_storage_account.a", Type: "azurerm_storage_account", Account: "sub-1", ResourceGroup: "rg-app"},
+		{ID: "s::b", Source: "s", Address: "azurerm_storage_account.b", Type: "azurerm_storage_account", Account: "sub-1", ResourceGroup: "rg-app"},
+		{ID: "s::c", Source: "s", Address: "azurerm_storage_account.c", Type: "azurerm_storage_account", Account: "sub-1", ResourceGroup: "rg-data"},
+		{ID: "s::d", Source: "s", Address: "aws_s3_bucket.d", Type: "aws_s3_bucket", Account: "123456789012"},
+	} {
+		if err := g.AddNode(n); err != nil {
+			t.Fatal(err)
+		}
+	}
+	tree := Build(g, Options{Dimensions: []Dimension{ByAccount, ByResourceGroup}})
+	d := tree.Document(8)
+	var lines []string
+	for _, it := range d.Items {
+		lines = append(lines, strings.Repeat("  ", it.Depth-1)+string(it.Kind)+" "+it.Label)
+	}
+	want := []string{
+		"account 123456789012",
+		"  resource s::aws_s3_bucket.d",
+		"account sub-1",
+		"  resource_group rg-app",
+		"    resource s::azurerm_storage_account.a",
+		"    resource s::azurerm_storage_account.b",
+		"  resource_group rg-data",
+		"    resource s::azurerm_storage_account.c",
+	}
+	if !reflect.DeepEqual(lines, want) {
+		t.Errorf("got\n%s\nwant\n%s", strings.Join(lines, "\n"), strings.Join(want, "\n"))
 	}
 }

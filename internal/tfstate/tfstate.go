@@ -161,6 +161,7 @@ func add(g *graph.Graph, source string, p parsed) error {
 		p.secrets.scrub(n.Attributes)
 		n.Account, n.Region = Partition(n.Provider, n.Type, n.Attributes)
 		n.CloudID = CloudID(n.Provider, n.Attributes)
+		n.ResourceGroup = ResourceGroup(n.Provider, n.Attributes)
 		if n.Mode != graph.ModeManaged {
 			continue
 		}
@@ -208,6 +209,7 @@ func add(g *graph.Graph, source string, p parsed) error {
 	}
 
 	nw := newNarrower(rs)
+	deps := map[string][]string{}
 	for i := range rs {
 		from := &rs[i].node
 		steps := tfaddr.ModuleSteps(from.Module)
@@ -230,9 +232,11 @@ func add(g *graph.Graph, source string, p parsed) error {
 				if err := g.AddEdge(graph.Edge{From: from.ID, To: to, Kind: graph.EdgeDependsOn}); err != nil {
 					return err
 				}
+				deps[from.ID] = append(deps[from.ID], to)
 			}
 		}
 	}
+	nw.settle(g, deps)
 	return nil
 }
 

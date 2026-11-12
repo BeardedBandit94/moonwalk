@@ -307,6 +307,14 @@ func (f *found) node(source string) graph.Node {
 	if account != "" || region != "" {
 		id += "@" + account + "/" + region
 	}
+	// In Azure it repeats across resource groups as well.
+	group := tfstate.ResourceGroup(provider, f.ResourceObject)
+	if group == "" && provider == "azurerm" {
+		group = parts["resource_group_name"]
+	}
+	if group != "" {
+		id += "/" + group
+	}
 	return graph.Node{
 		ID:                 id,
 		Source:             source,
@@ -318,6 +326,7 @@ func (f *found) node(source string) graph.Node {
 		Status:             graph.StatusUnmanaged,
 		Account:            account,
 		Region:             region,
+		ResourceGroup:      group,
 		CloudID:            cloudID,
 		Attributes:         f.ResourceObject,
 		AttributesWithheld: len(f.ResourceObject) > 0,

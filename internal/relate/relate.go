@@ -14,6 +14,7 @@ import (
 type Result struct {
 	CrossState int // Dependencies added between resources in different sources.
 	Contained  int // Containment edges added.
+	Regions    int // Resources given the region of the resource they are part of.
 	Glue       int // Resources marked as glue.
 }
 
@@ -22,6 +23,7 @@ func Enrich(g *graph.Graph) Result {
 	return Result{
 		CrossState: CrossState(g),
 		Contained:  Containment(g),
+		Regions:    InheritRegions(g),
 		Glue:       MarkGlue(g),
 	}
 }

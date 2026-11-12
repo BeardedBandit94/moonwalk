@@ -1,0 +1,40 @@
+14 resources in 19 items, grouped by source, account, region, module
+2 glue resources folded into links marked -- (-glue shows them)
+
+az  (source, 14 resources)
+  11111111-2222-3333-4444-555555555555  (account, 14 resources)
+    northeurope  (region, 3 resources)
+      azurerm_resource_group.shared
+      azurerm_storage_account.logs
+          -> azurerm_resource_group.shared
+      azurerm_virtual_network.hub
+          -- westeurope / azurerm_virtual_network.app
+          -> azurerm_resource_group.shared
+    westeurope  (region, 11 resources)
+      azurerm_subnet.app  (block, 2 resources)
+        azurerm_subnet.app["data"]
+            -> azurerm_virtual_network.app
+        azurerm_subnet.app["web"]
+            -- azurerm_network_security_group.web
+            -> azurerm_virtual_network.app
+      azurerm_kubernetes_cluster.app
+          -> azurerm_subnet.app / azurerm_subnet.app["data"]
+          -> azurerm_subnet.app / azurerm_subnet.app["web"]
+      azurerm_linux_virtual_machine.web
+          -> azurerm_network_interface.web
+      azurerm_mssql_database.app
+          -> azurerm_mssql_server.app
+      azurerm_mssql_server.app
+          -> azurerm_resource_group.app
+      azurerm_network_interface.web
+          -> azurerm_subnet.app / azurerm_subnet.app["web"]
+      azurerm_network_security_group.web
+          -> azurerm_resource_group.app
+          -- azurerm_subnet.app / azurerm_subnet.app["web"]
+      azurerm_private_endpoint.sql
+          -> azurerm_mssql_server.app
+          -> azurerm_subnet.app / azurerm_subnet.app["data"]
+      azurerm_resource_group.app
+      azurerm_virtual_network.app
+          -> azurerm_resource_group.app
+          -- northeurope / azurerm_virtual_network.hub
