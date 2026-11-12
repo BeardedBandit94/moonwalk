@@ -352,9 +352,13 @@ func acyclic(next map[string][]string, incoming map[string]int) bool {
 
 // Document is the stable, serializable form of a graph.
 type Document struct {
-	SchemaVersion int    `json:"schema_version"`
-	Nodes         []Node `json:"nodes"`
-	Edges         []Edge `json:"edges"`
+	SchemaVersion int `json:"schema_version"`
+	// Kind and Created are set on a snapshot: a document written to be
+	// loaded again later. Created is a time in RFC 3339 form.
+	Kind    string `json:"kind,omitempty"`
+	Created string `json:"created,omitempty"`
+	Nodes   []Node `json:"nodes"`
+	Edges   []Edge `json:"edges"`
 }
 
 // WriteJSON writes the document as indented JSON, one node or edge at a
@@ -362,38 +366,72 @@ type Document struct {
 // text. The output is what encoding/json would produce for the whole
 // document with a two-space indent.
 func (d Document) WriteJSON(w io.Writer) error {
+	return d.write(w, true)
+}
+
+// WriteCompact writes the document as JSON with each node and each edge on
+// a line of its own. It is the form to keep in a file: about a quarter
+// smaller than the indented one, quicker to read back, and still compared
+// line by line by the usual tools.
+func (d Document) WriteCompact(w io.Writer) error {
+	return d.write(w, false)
+}
+
+func (d Document) write(w io.Writer, indent bool) error {
+	// The separators of the two forms, at the top level and in an array.
+	sep, gap, item := "\n  ", " ", "\n    "
+	if !indent {
+		sep, gap, item = "\n", "", "\n"
+	}
 	bw := bufio.NewWriter(w)
-	fmt.Fprintf(bw, "{\n  \"schema_version\": %d,\n  \"nodes\": ", d.SchemaVersion)
-	if err := writeArray(bw, d.Nodes); err != nil {
+	fmt.Fprintf(bw, "{%s\"schema_version\":%s%d", sep, gap, d.SchemaVersion)
+	for _, field := range [][2]string{{"kind", d.Kind}, {"created", d.Created}} {
+		if field[1] != "" {
+			value, err := json.Marshal(field[1])
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(bw, ",%s%q:%s%s", sep, field[0], gap, value)
+		}
+	}
+	fmt.Fprintf(bw, ",%s\"nodes\":%s", sep, gap)
+	if err := writeArray(bw, d.Nodes, indent, item, sep); err != nil {
 		return err
 	}
-	bw.WriteString(",\n  \"edges\": ")
-	if err := writeArray(bw, d.Edges); err != nil {
+	fmt.Fprintf(bw, ",%s\"edges\":%s", sep, gap)
+	if err := writeArray(bw, d.Edges, indent, item, sep); err != nil {
 		return err
 	}
 	bw.WriteString("\n}\n")
 	return bw.Flush()
 }
 
-// writeArray writes items as a JSON array nested one level deep.
-func writeArray[T any](bw *bufio.Writer, items []T) error {
+// writeArray writes items as a JSON array, each after the item separator
+// and the closing bracket after the given one.
+func writeArray[T any](bw *bufio.Writer, items []T, indent bool, item, closing string) error {
 	if len(items) == 0 {
 		bw.WriteString("[]")
 		return nil
 	}
 	bw.WriteString("[")
-	for i, item := range items {
-		text, err := json.MarshalIndent(item, "    ", "  ")
+	for i, v := range items {
+		var text []byte
+		var err error
+		if indent {
+			text, err = json.MarshalIndent(v, "    ", "  ")
+		} else {
+			text, err = json.Marshal(v)
+		}
 		if err != nil {
 			return err
 		}
 		if i > 0 {
 			bw.WriteString(",")
 		}
-		bw.WriteString("\n    ")
+		bw.WriteString(item)
 		bw.Write(text)
 	}
-	bw.WriteString("\n  ]")
+	bw.WriteString(closing + "]")
 	return nil
 }
 

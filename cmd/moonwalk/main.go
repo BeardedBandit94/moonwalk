@@ -3,6 +3,7 @@ package main
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -19,6 +20,7 @@ import (
 	"github.com/BeardedBandit94/moonwalk/internal/discover"
 	"github.com/BeardedBandit94/moonwalk/internal/graph"
 	"github.com/BeardedBandit94/moonwalk/internal/relate"
+	"github.com/BeardedBandit94/moonwalk/internal/snapshot"
 	"github.com/BeardedBandit94/moonwalk/internal/tfcode"
 	"github.com/BeardedBandit94/moonwalk/internal/tfstate"
 	"github.com/BeardedBandit94/moonwalk/internal/view"
@@ -26,21 +28,29 @@ import (
 )
 
 const usage = `Usage:
-  moonwalk serve [options] <state>...
-  moonwalk view  [options] <state>...
-  moonwalk graph [options] <state>...
+  moonwalk serve      [options] <state>...
+  moonwalk view       [options] <state>...
+  moonwalk graph      [options] <state>...
+  moonwalk collect    [options] <state>...
+  moonwalk diff       [options] <older> <newer>
   moonwalk query-file [options] <schema>
 
 Reads Terraform or OpenTofu states ('terraform show -json' output or raw
 .tfstate files) into a single resource graph.
 
-  serve  opens the graph as an interactive explorer in the browser
-  view   prints the graph collapsed into nested groups, sized to stay
-         readable however large the states are
-  graph  prints every resource and relationship
+  serve       opens the graph as an interactive explorer in the browser
+  view        prints the graph collapsed into nested groups, sized to stay
+              readable however large the states are
+  graph       prints every resource and relationship
+  collect     writes everything it loaded as one snapshot, which the other
+              commands read in place of a state. Collect where the
+              credentials are, an account at a time, and look at the
+              snapshots together somewhere else.
+  diff        prints what differs between two snapshots, states or plans:
+              the resources that came, went or changed
   query-file  writes a query file for 'terraform query', which lists what
-         exists in the cloud, from the output of 'terraform providers
-         schema -json' (a file, or - for standard input)
+              exists in the cloud, from the output of 'terraform providers
+              schema -json' (a file, or - for standard input)
 
 Add the configuration with -code to see where each resource is declared and
 the resources that are written but not applied yet. With -code and no state,
@@ -52,12 +62,14 @@ Each <state> is one of:
                against with its changes and any drift marked; or the output
                of 'terraform query -json' or of an AWS CLI resource listing,
                whose resources are shown as unmanaged unless a state holds
-               them; named after its path
+               them; or a snapshot written by 'moonwalk collect', which
+               keeps the names it was collected under. Any of these may
+               be compressed with gzip.
   directory    every .tfstate file below it, hidden directories excluded
   -            standard input, named "stdin"
   name=<any of the above>   the same, under a name of your choosing
 
-Options for all three:
+Options for serve, view, graph and collect:
   -code        [name=]directory of a root module's .tf or .tofu files. The
                name says which state the code belongs to; it can be left
                out when there is one state or none. May be given repeatedly.
@@ -67,7 +79,7 @@ Options for serve:
                shows attribute values, so listen on another address only
                on a network you trust.
 
-Options for view and graph:
+Options for view, graph and diff:
   -format      text (default) or json
 
 Options for view:
@@ -125,12 +137,15 @@ type options struct {
 }
 
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
-	if len(args) == 0 || !slices.Contains([]string{"serve", "view", "graph", "query-file"}, args[0]) {
-		return fmt.Errorf("expected the 'serve', 'view', 'graph' or 'query-file' command\n\n%s", usage)
+	if len(args) == 0 || !slices.Contains([]string{"serve", "view", "graph", "collect", "diff", "query-file"}, args[0]) {
+		return fmt.Errorf("expected one of the commands serve, view, graph, collect, diff or query-file\n\n%s", usage)
 	}
 	command := args[0]
-	if command == "query-file" {
+	switch command {
+	case "query-file":
 		return runQueryFile(args[1:], stdin, stdout)
+	case "diff":
+		return runDiff(args[1:], stdin, stdout, stderr)
 	}
 	var o options
 	fs := flag.NewFlagSet(command, flag.ContinueOnError)
@@ -139,6 +154,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	switch command {
 	case "serve":
 		fs.StringVar(&o.addr, "addr", "127.0.0.1:7878", "")
+		o.format = "text"
+	case "collect":
 		o.format = "text"
 	case "graph":
 		fs.StringVar(&o.format, "format", "text", "")
@@ -187,6 +204,10 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 	if command == "serve" {
 		warnWithheld(stderr, g.Document())
 		return serve(g, code, fs.Args(), o.code, o.addr, stdout, stderr)
+	}
+	if command == "collect" {
+		warnWithheld(stderr, g.Document())
+		return snapshot.Write(stdout, g, now())
 	}
 	if command == "graph" {
 		if o.direct {
@@ -240,15 +261,91 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 // and how to get them.
 func warnWithheld(stderr io.Writer, d graph.Document) {
 	var sources []string
+	listing := map[string]bool{}
 	for _, n := range d.Nodes {
 		if n.AttributesWithheld && !slices.Contains(sources, n.Source) {
 			sources = append(sources, n.Source)
+			listing[n.Source] = n.Status == graph.StatusUnmanaged
 		}
 	}
 	for _, source := range sources {
+		if listing[source] {
+			fmt.Fprintf(stderr, "moonwalk: attribute values of %s are withheld: a listing of the cloud does not say which of them are sensitive.\n", source)
+			continue
+		}
 		fmt.Fprintf(stderr, "moonwalk: attribute values of %s are withheld: it was written by a version of Terraform or OpenTofu "+
 			"that did not record which attributes are sensitive. To see them, load the output of 'terraform show -json' from version 1.5 or later.\n", source)
 	}
+}
+
+// now is the time a snapshot is stamped with; tests replace it.
+var now = time.Now
+
+// runDiff handles the diff command.
+func runDiff(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
+	fs := flag.NewFlagSet("diff", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	format := fs.String("format", "text", "")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("%w\n\n%s", err, usage)
+	}
+	if fs.NArg() != 2 {
+		return fmt.Errorf("expected two inputs to compare, the older one first\n\n%s", usage)
+	}
+	if *format != "text" && *format != "json" {
+		return fmt.Errorf("unknown format %q (want text or json)", *format)
+	}
+	older, _, err := loadGraph(fs.Args()[:1], nil, stdin, stderr)
+	if err != nil {
+		return err
+	}
+	newer, _, err := loadGraph(fs.Args()[1:], nil, stdin, stderr)
+	if err != nil {
+		return err
+	}
+	d := snapshot.Compare(older, newer)
+	// Resources are matched by name, which starts with the source's, so
+	// sides whose sources share no name cannot be told apart from sides
+	// with nothing in common.
+	if o, n := snapshot.Sources(older), snapshot.Sources(newer); len(d.Changed) == 0 && len(o)+len(n) > 2 && !overlap(o, n) {
+		return fmt.Errorf("the two sides have no source in common (%s; %s), so none of their resources can be matched; "+
+			"compare things collected under the same names", strings.Join(o, ", "), strings.Join(n, ", "))
+	}
+	if *format == "json" {
+		return writeJSON(stdout, d)
+	}
+	return writeDiff(stdout, d)
+}
+
+func overlap(a, b []string) bool {
+	return slices.ContainsFunc(a, func(s string) bool { return slices.Contains(b, s) })
+}
+
+func writeDiff(w io.Writer, d snapshot.Diff) error {
+	var b strings.Builder
+	if d.Empty() {
+		b.WriteString("No differences\n")
+	} else {
+		fmt.Fprintf(&b, "%d added, %d removed, %d changed\n", len(d.Added), len(d.Removed), len(d.Changed))
+	}
+	section := func(title string, n int, each func(i int) string) {
+		if n == 0 {
+			return
+		}
+		fmt.Fprintf(&b, "\n%s\n", title)
+		for i := 0; i < n; i++ {
+			fmt.Fprintf(&b, "  %s\n", each(i))
+		}
+	}
+	section("Added", len(d.Added), func(i int) string { return "+ " + d.Added[i] })
+	section("Removed", len(d.Removed), func(i int) string { return "- " + d.Removed[i] })
+	section("Changed", len(d.Changed), func(i int) string {
+		return "~ " + d.Changed[i].ID + "\n      " + strings.Join(d.Changed[i].What, "\n      ")
+	})
+	section("Dependencies added", len(d.DependenciesAdded), func(i int) string { return "+ " + d.DependenciesAdded[i] })
+	section("Dependencies removed", len(d.DependenciesRemoved), func(i int) string { return "- " + d.DependenciesRemoved[i] })
+	_, err := io.WriteString(w, b.String())
+	return err
 }
 
 // runQueryFile handles the query-file command.
@@ -286,6 +383,20 @@ type multiFlag []string
 func (m *multiFlag) String() string     { return strings.Join(*m, ",") }
 func (m *multiFlag) Set(v string) error { *m = append(*m, v); return nil }
 
+// gunzip returns data uncompressed if it is gzip, and as it is otherwise.
+// Snapshots compress to a few hundredths of their size, so that is how
+// they are best kept.
+func gunzip(data []byte) ([]byte, error) {
+	if len(data) < 2 || data[0] != 0x1f || data[1] != 0x8b {
+		return data, nil
+	}
+	zr, err := gzip.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	return io.ReadAll(zr)
+}
+
 // loadGraph reads the states the arguments name into one graph, adds what
 // listings of the cloud found beyond them, joins the configurations, and
 // works out containment and glue. It returns
@@ -303,10 +414,23 @@ func loadGraph(args, codeDirs []string, stdin io.Reader, stderr io.Writer) (*gra
 		data   []byte
 	}
 	var listings []listing
+	snapshots := 0
 	for _, in := range inputs {
 		data, err := in.read(stdin)
 		if err != nil {
 			return nil, nil, err
+		}
+		if data, err = gunzip(data); err != nil {
+			return nil, nil, fmt.Errorf("%s: %w", in.path, err)
+		}
+		if snapshot.Is(data) {
+			// A snapshot's resources keep the names they were collected
+			// under, so the name given to the file itself goes unused.
+			if _, err := snapshot.Load(g, bytes.NewReader(data)); err != nil {
+				return nil, nil, fmt.Errorf("%s: %w", in.path, err)
+			}
+			snapshots++
+			continue
 		}
 		if discover.IsQueryOutput(data) || discover.IsARNListing(data) {
 			listings = append(listings, listing{in.source, data})
@@ -316,7 +440,7 @@ func loadGraph(args, codeDirs []string, stdin io.Reader, stderr io.Writer) (*gra
 			return nil, nil, err
 		}
 	}
-	states := len(inputs) - len(listings)
+	states := len(inputs) - len(listings) - snapshots
 	for _, l := range listings {
 		load := discover.Load
 		if discover.IsARNListing(l.data) {
