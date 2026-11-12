@@ -336,6 +336,10 @@ func (f *found) node(source string) graph.Node {
 	if group != "" {
 		id += "/" + group
 	}
+	// In Google Cloud, across the zones of a region.
+	if zone := parts["zone"]; zone != "" {
+		id += "/" + zone
+	}
 	return graph.Node{
 		ID:                 id,
 		Source:             source,

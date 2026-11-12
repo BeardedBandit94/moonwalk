@@ -41,8 +41,8 @@ Early. What works today: loading state, code, plans and listings of the
 cloud into one graph and exploring it in the browser, or printing it, either
 collapsed into groups or in full; reading states straight from S3;
 collecting the graph into snapshots to look at together; and comparing two
-of them. AWS is covered best, Azure second; Google resources load, with
-their project and region, and nothing more is worked out about them yet.
+of them. AWS is covered best, then Azure, then Google Cloud, which has no
+written permissions yet.
 
 ### The explorer
 
@@ -344,6 +344,19 @@ in (`MC_...`) and what is in it. A listing does not say whether a virtual
 machine runs Linux or Windows, so an unmanaged one shows as
 `azurerm_virtual_machine`. Resource Graph pages its results too.
 
+For Google Cloud, the asset inventory:
+
+```bash
+gcloud asset search-all-resources --scope=projects/acme-prod --format=json > found.json
+```
+
+A resource is matched to state by its name, whichever way each side writes
+it; where a service names a resource by its project's number, the rest of
+the listing says which project that is. An unmanaged one is placed in its
+project and region, but not in a network. Left out as Google's own: the
+`default` network with its subnetworks, firewall rules and routes, and the
+service accounts of Google's services.
+
 ### What moonwalk works out
 
 State does not record everything worth showing, so some of the graph is
@@ -352,11 +365,13 @@ question, nothing is changed.
 
 - **Containment.** A resource that names a subnet or network by ID sits
   inside it; one that spans several subnets sits in their network. This
-  works across states, for AWS and Azure networks and subnets. On AWS, a
-  database or cache that names a subnet group sits where the group's
-  subnets put it. On Azure, a virtual machine sits where its network
-  interfaces do, and a subnet or peering is part of the network its ID
-  starts with.
+  works across states, for AWS, Azure and Google Cloud networks and
+  subnets. On AWS, a database or cache that names a subnet group sits
+  where the group's subnets put it. On Azure, a virtual machine sits where
+  its network interfaces do, and a subnet or peering is part of the
+  network its ID starts with. On Google Cloud, a network or subnetwork is
+  recognised however it is named: by its self link, by the same without
+  the address in front, or by its name alone within its project.
 - **Which instance is meant.** State records a dependency on a block with
   `count` or `for_each` as a dependency on every instance. Where a
   resource's attributes hold a value that only some instances have, such as
@@ -373,11 +388,13 @@ question, nothing is changed.
   `role_arn`, `subnet_ids`), as a path such as an ARN, among the outputs
   of a `terraform_remote_state` data source, or as the ID of a data
   source that looked the resource up. An ID that two resources claim
-  links nothing. Azure IDs are compared without regard to case.
+  links nothing. Azure IDs are compared without regard to case, and a
+  Google Cloud name is the same with or without the address in front.
 - **Glue.** A resource named as an association, attachment or membership
   that only joins two others is folded into a link between them, shown as
-  `--`. So is a security group rule between two groups, and an Azure
-  peering between two networks. `-glue` shows such resources instead.
+  `--`. So is a security group rule between two groups, and an Azure or
+  Google Cloud peering between two networks. `-glue` shows such resources
+  instead.
 
 ### The full graph
 
@@ -539,7 +556,9 @@ providers (ARN, subscription ID, project and so on). A resource that does not
 state its account takes the one its provider's other resources agree on, and
 is marked `account_inferred` in JSON output. The same goes for the region of
 an AWS resource (`region_inferred`). AWS resources of services without
-regions, such as IAM, get the region `global`.
+regions, such as IAM, get the region `global`, and so do Google Cloud
+resources that belong to no region, such as networks and firewall rules.
+A Google Cloud resource in a zone is in the zone's region.
 
 An Azure resource also records its resource group, taken from its
 `resource_group_name` or its ID. `-group-by` takes `resource_group` as a

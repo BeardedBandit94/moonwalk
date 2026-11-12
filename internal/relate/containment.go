@@ -11,12 +11,13 @@ import (
 // resource that sits in it, and returns how many it added.
 //
 // Where a resource sits is worked out from the IDs it names, by rules that
-// differ between clouds; see awsContainment and azureContainment. A
+// differ between clouds; see awsContainment, azureContainment and
+// googleContainment. A
 // resource is matched across states, so a subnet can sit in a network that
 // another state manages. A resource has at most one container.
 func Containment(g *graph.Graph) int {
 	nodes := g.Nodes()
-	return awsContainment(g, nodes) + azureContainment(g, nodes)
+	return awsContainment(g, nodes) + azureContainment(g, nodes) + googleContainment(g, nodes)
 }
 
 // sharedNetwork returns the network that all the given subnets sit in, if
@@ -74,6 +75,34 @@ func referencesWhere(attrs map[string]any, named func(string) bool) []string {
 			}
 		}
 	}
+	sort.Strings(out) // Attributes come in no order; the result must not depend on it.
+	return out
+}
+
+// deepReferences returns the strings held under any of the given names at
+// any depth, for providers that put a reference several blocks down.
+func deepReferences(attrs map[string]any, names []string) []string {
+	var out []string
+	var walk func(v any, under string, depth int)
+	walk = func(v any, under string, depth int) {
+		switch t := v.(type) {
+		case string:
+			if slices.Contains(names, under) {
+				out = append(out, t)
+			}
+		case map[string]any:
+			if depth < 6 {
+				for k, e := range t {
+					walk(e, k, depth+1)
+				}
+			}
+		case []any:
+			for _, e := range t {
+				walk(e, under, depth)
+			}
+		}
+	}
+	walk(attrs, "", 0)
 	sort.Strings(out) // Attributes come in no order; the result must not depend on it.
 	return out
 }

@@ -72,7 +72,7 @@ Each <state> is one of:
                -json <planfile>'), which shows the state the plan was made
                against with its changes and any drift marked; or the output
                of 'terraform query -json', or a resource listing made with
-               the AWS or Azure command line, whose resources are shown as
+               the AWS, Azure or Google Cloud command line, shown as
                unmanaged unless a state holds them; or a snapshot written by
                'moonwalk collect', which keeps the names it was collected
                under. Any of these may be compressed with gzip.
@@ -515,7 +515,7 @@ func loadGraph(args, codeDirs []string, stdin io.Reader, stderr io.Writer) (*gra
 			snapshots++
 			continue
 		}
-		if discover.IsQueryOutput(data) || discover.IsAzureListing(data) || discover.IsARNListing(data) {
+		if discover.IsQueryOutput(data) || discover.IsAzureListing(data) || discover.IsGoogleListing(data) || discover.IsARNListing(data) {
 			listings = append(listings, listing{in.source, data})
 			continue
 		}
@@ -530,6 +530,8 @@ func loadGraph(args, codeDirs []string, stdin io.Reader, stderr io.Writer) (*gra
 		case discover.IsQueryOutput(l.data):
 		case discover.IsAzureListing(l.data):
 			load = discover.LoadAzure
+		case discover.IsGoogleListing(l.data):
+			load = discover.LoadGoogle
 		default:
 			load = discover.LoadARNs
 		}

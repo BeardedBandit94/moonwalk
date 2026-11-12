@@ -1,0 +1,188 @@
+[
+  {
+    "assetType": "compute.googleapis.com/Network",
+    "createTime": "2026-09-30T11:02:07Z",
+    "displayName": "main",
+    "location": "global",
+    "name": "//compute.googleapis.com/projects/acme-prod/global/networks/main",
+    "parentAssetType": "cloudresourcemanager.googleapis.com/Project",
+    "parentFullResourceName": "//cloudresourcemanager.googleapis.com/projects/acme-prod",
+    "project": "projects/123456789012",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-02T09:14:51Z"
+  },
+  {
+    "assetType": "compute.googleapis.com/Instance",
+    "createTime": "2026-09-30T11:02:07Z",
+    "displayName": "web",
+    "location": "europe-west1-b",
+    "name": "//compute.googleapis.com/projects/acme-prod/zones/europe-west1-b/instances/web",
+    "parentAssetType": "cloudresourcemanager.googleapis.com/Project",
+    "parentFullResourceName": "//cloudresourcemanager.googleapis.com/projects/acme-prod",
+    "project": "projects/123456789012",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-02T09:14:51Z"
+  },
+  {
+    "assetType": "storage.googleapis.com/Bucket",
+    "createTime": "2026-09-30T11:02:07Z",
+    "displayName": "acme-prod-logs",
+    "location": "eu",
+    "name": "//storage.googleapis.com/acme-prod-logs",
+    "parentAssetType": "cloudresourcemanager.googleapis.com/Project",
+    "parentFullResourceName": "//cloudresourcemanager.googleapis.com/projects/acme-prod",
+    "project": "projects/123456789012",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-02T09:14:51Z"
+  },
+  {
+    "assetType": "sqladmin.googleapis.com/Instance",
+    "createTime": "2026-09-30T11:02:07Z",
+    "displayName": "db-main",
+    "location": "europe-west1",
+    "name": "//sqladmin.googleapis.com/projects/acme-prod/instances/db-main",
+    "parentAssetType": "cloudresourcemanager.googleapis.com/Project",
+    "parentFullResourceName": "//cloudresourcemanager.googleapis.com/projects/acme-prod",
+    "project": "projects/123456789012",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-02T09:14:51Z"
+  },
+  {
+    "assetType": "iam.googleapis.com/ServiceAccount",
+    "createTime": "2026-09-30T11:02:07Z",
+    "displayName": "App",
+    "location": "global",
+    "name": "//iam.googleapis.com/projects/acme-prod/serviceAccounts/112233445566778899000",
+    "parentAssetType": "cloudresourcemanager.googleapis.com/Project",
+    "parentFullResourceName": "//cloudresourcemanager.googleapis.com/projects/acme-prod",
+    "project": "projects/123456789012",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-02T09:14:51Z",
+    "additionalAttributes": {
+      "email": "app@acme-prod.iam.gserviceaccount.com"
+    }
+  },
+  {
+    "assetType": "compute.googleapis.com/Instance",
+    "createTime": "2026-09-30T11:02:07Z",
+    "displayName": "scratch",
+    "location": "europe-west1-c",
+    "name": "//compute.googleapis.com/projects/acme-prod/zones/europe-west1-c/instances/scratch",
+    "parentAssetType": "cloudresourcemanager.googleapis.com/Project",
+    "parentFullResourceName": "//cloudresourcemanager.googleapis.com/projects/acme-prod",
+    "project": "projects/123456789012",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-02T09:14:51Z"
+  },
+  {
+    "assetType": "storage.googleapis.com/Bucket",
+    "createTime": "2026-09-30T11:02:07Z",
+    "displayName": "acme-scratch-data",
+    "location": "us",
+    "name": "//storage.googleapis.com/acme-scratch-data",
+    "parentAssetType": "cloudresourcemanager.googleapis.com/Project",
+    "parentFullResourceName": "//cloudresourcemanager.googleapis.com/projects/acme-prod",
+    "project": "projects/123456789012",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-02T09:14:51Z"
+  },
+  {
+    "assetType": "pubsub.googleapis.com/Topic",
+    "createTime": "2026-09-30T11:02:07Z",
+    "displayName": "manual",
+    "location": "global",
+    "name": "//pubsub.googleapis.com/projects/acme-prod/topics/manual",
+    "parentAssetType": "cloudresourcemanager.googleapis.com/Project",
+    "parentFullResourceName": "//cloudresourcemanager.googleapis.com/projects/acme-prod",
+    "project": "projects/123456789012",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-02T09:14:51Z"
+  },
+  {
+    "assetType": "secretmanager.googleapis.com/Secret",
+    "createTime": "2026-09-30T11:02:07Z",
+    "displayName": "api-key",
+    "location": "global",
+    "name": "//secretmanager.googleapis.com/projects/123456789012/secrets/api-key",
+    "parentAssetType": "cloudresourcemanager.googleapis.com/Project",
+    "parentFullResourceName": "//cloudresourcemanager.googleapis.com/projects/acme-prod",
+    "project": "projects/123456789012",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-02T09:14:51Z"
+  },
+  {
+    "assetType": "workflows.googleapis.com/Workflow",
+    "createTime": "2026-09-30T11:02:07Z",
+    "displayName": "nightly",
+    "location": "europe-west1",
+    "name": "//workflows.googleapis.com/projects/acme-prod/locations/europe-west1/workflows/nightly",
+    "parentAssetType": "cloudresourcemanager.googleapis.com/Project",
+    "parentFullResourceName": "//cloudresourcemanager.googleapis.com/projects/acme-prod",
+    "project": "projects/123456789012",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-02T09:14:51Z"
+  },
+  {
+    "assetType": "compute.googleapis.com/Network",
+    "createTime": "2026-09-30T11:02:07Z",
+    "displayName": "default",
+    "location": "global",
+    "name": "//compute.googleapis.com/projects/acme-prod/global/networks/default",
+    "parentAssetType": "cloudresourcemanager.googleapis.com/Project",
+    "parentFullResourceName": "//cloudresourcemanager.googleapis.com/projects/acme-prod",
+    "project": "projects/123456789012",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-02T09:14:51Z"
+  },
+  {
+    "assetType": "compute.googleapis.com/Subnetwork",
+    "createTime": "2026-09-30T11:02:07Z",
+    "displayName": "default",
+    "location": "europe-west1",
+    "name": "//compute.googleapis.com/projects/acme-prod/regions/europe-west1/subnetworks/default",
+    "parentAssetType": "cloudresourcemanager.googleapis.com/Project",
+    "parentFullResourceName": "//cloudresourcemanager.googleapis.com/projects/acme-prod",
+    "project": "projects/123456789012",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-02T09:14:51Z"
+  },
+  {
+    "assetType": "compute.googleapis.com/Firewall",
+    "createTime": "2026-09-30T11:02:07Z",
+    "displayName": "default-allow-ssh",
+    "location": "global",
+    "name": "//compute.googleapis.com/projects/acme-prod/global/firewalls/default-allow-ssh",
+    "parentAssetType": "cloudresourcemanager.googleapis.com/Project",
+    "parentFullResourceName": "//cloudresourcemanager.googleapis.com/projects/acme-prod",
+    "project": "projects/123456789012",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-02T09:14:51Z"
+  },
+  {
+    "assetType": "iam.googleapis.com/ServiceAccount",
+    "createTime": "2026-09-30T11:02:07Z",
+    "displayName": "Compute Engine default service account",
+    "location": "global",
+    "name": "//iam.googleapis.com/projects/acme-prod/serviceAccounts/100000000000000000001",
+    "parentAssetType": "cloudresourcemanager.googleapis.com/Project",
+    "parentFullResourceName": "//cloudresourcemanager.googleapis.com/projects/acme-prod",
+    "project": "projects/123456789012",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-02T09:14:51Z",
+    "additionalAttributes": {
+      "email": "123456789012-compute@developer.gserviceaccount.com"
+    }
+  },
+  {
+    "assetType": "compute.googleapis.com/Instance",
+    "createTime": "2026-09-30T11:02:07Z",
+    "displayName": "scratch",
+    "location": "europe-west1-c",
+    "name": "//compute.googleapis.com/projects/acme-prod/zones/europe-west1-c/instances/scratch",
+    "parentAssetType": "cloudresourcemanager.googleapis.com/Project",
+    "parentFullResourceName": "//cloudresourcemanager.googleapis.com/projects/acme-prod",
+    "project": "projects/123456789012",
+    "state": "ACTIVE",
+    "updateTime": "2026-10-02T09:14:51Z"
+  }
+]
