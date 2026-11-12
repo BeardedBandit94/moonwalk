@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"slices"
 	"strings"
 	"time"
@@ -34,6 +35,7 @@ const usage = `Usage:
   moonwalk collect    [options] <state>...
   moonwalk diff       [options] <older> <newer>
   moonwalk query-file [options] <schema>
+  moonwalk version
 
 Reads Terraform or OpenTofu states ('terraform show -json' output or raw
 .tfstate files) into a single resource graph.
@@ -119,6 +121,32 @@ Options for graph:
                state marks as sensitive are replaced with "(sensitive)"
 `
 
+// version is the release this binary was built as. A release build sets
+// it; see scripts/build-release.sh.
+var version = ""
+
+// buildVersion returns the version to report: the release's, or the one
+// the Go toolchain recorded when the binary was built with 'go install',
+// or failing both the commit it was built from.
+func buildVersion() string {
+	if version != "" {
+		return version
+	}
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "unknown"
+	}
+	if v := info.Main.Version; v != "" && v != "(devel)" {
+		return strings.TrimPrefix(v, "v")
+	}
+	for _, s := range info.Settings {
+		if s.Key == "vcs.revision" && len(s.Value) >= 12 {
+			return "built from " + s.Value[:12]
+		}
+	}
+	return "unknown"
+}
+
 func main() {
 	if err := run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintln(os.Stderr, "moonwalk:", err)
@@ -142,6 +170,10 @@ type options struct {
 }
 
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
+	if len(args) == 1 && (args[0] == "version" || args[0] == "-version" || args[0] == "--version") {
+		_, err := fmt.Fprintln(stdout, "moonwalk", buildVersion())
+		return err
+	}
 	if len(args) == 0 || !slices.Contains([]string{"serve", "view", "graph", "collect", "diff", "query-file"}, args[0]) {
 		return fmt.Errorf("expected one of the commands serve, view, graph, collect, diff or query-file\n\n%s", usage)
 	}

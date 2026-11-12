@@ -4,6 +4,31 @@ An explorer for infrastructure as code. moonwalk reads Terraform and OpenTofu
 state into one normalized resource graph, with the goal of showing code, state
 and the live cloud environment side by side in a single interactive view.
 
+## Install
+
+With Go 1.25 or later:
+
+```bash
+go install github.com/BeardedBandit94/moonwalk/cmd/moonwalk@latest
+```
+
+Or as a container image, built from a checkout:
+
+```bash
+docker build -t moonwalk .
+```
+
+```bash
+docker run --rm --user "$(id -u)" -p 127.0.0.1:7878:7878 -v "$PWD:/work:ro" moonwalk serve -addr 0.0.0.0:7878 /work/terraform.tfstate
+```
+
+In a container the explorer has to listen on every address to be reached
+at all; publishing the port on `127.0.0.1`, as above, keeps it to this
+machine.
+
+The examples below run moonwalk from a checkout with `go run ./cmd/moonwalk`;
+with it installed, that is just `moonwalk`.
+
 ## Status
 
 Early. What works today: loading state, code, plans and listings of the
@@ -556,6 +581,31 @@ go test ./internal/tfstate -fuzz FuzzLoad -fuzztime 1m
 ```bash
 go test ./internal/tfstate -run '^$' -bench Load100k
 ```
+
+### Releasing
+
+Pushing a tag publishes that version:
+
+```bash
+git tag v0.1.0
+```
+
+```bash
+git push origin v0.1.0
+```
+
+The release workflow tests the tag, builds archives for Linux, macOS and
+Windows on amd64 and arm64 with their checksums, attaches them and a
+Homebrew formula to a release on GitHub, and pushes a container image to
+`ghcr.io`. A tag with a suffix, such as `v0.2.0-rc1`, becomes a pre-release.
+`scripts/build-release.sh 0.1.0 dist` builds the same archives locally, and
+every pull request builds them, and the image, without publishing.
+
+## Security
+
+State holds secrets, and moonwalk is careful with them; see
+[attributes and secrets](#attributes-and-secrets). To report a
+vulnerability, see [SECURITY.md](SECURITY.md).
 
 ## License
 

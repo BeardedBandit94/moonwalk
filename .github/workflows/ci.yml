@@ -39,3 +39,42 @@ jobs:
         run: npm install && npx playwright install --with-deps chromium
       - name: Drive the explorer
         run: MOONWALK_BIN=./moonwalk node e2e/explorer.cjs
+
+  # What a release would publish, built and tried but not published.
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build the release archives
+        run: scripts/build-release.sh 0.0.0-ci dist
+      - name: Check the archives
+        run: |
+          cd dist
+          sha256sum --check moonwalk_0.0.0-ci_checksums.txt
+          test "$(ls moonwalk_0.0.0-ci_*.tar.gz moonwalk_0.0.0-ci_*.zip | wc -l)" = 6
+          tar -xzf moonwalk_0.0.0-ci_linux_amd64.tar.gz
+          test "$(./moonwalk version)" = "moonwalk 0.0.0-ci"
+          test -s THIRD_PARTY_LICENSES
+      - name: Check the Homebrew formula
+        run: scripts/homebrew-formula.sh 0.0.0-ci dist > moonwalk.rb && ruby -c moonwalk.rb
+      - name: Build the container image
+        run: docker build --build-arg VERSION=0.0.0-ci -t moonwalk:ci .
+      - name: Run the container image
+        run: |
+          test "$(docker run --rm moonwalk:ci version)" = "moonwalk 0.0.0-ci"
+          docker run --rm -v "$PWD/internal/tfstate/testdata:/states:ro" moonwalk:ci view /states/network.tfstate | grep -q "aws_vpc.main"
+      - name: Reach the explorer in a container
+        run: |
+          docker run --detach --name explorer --user "$(id -u)" -p 127.0.0.1:7878:7878 \
+            -v "$PWD/internal/tfstate/testdata:/states:ro" moonwalk:ci serve -addr 0.0.0.0:7878 /states/network.tfstate
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if curl --silent --fail http://127.0.0.1:7878/api/meta > meta.json; then break; fi
+            sleep 1
+          done
+          docker logs explorer
+          grep -q '"resources":11' meta.json
+          docker rm --force explorer
+
