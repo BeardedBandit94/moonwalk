@@ -217,6 +217,8 @@ const CHANGE_NOTES = {
 };
 const NOT_IN_CODE_NOTE = 'In the state, but the code no longer declares it: removed from the code and not destroyed yet, or the code is out of date.';
 
+const NOT_LISTED_NOTE = 'In the state, but a listing of the cloud that covered its type and region did not find it. It may be gone. It may also be one that the provider leaves out of listings, such as a default network.';
+
 // ---- Drawing the view ---------------------------------------------------
 
 function el(tag, className, text) {
@@ -276,6 +278,10 @@ function render() {
       if (item.not_in_code) {
         node.classList.add('not-in-code');
         notes.push(NOT_IN_CODE_NOTE);
+      }
+      if (item.not_listed) {
+        node.classList.add('not-listed');
+        notes.push(NOT_LISTED_NOTE);
       }
       if (notes.length) node.title = notes.join(' ');
       node.addEventListener('click', () => select(item.id));
@@ -525,6 +531,7 @@ async function showResource(id) {
   if (CHANGE_NOTES[n.change]) panel.append(el('p', 'note', CHANGE_NOTES[n.change]));
   else if (STATUS_NOTES[n.status]) panel.append(el('p', 'note', STATUS_NOTES[n.status]));
   if (n.not_in_code) panel.append(el('p', 'note', NOT_IN_CODE_NOTE));
+  if (n.not_listed) panel.append(el('p', 'note', NOT_LISTED_NOTE));
   if (!r.shown) {
     panel.append(el('p', 'note', n.glue && !state.glue
       ? 'Not drawn: this glue resource is folded into a link between what it joins.'

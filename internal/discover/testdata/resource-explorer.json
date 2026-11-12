@@ -1,0 +1,33 @@
+{
+    "Count": {"Complete": true, "TotalResources": 3},
+    "Resources": [
+        {
+            "Arn": "arn:aws:ec2:us-east-1:111111111111:subnet/subnet-9",
+            "LastReportedAt": "2026-11-10T08:12:44+00:00",
+            "OwningAccountId": "111111111111",
+            "Properties": [],
+            "Region": "us-east-1",
+            "ResourceType": "ec2:subnet",
+            "Service": "ec2"
+        },
+        {
+            "Arn": "arn:aws:lambda:eu-west-1:111111111111:function:resize",
+            "LastReportedAt": "2026-11-10T08:12:44+00:00",
+            "OwningAccountId": "111111111111",
+            "Properties": [],
+            "Region": "eu-west-1",
+            "ResourceType": "lambda:function",
+            "Service": "lambda"
+        },
+        {
+            "Arn": "arn:aws:sqs:us-east-1:111111111111:jobs",
+            "LastReportedAt": "2026-11-10T08:12:44+00:00",
+            "OwningAccountId": "111111111111",
+            "Properties": [],
+            "Region": "us-east-1",
+            "ResourceType": "sqs:queue",
+            "Service": "sqs"
+        }
+    ],
+    "ViewArn": "arn:aws:resource-explorer-2:us-east-1:111111111111:view/all/00000000-0000-0000-0000-000000000000"
+}

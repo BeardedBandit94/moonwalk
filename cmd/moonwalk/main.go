@@ -29,6 +29,7 @@ const usage = `Usage:
   moonwalk serve [options] <state>...
   moonwalk view  [options] <state>...
   moonwalk graph [options] <state>...
+  moonwalk query-file [options] <schema>
 
 Reads Terraform or OpenTofu states ('terraform show -json' output or raw
 .tfstate files) into a single resource graph.
@@ -37,6 +38,9 @@ Reads Terraform or OpenTofu states ('terraform show -json' output or raw
   view   prints the graph collapsed into nested groups, sized to stay
          readable however large the states are
   graph  prints every resource and relationship
+  query-file  writes a query file for 'terraform query', which lists what
+         exists in the cloud, from the output of 'terraform providers
+         schema -json' (a file, or - for standard input)
 
 Add the configuration with -code to see where each resource is declared and
 the resources that are written but not applied yet. With -code and no state,
@@ -46,8 +50,9 @@ Each <state> is one of:
   path         a state file; or the JSON form of a plan ('terraform show
                -json <planfile>'), which shows the state the plan was made
                against with its changes and any drift marked; or the output
-               of 'terraform query -json', whose resources are shown as
-               unmanaged unless a state holds them; named after its path
+               of 'terraform query -json' or of an AWS CLI resource listing,
+               whose resources are shown as unmanaged unless a state holds
+               them; named after its path
   directory    every .tfstate file below it, hidden directories excluded
   -            standard input, named "stdin"
   name=<any of the above>   the same, under a name of your choosing
@@ -81,6 +86,16 @@ Options for view:
   -glue        show glue resources, such as route table associations,
                instead of folding each into a link between what it joins
 
+Options for query-file:
+  -region      comma-separated regions to list in; without it, each type is
+               listed in the provider's own region
+  -type        comma-separated patterns of resource types to list, such as
+               'aws_iam_*'; without it, every type the provider can list
+  -provider    write for this provider only, such as aws
+  -identity-only  do not ask for each resource's attributes, which is
+               faster and needs fewer permissions but leaves moonwalk
+               unable to place a resource in its network
+
 Options for graph:
   -direct      leave out dependencies that others already imply
   -attributes  include attribute values in JSON output; values that the
@@ -110,10 +125,13 @@ type options struct {
 }
 
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
-	if len(args) == 0 || !slices.Contains([]string{"serve", "view", "graph"}, args[0]) {
-		return fmt.Errorf("expected the 'serve', 'view' or 'graph' command\n\n%s", usage)
+	if len(args) == 0 || !slices.Contains([]string{"serve", "view", "graph", "query-file"}, args[0]) {
+		return fmt.Errorf("expected the 'serve', 'view', 'graph' or 'query-file' command\n\n%s", usage)
 	}
 	command := args[0]
+	if command == "query-file" {
+		return runQueryFile(args[1:], stdin, stdout)
+	}
 	var o options
 	fs := flag.NewFlagSet(command, flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
@@ -233,6 +251,35 @@ func warnWithheld(stderr io.Writer, d graph.Document) {
 	}
 }
 
+// runQueryFile handles the query-file command.
+func runQueryFile(args []string, stdin io.Reader, stdout io.Writer) error {
+	fs := flag.NewFlagSet("query-file", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	regions := fs.String("region", "", "")
+	types := fs.String("type", "", "")
+	provider := fs.String("provider", "", "")
+	identityOnly := fs.Bool("identity-only", false, "")
+	if err := fs.Parse(args); err != nil {
+		return fmt.Errorf("%w\n\n%s", err, usage)
+	}
+	if fs.NArg() != 1 {
+		return fmt.Errorf("expected one schema file, or - for standard input\n\n%s", usage)
+	}
+	var schema []byte
+	var err error
+	if fs.Arg(0) == "-" {
+		schema, err = io.ReadAll(stdin)
+	} else {
+		schema, err = os.ReadFile(fs.Arg(0))
+	}
+	if err != nil {
+		return err
+	}
+	return writeQueryFile(stdout, schema, queryFileOptions{
+		regions: list(*regions), types: list(*types), provider: *provider, identityOnly: *identityOnly,
+	})
+}
+
 // multiFlag collects the values of a flag that may be given repeatedly.
 type multiFlag []string
 
@@ -261,7 +308,7 @@ func loadGraph(args, codeDirs []string, stdin io.Reader, stderr io.Writer) (*gra
 		if err != nil {
 			return nil, nil, err
 		}
-		if discover.IsQueryOutput(data) {
+		if discover.IsQueryOutput(data) || discover.IsARNListing(data) {
 			listings = append(listings, listing{in.source, data})
 			continue
 		}
@@ -271,12 +318,20 @@ func loadGraph(args, codeDirs []string, stdin io.Reader, stderr io.Writer) (*gra
 	}
 	states := len(inputs) - len(listings)
 	for _, l := range listings {
-		res, err := discover.Load(g, l.source, bytes.NewReader(l.data))
+		load := discover.Load
+		if discover.IsARNListing(l.data) {
+			load = discover.LoadARNs
+		}
+		res, err := load(g, l.source, bytes.NewReader(l.data))
 		if err != nil {
 			return nil, nil, err
 		}
 		for _, e := range res.Errors {
 			fmt.Fprintf(stderr, "moonwalk: the listing in %s is incomplete, so resources may be missing from it: %s\n", l.source, e)
+		}
+		for _, block := range res.Capped {
+			fmt.Fprintf(stderr, "moonwalk: %s in %s returned exactly 100 resources, where a list block stops unless it sets a limit. "+
+				"There are probably more; add 'limit = %d' to the block.\n", block, l.source, listLimit)
 		}
 	}
 
@@ -536,7 +591,7 @@ func writeView(w io.Writer, d view.Document) error {
 		indent := strings.Repeat("  ", it.Depth-1)
 		switch {
 		case it.Kind == view.KindResource:
-			fmt.Fprintf(&b, "%s%s%s\n", indent, it.Label, marks(statusText(it.Status, it.Drift), it.Change, it.NotInCode, "  (", ")"))
+			fmt.Fprintf(&b, "%s%s%s\n", indent, it.Label, marks(statusText(it.Status, it.Drift), it.Change, it.NotInCode, it.NotListed, "  (", ")"))
 		case it.Expanded:
 			fmt.Fprintf(&b, "%s%s  (%s, %s%s)\n", indent, it.Label, kindName(it.Kind), plural(it.Resources, "resource"), tally(it))
 		default:
@@ -588,7 +643,7 @@ func tally(it view.Item) string {
 
 // marks renders what is unusual about a resource: a status other than
 // managed, a change a plan intends, and being absent from the code.
-func marks(status, change string, notInCode bool, open, shut string) string {
+func marks(status, change string, notInCode, notListed bool, open, shut string) string {
 	var parts []string
 	switch {
 	case change == "create":
@@ -601,6 +656,9 @@ func marks(status, change string, notInCode bool, open, shut string) string {
 	}
 	if notInCode {
 		parts = append(parts, "not in code")
+	}
+	if notListed {
+		parts = append(parts, "not found in the cloud listing")
 	}
 	if len(parts) == 0 {
 		return ""
@@ -665,7 +723,7 @@ func writeGraph(w io.Writer, d graph.Document) error {
 			if n.Status != graph.StatusManaged {
 				status = statusText(n.Status, n.Drift)
 			}
-			fmt.Fprintf(&b, "  %s%s%s\n", n.Address, partitionLabel(n), marks(status, n.Change, n.NotInCode, "  [", "]"))
+			fmt.Fprintf(&b, "  %s%s%s\n", n.Address, partitionLabel(n), marks(status, n.Change, n.NotInCode, n.NotListed, "  [", "]"))
 			for _, e := range edges[n.ID] {
 				switch e.Kind {
 				case graph.EdgeDependsOn:

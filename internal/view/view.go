@@ -47,6 +47,9 @@ type Item struct {
 	// NotInCode is true for a resource in state that the loaded code no
 	// longer declares.
 	NotInCode bool `json:"not_in_code,omitempty"`
+	// NotListed is true for a resource in state that a listing of the
+	// cloud covered and did not find.
+	NotListed bool `json:"not_listed,omitempty"`
 }
 
 // Link joins two items that stand for resources in a view: single resources
@@ -158,7 +161,7 @@ func (t *Tree) View(expanded func(*Group) bool) View {
 			v.Items = append(v.Items, Item{
 				ID: id, Kind: KindResource, Label: t.labels[id], Parent: grp.ID,
 				Depth: grp.Depth + 1, Resources: 1, Status: t.statuses[id],
-				Change: t.changes[id], NotInCode: t.notInCode[id], Drift: t.drifts[id],
+				Change: t.changes[id], NotInCode: t.notInCode[id], Drift: t.drifts[id], NotListed: t.notListed[id],
 			})
 			shownAs[id] = id
 		}

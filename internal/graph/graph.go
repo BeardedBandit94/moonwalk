@@ -101,6 +101,10 @@ type Node struct {
 	// CloudID is what the cloud itself calls the resource: an ARN, a
 	// resource ID or a self link. It is empty when unknown.
 	CloudID string `json:"cloud_id,omitempty"`
+	// NotListed is true for a resource in state that a listing of the
+	// cloud covered and did not find. It may be gone; it may also be one
+	// that the provider leaves out of listings, such as a default network.
+	NotListed bool `json:"not_listed,omitempty"`
 	// Drift says how a resource with the status "drifted" differs from its
 	// state: "changed" or "deleted", outside Terraform.
 	Drift string `json:"drift,omitempty"`

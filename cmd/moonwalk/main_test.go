@@ -343,6 +343,50 @@ func TestDiscovery(t *testing.T) {
 	}
 }
 
+// For those without `terraform query`: the AWS CLI's own listings.
+func TestARNListing(t *testing.T) {
+	out, err := runCLI(t, "", "view", "-group-by", "account,region", "prod="+found+"managed.tfstate", "cli="+found+"tagging-api.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"cli::aws_subnet.subnet-9  (unmanaged)", "cli::aws_iam_role.deploy  (unmanaged)", "prod::aws_vpc.main"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+	// A state file is still a state file: it has a "resources" key, as a
+	// Resource Explorer search has "Resources".
+	if strings.Contains(out, "prod::aws_vpc.main  (unmanaged)") {
+		t.Errorf("the state was read as a listing:\n%s", out)
+	}
+}
+
+func TestCappedListingWarns(t *testing.T) {
+	var listing strings.Builder
+	listing.WriteString(`{"@level":"info","type":"list_start","list_start":{"address":"list.aws_subnet.all","resource_type":"aws_subnet"}}` + "\n")
+	listing.WriteString(`{"@level":"info","type":"list_complete","list_complete":{"address":"list.aws_subnet.all","resource_type":"aws_subnet","total":100}}` + "\n")
+	_, warnings, err := runCLIWithWarnings(t, listing.String(), "graph", "cloud=-")
+	if err != nil || !strings.Contains(warnings, "list.aws_subnet.all") || !strings.Contains(warnings, "limit = 1000000") {
+		t.Errorf("err %v, warnings %q", err, warnings)
+	}
+}
+
+// A subnet in state that the listing covered and did not find is marked.
+func TestNotFoundInListing(t *testing.T) {
+	dir := t.TempDir()
+	state := filepath.Join(dir, "s.tfstate")
+	const aws = `"provider":"provider[\"registry.terraform.io/hashicorp/aws\"]"`
+	if err := os.WriteFile(state, []byte(`{"version":4,"terraform_version":"1.9.5","resources":[
+	  {"mode":"managed","type":"aws_subnet","name":"gone",`+aws+`,
+	   "instances":[{"attributes":{"id":"subnet-gone","arn":"arn:aws:ec2:us-east-1:123456789012:subnet/subnet-gone"}}]}]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := runCLI(t, "", "view", "-group-by", "source", "s="+state, "cloud="+found+"query.jsonl")
+	if err != nil || !strings.Contains(out, "aws_subnet.gone  (not found in the cloud listing)") {
+		t.Errorf("err %v\n%s", err, out)
+	}
+}
+
 func TestDrift(t *testing.T) {
 	out, err := runCLI(t, "", "view", "-status", "drifted", "-group-by", "source", fixtures+"drift.json")
 	if err != nil || !strings.Contains(out, "local_file.removed  (drifted: deleted)") || !strings.Contains(out, "1 resource in") {
