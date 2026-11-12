@@ -36,6 +36,7 @@ const usage = `Usage:
   moonwalk diff       [options] <older> <newer>
   moonwalk query-file [options] <schema>
   moonwalk iam-policy [options] [<schema>]
+  moonwalk azure-role [options] [<schema>]
   moonwalk version
 
 Reads Terraform or OpenTofu states ('terraform show -json' output or raw
@@ -58,6 +59,9 @@ Reads Terraform or OpenTofu states ('terraform show -json' output or raw
               takes, and that reading states from S3 takes: every action
               named in full, reads only, limited to resources where AWS
               allows it
+  azure-role  writes the Azure custom role that running that query file
+              takes: every permission named in full, reads only, no data
+              actions, assignable only at the subscriptions named
 
 Add the configuration with -code to see where each resource is declared and
 the resources that are written but not applied yet. With -code and no state,
@@ -140,6 +144,13 @@ Options for iam-policy:
   -out         directory to write the policy documents to; needed when
                there is more than one, since IAM limits a policy's size
 
+Options for azure-role:
+  -subscription  comma-separated IDs of the subscriptions the role may be
+               assigned at; needed
+  -type, -identity-only   as for query-file, so that the role matches the
+               query file written with the same options
+  -name        the role's name (default: moonwalk discovery)
+
 Options for graph:
   -direct      leave out dependencies that others already imply
   -attributes  include attribute values in JSON output; values that the
@@ -199,8 +210,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		_, err := fmt.Fprintln(stdout, "moonwalk", buildVersion())
 		return err
 	}
-	if len(args) == 0 || !slices.Contains([]string{"serve", "view", "graph", "collect", "diff", "query-file", "iam-policy"}, args[0]) {
-		return fmt.Errorf("expected one of the commands serve, view, graph, collect, diff, query-file or iam-policy\n\n%s", usage)
+	if len(args) == 0 || !slices.Contains([]string{"serve", "view", "graph", "collect", "diff", "query-file", "iam-policy", "azure-role"}, args[0]) {
+		return fmt.Errorf("expected one of the commands serve, view, graph, collect, diff, query-file, iam-policy or azure-role\n\n%s", usage)
 	}
 	command := args[0]
 	switch command {
@@ -210,6 +221,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		return runDiff(args[1:], stdin, stdout, stderr)
 	case "iam-policy":
 		return runIAMPolicy(args[1:], stdin, stdout, stderr)
+	case "azure-role":
+		return runAzureRole(args[1:], stdin, stdout, stderr)
 	}
 	var o options
 	fs := flag.NewFlagSet(command, flag.ContinueOnError)

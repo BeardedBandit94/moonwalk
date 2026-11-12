@@ -204,6 +204,13 @@ func warnPlan(stderr io.Writer, plan awsiam.Plan, perms *awsiam.Permissions) {
 // query file from moonwalk lists, narrowed by the patterns, and which of
 // them have no region.
 func awsListTypes(schema []byte, patterns []string) (types []string, global map[string]bool, err error) {
+	return providerListTypes(schema, "aws", patterns)
+}
+
+// providerListTypes returns the resource types of one provider in a
+// schema that a query file from moonwalk lists, narrowed by the patterns,
+// and which of them take no region.
+func providerListTypes(schema []byte, name string, patterns []string) (types []string, global map[string]bool, err error) {
 	var s providerSchemas
 	if err := json.Unmarshal(schema, &s); err != nil {
 		return nil, nil, fmt.Errorf("not the output of 'terraform providers schema -json': %w", err)
@@ -211,7 +218,7 @@ func awsListTypes(schema []byte, patterns []string) (types []string, global map[
 	global = map[string]bool{}
 	found := false
 	for addr, provider := range s.ProviderSchemas {
-		if path.Base(addr) != "aws" {
+		if path.Base(addr) != name {
 			continue
 		}
 		found = true
@@ -229,10 +236,10 @@ func awsListTypes(schema []byte, patterns []string) (types []string, global map[
 		}
 	}
 	if !found {
-		return nil, nil, fmt.Errorf("the schema has no aws provider; policies are written for AWS only so far")
+		return nil, nil, fmt.Errorf("the schema has no %s provider", name)
 	}
 	if len(types) == 0 {
-		return nil, nil, fmt.Errorf("the schema has no AWS resource types to list that match; listing needs Terraform 1.14 or later and a provider that supports it")
+		return nil, nil, fmt.Errorf("the schema has no %s resource types to list that match; listing needs Terraform 1.14 or later and a provider that supports it", name)
 	}
 	sort.Strings(types)
 	return types, global, nil
