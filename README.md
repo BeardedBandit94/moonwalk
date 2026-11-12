@@ -6,7 +6,13 @@ and the live cloud environment side by side in a single interactive view.
 
 ## Install
 
-With Go 1.25 or later:
+With Homebrew, on macOS or Linux:
+
+```bash
+brew install beardedbandit94/tap/moonwalk
+```
+
+Or with Go 1.25 or later:
 
 ```bash
 go install github.com/BeardedBandit94/moonwalk/cmd/moonwalk@latest
