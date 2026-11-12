@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.10
 	github.com/hashicorp/hcl/v2 v2.25.0
 	github.com/hashicorp/terraform-json v0.29.0
-	github.com/zclconf/go-cty v1.19.0
+	github.com/zclconf/go-cty v1.20.0
 )
 
 require (
