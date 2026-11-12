@@ -1,0 +1,194 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "MoonwalkSesLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "ses:GetArchive",
+        "ses:GetIngressPoint",
+        "ses:GetRelay",
+        "ses:GetRuleSet",
+        "ses:GetTrafficPolicy"
+      ],
+      "Resource": [
+        "arn:aws:ses:*:111122223333:mailmanager-archive/*",
+        "arn:aws:ses:*:111122223333:mailmanager-ingress-point/*",
+        "arn:aws:ses:*:111122223333:mailmanager-rule-set/*",
+        "arn:aws:ses:*:111122223333:mailmanager-smtp-relay/*",
+        "arn:aws:ses:*:111122223333:mailmanager-traffic-policy/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSesLimitedToService",
+      "Effect": "Allow",
+      "Action": [
+        "ses:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:ses:*:111122223333:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSmsVoiceLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "sms-voice:DescribePools",
+        "sms-voice:DescribeProtectConfigurations",
+        "sms-voice:DescribeSenderIds",
+        "sms-voice:GetProtectConfigurationCountryRuleSet",
+        "sms-voice:ListPoolOriginationIdentities"
+      ],
+      "Resource": [
+        "arn:aws:sms-voice:*:111122223333:pool/*",
+        "arn:aws:sms-voice:*:111122223333:protect-configuration/*",
+        "arn:aws:sms-voice:*:111122223333:sender-id/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSmsVoiceLimitedToService",
+      "Effect": "Allow",
+      "Action": [
+        "sms-voice:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:sms-voice:*:111122223333:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSns",
+      "Effect": "Allow",
+      "Action": [
+        "sns:ListTopics"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSnsLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "sns:GetTopicAttributes"
+      ],
+      "Resource": [
+        "arn:aws:sns:*:111122223333:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSqs",
+      "Effect": "Allow",
+      "Action": [
+        "sqs:ListQueues"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSqsLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "sqs:GetQueueAttributes"
+      ],
+      "Resource": [
+        "arn:aws:sqs:*:111122223333:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSsm",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:DescribeParameters",
+        "ssm:DescribePatchBaselines",
+        "ssm:DescribePatchGroups",
+        "ssm:ListAssociations",
+        "ssm:ListDocuments"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSsmLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:DescribeAssociation",
+        "ssm:DescribeDocument",
+        "ssm:DescribeDocumentPermission",
+        "ssm:GetDocument",
+        "ssm:GetPatchBaseline"
+      ],
+      "Resource": [
+        "arn:aws:ssm:*:111122223333:association/*",
+        "arn:aws:ssm:*:111122223333:document/*",
+        "arn:aws:ssm:*:111122223333:patchbaseline/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSsmLimitedToService",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:ssm:*:111122223333:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkStates",
+      "Effect": "Allow",
+      "Action": [
+        "states:ListStateMachines"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkStatesLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "states:DescribeStateMachine",
+        "states:ListStateMachineVersions",
+        "states:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:states:*:111122223333:activity:*",
+        "arn:aws:states:*:111122223333:stateMachine:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkWorkmail",
+      "Effect": "Allow",
+      "Action": [
+        "workmail:ListOrganizations"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkWorkmailLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "workmail:DescribeOrganization",
+        "workmail:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:workmail:*:111122223333:organization/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkWorkspaces",
+      "Effect": "Allow",
+      "Action": [
+        "workspaces:DescribeTags",
+        "workspaces:DescribeWorkspacesPools"
+      ],
+      "Resource": [
+        "*"
+      ]
+    }
+  ]
+}

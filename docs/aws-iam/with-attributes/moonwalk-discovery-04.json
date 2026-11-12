@@ -1,0 +1,344 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "MoonwalkOsisLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "osis:GetPipeline",
+        "osis:GetResourcePolicy"
+      ],
+      "Resource": [
+        "arn:aws:osis:*:111122223333:pipeline/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkPricingplanmanager",
+      "Effect": "Allow",
+      "Action": [
+        "pricingplanmanager:GetSubscription",
+        "pricingplanmanager:ListSubscriptions"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkQuicksight",
+      "Effect": "Allow",
+      "Action": [
+        "quicksight:DescribeAccountCustomPermission"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkRam",
+      "Effect": "Allow",
+      "Action": [
+        "ram:GetResourceShareAssociations"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkRdsLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "rds:DescribeDBClusters",
+        "rds:DescribeDBInstances",
+        "rds:DescribeDBParameterGroups",
+        "rds:DescribeDBParameters",
+        "rds:DescribeDBSubnetGroups",
+        "rds:DescribeTenantDatabases"
+      ],
+      "Resource": [
+        "arn:aws:rds:*:111122223333:cluster:*",
+        "arn:aws:rds:*:111122223333:db:*",
+        "arn:aws:rds:*:111122223333:pg:*",
+        "arn:aws:rds:*:111122223333:subgrp:*",
+        "arn:aws:rds:*:111122223333:tenant-database:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkRdsLimitedToService",
+      "Effect": "Allow",
+      "Action": [
+        "rds:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:rds:*:111122223333:*",
+        "arn:aws:rds::111122223333:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkRekognition",
+      "Effect": "Allow",
+      "Action": [
+        "rekognition:ListCollections"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkRekognitionLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "rekognition:DescribeCollection",
+        "rekognition:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:rekognition:*:111122223333:collection/*",
+        "arn:aws:rekognition:*:111122223333:project/*",
+        "arn:aws:rekognition:*:111122223333:project/*/dataset/*",
+        "arn:aws:rekognition:*:111122223333:project/*/version/*",
+        "arn:aws:rekognition:*:111122223333:streamprocessor/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkResiliencehub",
+      "Effect": "Allow",
+      "Action": [
+        "resiliencehub:ListPolicies",
+        "resiliencehub:ListServices",
+        "resiliencehub:ListSystems"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkResiliencehubLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "resiliencehub:GetPolicy",
+        "resiliencehub:GetService",
+        "resiliencehub:GetSystem"
+      ],
+      "Resource": [
+        "arn:aws:resiliencehub:*:111122223333:policy/*",
+        "arn:aws:resiliencehub:*:111122223333:service/*",
+        "arn:aws:resiliencehub:*:111122223333:system/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkRoute53",
+      "Effect": "Allow",
+      "Action": [
+        "route53:ListHostedZones"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkRoute53LimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "route53:GetHostedZone",
+        "route53:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:route53:::healthcheck/*",
+        "arn:aws:route53:::hostedzone/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkRoute53resolver",
+      "Effect": "Allow",
+      "Action": [
+        "route53resolver:ListResolverRuleAssociations",
+        "route53resolver:ListResolverRules"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkRoute53resolverLimitedToService",
+      "Effect": "Allow",
+      "Action": [
+        "route53resolver:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:route53resolver:*:111122223333:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkS3",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListAllMyBuckets",
+        "s3:ListMultiRegionAccessPoints"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkS3LimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetBucketAcl",
+        "s3:GetBucketCORS",
+        "s3:GetBucketLogging",
+        "s3:GetBucketNotification",
+        "s3:GetBucketOwnershipControls",
+        "s3:GetBucketPolicy",
+        "s3:GetBucketPublicAccessBlock",
+        "s3:GetBucketVersioning",
+        "s3:GetEncryptionConfiguration",
+        "s3:GetLifecycleConfiguration",
+        "s3:GetMultiRegionAccessPointRoutes"
+      ],
+      "Resource": [
+        "arn:aws:s3:*:111122223333:accesspoint/*",
+        "arn:aws:s3::111122223333:accesspoint/*",
+        "arn:aws:s3:::*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkS3filesLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "s3files:GetFileSystem",
+        "s3files:ListFileSystems",
+        "s3files:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:s3files:*:111122223333:file-system/*",
+        "arn:aws:s3files:*:111122223333:file-system/*/access-point/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSagemaker",
+      "Effect": "Allow",
+      "Action": [
+        "sagemaker:ListAlgorithms",
+        "sagemaker:ListHubs",
+        "sagemaker:ListHyperParameterTuningJobs",
+        "sagemaker:ListInferenceComponents",
+        "sagemaker:ListTrainingJobs"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSagemakerLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "sagemaker:DescribeAlgorithm",
+        "sagemaker:DescribeHubContent",
+        "sagemaker:DescribeHyperParameterTuningJob",
+        "sagemaker:DescribeInferenceComponent",
+        "sagemaker:DescribeTrainingJob",
+        "sagemaker:ListHubContents"
+      ],
+      "Resource": [
+        "arn:aws:sagemaker:*:111122223333:algorithm/*",
+        "arn:aws:sagemaker:*:111122223333:hub-content/*",
+        "arn:aws:sagemaker:*:111122223333:hub/*",
+        "arn:aws:sagemaker:*:111122223333:hyper-parameter-tuning-job/*",
+        "arn:aws:sagemaker:*:111122223333:inference-component/*",
+        "arn:aws:sagemaker:*:111122223333:training-job/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSagemakerLimitedToService",
+      "Effect": "Allow",
+      "Action": [
+        "sagemaker:ListTags"
+      ],
+      "Resource": [
+        "arn:aws:sagemaker:*:111122223333:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkScheduler",
+      "Effect": "Allow",
+      "Action": [
+        "scheduler:ListSchedules"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSchedulerLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "scheduler:GetSchedule"
+      ],
+      "Resource": [
+        "arn:aws:scheduler:*:111122223333:schedule/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSecretsmanager",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:ListSecrets"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSecretsmanagerLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:GetResourcePolicy"
+      ],
+      "Resource": [
+        "arn:aws:secretsmanager:*:111122223333:secret:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSecurityhub",
+      "Effect": "Allow",
+      "Action": [
+        "securityhub:ListAutomationRulesV2",
+        "securityhub:ListConnectorsV2"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSecurityhubLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "securityhub:GetAutomationRuleV2",
+        "securityhub:GetConnectorV2",
+        "securityhub:GetInsights",
+        "securityhub:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:securityhub:*:111122223333:automation-rule/*",
+        "arn:aws:securityhub:*:111122223333:automation-rulev2/*",
+        "arn:aws:securityhub:*:111122223333:configuration-policy/*",
+        "arn:aws:securityhub:*:111122223333:connectorv2/*",
+        "arn:aws:securityhub:*:111122223333:hub/default"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSes",
+      "Effect": "Allow",
+      "Action": [
+        "ses:ListArchives",
+        "ses:ListIngressPoints",
+        "ses:ListRelays",
+        "ses:ListRuleSets",
+        "ses:ListTrafficPolicies"
+      ],
+      "Resource": [
+        "*"
+      ]
+    }
+  ]
+}

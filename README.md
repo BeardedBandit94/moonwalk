@@ -243,12 +243,37 @@ managed resources they sit among.
 
 Listing needs credentials that can read, and nothing more; moonwalk itself
 never touches the cloud, unless it is given the address of a state in S3,
-and then it reads that and nothing else. On AWS, the managed policies `ViewOnlyAccess` and
-`SecurityAudit` are the usual pair for this, narrower than `ReadOnlyAccess`,
-which can also read the data inside buckets and tables. Which is enough
-depends on the types listed, and has not been tried here against a real
-account. A type the credentials may not list shows up as an error in the
-listing, which moonwalk reports.
+and then it reads that and nothing else.
+
+#### Permissions on AWS
+
+`iam-policy` writes the IAM policies that the query file needs, from the
+same schema and options, so that the role may do what the listing does and
+nothing else:
+
+```bash
+go run ./cmd/moonwalk iam-policy -account 111122223333 -region us-east-1,eu-west-1 -out policies schema.json
+```
+
+Every action is named in full, with no wildcards. Every one is a read by
+AWS's own classification. Resources are limited to their kind and your
+account wherever AWS allows an action to be limited, and `"Resource": "*"`
+appears only for the actions it does not. The actions were recorded from
+the AWS provider itself, run against a stand-in for AWS, and looked up in
+AWS's Service Reference; they have not been tried against a real account.
+If the role lacks an action, the listing is refused it, and moonwalk says
+which.
+
+Three actions that the provider calls return what a service stores:
+`lambda:GetFunction` (a link to the code), `s3:ListBucket` (a bucket's
+objects) and `ssm:GetParameter` (a parameter's value). They are left out,
+and so are the types that cannot be listed without them, unless both
+commands are given `-allow` with the action. `-identity-only` asks for
+least: about two thirds of the actions, and no resource's settings.
+
+[docs/aws-iam](docs/aws-iam) has the policies for everything moonwalk can
+list, the rules they keep, how to set up the role, and the policy for
+reading states from S3.
 
 #### Without `terraform query`
 
@@ -390,8 +415,9 @@ Terraform take them: the environment, `~/.aws` and its profiles
 runs on. A bucket in another region than the configured one is found.
 Reading needs `s3:GetObject` on the states and, for an address ending in
 `/`, `s3:ListBucket` on the bucket; if the bucket is encrypted with a KMS
-key, `kms:Decrypt` on that key as well. Nothing is written and no lock is
-taken. Another store that speaks the S3 protocol is reached by setting
+key, `kms:Decrypt` on that key as well. `moonwalk iam-policy -state
+s3://acme-terraform-state/ -kms-key <key ARN>` writes exactly that policy.
+Nothing is written and no lock is taken. Another store that speaks the S3 protocol is reached by setting
 `AWS_ENDPOINT_URL_S3`.
 
 States in S3 are read once: the explorer does not reload them when they
@@ -542,6 +568,9 @@ and a snapshot, carry a `schema_version`. It changes only when a field is remove
 | `internal/discover` | Adapter from `terraform query` output, and from AWS and Azure CLI listings, to the graph |
 | `internal/s3state` | Reads states from S3; `s3test` is a stand-in for S3 to test against |
 | `internal/azureid` | Parsing and comparison of Azure resource IDs |
+| `internal/awsiam` | The IAM policies that listing an AWS account takes, from recorded permissions |
+| `scripts/aws-permissions` | Records which AWS API calls the provider makes; not part of the build |
+| `docs/aws-iam` | The policies for everything moonwalk can list, and how to set up the role |
 | `internal/relate` | Relationships inferred from attributes: containment, glue, links between states |
 | `internal/snapshot` | A graph written to a file and read back, and the comparison of two |
 | `internal/view` | Grouping of a graph, filters, and the collapsed views of it |

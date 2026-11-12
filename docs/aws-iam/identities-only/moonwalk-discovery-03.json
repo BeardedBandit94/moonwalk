@@ -1,0 +1,251 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "MoonwalkRoute53resolver",
+      "Effect": "Allow",
+      "Action": [
+        "route53resolver:ListResolverRuleAssociations",
+        "route53resolver:ListResolverRules"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkS3",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListAllMyBuckets",
+        "s3:ListMultiRegionAccessPoints"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkS3LimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetBucketCORS",
+        "s3:GetBucketLogging",
+        "s3:GetBucketNotification",
+        "s3:GetBucketPolicy",
+        "s3:GetBucketPublicAccessBlock",
+        "s3:GetEncryptionConfiguration",
+        "s3:GetLifecycleConfiguration"
+      ],
+      "Resource": [
+        "arn:aws:s3:*:111122223333:accesspoint/*",
+        "arn:aws:s3:::*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkS3filesLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "s3files:GetFileSystem",
+        "s3files:ListFileSystems"
+      ],
+      "Resource": [
+        "arn:aws:s3files:*:111122223333:file-system/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSagemaker",
+      "Effect": "Allow",
+      "Action": [
+        "sagemaker:ListAlgorithms",
+        "sagemaker:ListHubs",
+        "sagemaker:ListHyperParameterTuningJobs",
+        "sagemaker:ListInferenceComponents",
+        "sagemaker:ListTrainingJobs"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSagemakerLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "sagemaker:DescribeAlgorithm",
+        "sagemaker:DescribeHubContent",
+        "sagemaker:ListHubContents"
+      ],
+      "Resource": [
+        "arn:aws:sagemaker:*:111122223333:algorithm/*",
+        "arn:aws:sagemaker:*:111122223333:hub-content/*",
+        "arn:aws:sagemaker:*:111122223333:hub/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkScheduler",
+      "Effect": "Allow",
+      "Action": [
+        "scheduler:ListSchedules"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSecretsmanager",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:ListSecrets"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSecretsmanagerLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:GetResourcePolicy"
+      ],
+      "Resource": [
+        "arn:aws:secretsmanager:*:111122223333:secret:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSecurityhub",
+      "Effect": "Allow",
+      "Action": [
+        "securityhub:ListAutomationRulesV2",
+        "securityhub:ListConnectorsV2"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSecurityhubLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "securityhub:GetAutomationRuleV2",
+        "securityhub:GetConnectorV2",
+        "securityhub:GetInsights"
+      ],
+      "Resource": [
+        "arn:aws:securityhub:*:111122223333:automation-rulev2/*",
+        "arn:aws:securityhub:*:111122223333:connectorv2/*",
+        "arn:aws:securityhub:*:111122223333:hub/default"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSes",
+      "Effect": "Allow",
+      "Action": [
+        "ses:ListArchives",
+        "ses:ListIngressPoints",
+        "ses:ListRelays",
+        "ses:ListRuleSets",
+        "ses:ListTrafficPolicies"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSmsVoiceLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "sms-voice:DescribePools",
+        "sms-voice:DescribeProtectConfigurations",
+        "sms-voice:DescribeSenderIds",
+        "sms-voice:ListPoolOriginationIdentities"
+      ],
+      "Resource": [
+        "arn:aws:sms-voice:*:111122223333:pool/*",
+        "arn:aws:sms-voice:*:111122223333:protect-configuration/*",
+        "arn:aws:sms-voice:*:111122223333:sender-id/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSns",
+      "Effect": "Allow",
+      "Action": [
+        "sns:ListTopics"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSqs",
+      "Effect": "Allow",
+      "Action": [
+        "sqs:ListQueues"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSqsLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "sqs:GetQueueAttributes"
+      ],
+      "Resource": [
+        "arn:aws:sqs:*:111122223333:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSsm",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:DescribeParameters",
+        "ssm:DescribePatchBaselines",
+        "ssm:DescribePatchGroups",
+        "ssm:ListAssociations",
+        "ssm:ListDocuments"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkStates",
+      "Effect": "Allow",
+      "Action": [
+        "states:ListStateMachines"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkWorkmail",
+      "Effect": "Allow",
+      "Action": [
+        "workmail:ListOrganizations"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkWorkmailLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "workmail:DescribeOrganization"
+      ],
+      "Resource": [
+        "arn:aws:workmail:*:111122223333:organization/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkWorkspaces",
+      "Effect": "Allow",
+      "Action": [
+        "workspaces:DescribeWorkspacesPools"
+      ],
+      "Resource": [
+        "*"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3642 @@
+{
+ "provider": "hashicorp/aws 6.73.0",
+ "catalog": "AWS Service Reference, read 2026-11-12",
+ "types": {
+  "aws_accountaccess_application": {
+   "list": [
+    "account-access:ListApplications"
+   ],
+   "read": [
+    "account-access:GetApplication",
+    "account-access:ListTagsForResource"
+   ]
+  },
+  "aws_acm_certificate": {
+   "list": [
+    "acm:ListCertificates"
+   ],
+   "read": [
+    "acm:DescribeCertificate",
+    "acm:ListTagsForCertificate"
+   ]
+  },
+  "aws_agentregistry_registry": {
+   "list": [
+    "agent-registry:ListRegistries"
+   ],
+   "read": [
+    "agent-registry:GetRegistry",
+    "agent-registry:ListTagsForResource"
+   ]
+  },
+  "aws_ami_launch_permission": {
+   "list": [
+    "ec2:DescribeImageAttribute",
+    "ec2:DescribeImages"
+   ]
+  },
+  "aws_api_gateway_rest_api": {
+   "list": [
+    "apigateway:GET"
+   ],
+   "read_unconfirmed": true
+  },
+  "aws_apigatewayv2_api": {
+   "list": [
+    "apigateway:GET"
+   ]
+  },
+  "aws_appflow_connector_profile": {
+   "list": [
+    "appflow:DescribeConnectorProfiles"
+   ]
+  },
+  "aws_appflow_flow": {
+   "list": [
+    "appflow:DescribeFlow",
+    "appflow:ListFlows"
+   ]
+  },
+  "aws_arczonalshift_zonal_autoshift_configuration": {
+   "list": [
+    "arc-zonal-shift:ListManagedResources"
+   ],
+   "read": [
+    "arc-zonal-shift:GetManagedResource"
+   ]
+  },
+  "aws_autoscaling_group": {
+   "list": [
+    "autoscaling:DescribeAutoScalingGroups"
+   ]
+  },
+  "aws_backup_plan": {
+   "list": [
+    "backup:ListBackupPlans"
+   ],
+   "read": [
+    "backup:GetBackupPlan",
+    "backup:ListTags"
+   ]
+  },
+  "aws_backup_selection": {
+   "list": [
+    "backup:ListBackupPlans",
+    "backup:ListBackupSelections"
+   ],
+   "read": [
+    "backup:GetBackupSelection"
+   ]
+  },
+  "aws_backup_vault": {
+   "list": [
+    "backup:ListBackupVaults"
+   ],
+   "read": [
+    "backup:DescribeBackupVault",
+    "backup:ListTags"
+   ]
+  },
+  "aws_batch_job_definition": {
+   "list": [
+    "batch:DescribeJobDefinitions"
+   ]
+  },
+  "aws_batch_job_queue": {
+   "list": [
+    "batch:DescribeJobQueues"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_bedrock_evaluation_job": {
+   "list": [
+    "bedrock:ListEvaluationJobs"
+   ],
+   "read": [
+    "bedrock:GetEvaluationJob",
+    "bedrock:ListTagsForResource"
+   ]
+  },
+  "aws_bedrock_guardrail_resource_policy": {
+   "list": [
+    "bedrock:GetResourcePolicy",
+    "bedrock:ListGuardrails"
+   ]
+  },
+  "aws_bedrock_model_invocation_job": {
+   "list": [
+    "bedrock:ListModelInvocationJobs"
+   ],
+   "read": [
+    "bedrock:GetModelInvocationJob"
+   ]
+  },
+  "aws_bedrockagentcore_browser_profile": {
+   "list": [
+    "bedrock-agentcore:ListBrowserProfiles"
+   ],
+   "read": [
+    "bedrock-agentcore:ListTagsForResource"
+   ]
+  },
+  "aws_bedrockagentcore_evaluator": {
+   "list": [
+    "bedrock-agentcore:ListEvaluators"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_bedrockagentcore_harness": {
+   "list": [
+    "bedrock-agentcore:ListHarnesses"
+   ],
+   "read": [
+    "bedrock-agentcore:GetHarness",
+    "bedrock-agentcore:ListTagsForResource"
+   ]
+  },
+  "aws_bedrockagentcore_online_evaluation_config": {
+   "list": [
+    "bedrock-agentcore:ListOnlineEvaluationConfigs"
+   ],
+   "read": [
+    "bedrock-agentcore:GetOnlineEvaluationConfig",
+    "bedrock-agentcore:ListTagsForResource"
+   ]
+  },
+  "aws_bedrockagentcore_policy_engine": {
+   "list": [
+    "bedrock-agentcore:ListPolicyEngines"
+   ],
+   "read": [
+    "bedrock-agentcore:GetPolicyEngine",
+    "bedrock-agentcore:ListTagsForResource"
+   ]
+  },
+  "aws_bedrockagentcore_registry": {
+   "list": [
+    "bedrock-agentcore:ListRegistries"
+   ],
+   "read": [
+    "bedrock-agentcore:GetRegistry"
+   ]
+  },
+  "aws_bedrockagentcore_resource_policy": {
+   "list": [
+    "bedrock-agentcore:GetGateway",
+    "bedrock-agentcore:GetResourcePolicy",
+    "bedrock-agentcore:ListAgentRuntimeEndpoints",
+    "bedrock-agentcore:ListAgentRuntimes",
+    "bedrock-agentcore:ListGateways"
+   ]
+  },
+  "aws_bedrockdataautomation_blueprint": {
+   "list": [
+    "bedrock:ListBlueprints"
+   ],
+   "read": [
+    "bedrock:GetBlueprint",
+    "bedrock:ListTagsForResource"
+   ]
+  },
+  "aws_bedrockdataautomation_library": {
+   "list": [
+    "bedrock:ListDataAutomationLibraries"
+   ],
+   "read": [
+    "bedrock:GetDataAutomationLibrary",
+    "bedrock:ListTagsForResource"
+   ]
+  },
+  "aws_bedrockdataautomation_project": {
+   "list": [
+    "bedrock:ListDataAutomationProjects"
+   ],
+   "read": [
+    "bedrock:GetDataAutomationProject",
+    "bedrock:ListTagsForResource"
+   ]
+  },
+  "aws_cleanrooms_collaboration": {
+   "list": [
+    "cleanrooms:GetCollaboration",
+    "cleanrooms:ListCollaborations",
+    "cleanrooms:ListMembers"
+   ],
+   "read": [
+    "cleanrooms:ListTagsForResource"
+   ]
+  },
+  "aws_cleanrooms_configured_table": {
+   "list": [
+    "cleanrooms:GetConfiguredTable",
+    "cleanrooms:ListConfiguredTables"
+   ],
+   "read": [
+    "cleanrooms:ListTagsForResource"
+   ]
+  },
+  "aws_cleanrooms_membership": {
+   "list": [
+    "cleanrooms:ListMemberships"
+   ],
+   "read": [
+    "cleanrooms:GetMembership",
+    "cleanrooms:ListTagsForResource"
+   ]
+  },
+  "aws_cloudfront_distribution": {
+   "list": [
+    "cloudfront:ListDistributions"
+   ],
+   "global": true,
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_cloudfront_key_value_store": {
+   "list": [
+    "cloudfront:ListKeyValueStores"
+   ],
+   "global": true,
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_cloudwatch_alarm_mute_rule": {
+   "list": [
+    "cloudwatch:GetAlarmMuteRule",
+    "cloudwatch:ListAlarmMuteRules"
+   ],
+   "read": [
+    "cloudwatch:ListTagsForResource"
+   ]
+  },
+  "aws_cloudwatch_event_rule": {
+   "list": [
+    "events:DescribeRule",
+    "events:ListRules"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_cloudwatch_log_group": {
+   "list": [
+    "logs:DescribeLogGroups"
+   ],
+   "read": [
+    "logs:ListTagsForResource"
+   ]
+  },
+  "aws_cloudwatch_metric_alarm": {
+   "list": [
+    "cloudwatch:DescribeAlarms"
+   ],
+   "read": [
+    "cloudwatch:ListTagsForResource"
+   ]
+  },
+  "aws_cloudwatchomni_access_grant": {
+   "list": [
+    "cloudwatch:ListAccessGrants",
+    "cloudwatch:ListSpaces"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_cloudwatchomni_domain": {
+   "list": [
+    "cloudwatch:ListDomains"
+   ],
+   "read": [
+    "cloudwatch:GetDomain"
+   ]
+  },
+  "aws_cloudwatchomni_organization_domain": {
+   "list": [
+    "cloudwatch:ListDomains"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_cloudwatchomni_space": {
+   "list": [
+    "cloudwatch:ListSpaces"
+   ],
+   "read": [
+    "cloudwatch:GetSpace"
+   ]
+  },
+  "aws_cloudwatchomni_view": {
+   "list": [
+    "cloudwatch:ListViews"
+   ],
+   "read": [
+    "cloudwatch:GetView",
+    "cloudwatch:ListTagsForResource"
+   ]
+  },
+  "aws_codebuild_project": {
+   "list": [
+    "codebuild:ListProjects"
+   ],
+   "read": [
+    "codebuild:BatchGetProjects"
+   ],
+   "read_unconfirmed": true
+  },
+  "aws_codepipeline": {
+   "list": [
+    "codepipeline:ListPipelines"
+   ],
+   "read": [
+    "codepipeline:GetPipeline",
+    "codepipeline:ListTagsForResource"
+   ]
+  },
+  "aws_config_config_rule": {
+   "list": [
+    "config:DescribeConfigRules"
+   ],
+   "read": [
+    "config:ListTagsForResource"
+   ]
+  },
+  "aws_db_instance": {
+   "list": [
+    "rds:DescribeDBInstances"
+   ]
+  },
+  "aws_db_parameter_group": {
+   "list": [
+    "rds:DescribeDBParameterGroups"
+   ],
+   "read": [
+    "rds:DescribeDBParameters",
+    "rds:ListTagsForResource"
+   ]
+  },
+  "aws_db_subnet_group": {
+   "list": [
+    "rds:DescribeDBSubnetGroups"
+   ],
+   "read": [
+    "rds:ListTagsForResource"
+   ]
+  },
+  "aws_default_security_group": {
+   "list": [
+    "ec2:DescribeSecurityGroups"
+   ]
+  },
+  "aws_devopsagent_agent_space": {
+   "list": [
+    "aidevops:ListAgentSpaces"
+   ],
+   "read": [
+    "aidevops:ListTagsForResource"
+   ]
+  },
+  "aws_dms_data_provider": {
+   "list": [
+    "dms:ListDataProviders"
+   ],
+   "read": [
+    "dms:ListTagsForResource"
+   ]
+  },
+  "aws_dms_instance_profile": {
+   "list": [
+    "dms:ListInstanceProfiles"
+   ],
+   "read": [
+    "dms:ListTagsForResource"
+   ]
+  },
+  "aws_dms_migration_project": {
+   "list": [
+    "dms:ListMigrationProjects"
+   ],
+   "read": [
+    "dms:ListTagsForResource"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_dsql_cluster": {
+   "list": [
+    "dsql:ListClusters"
+   ],
+   "read": [
+    "dsql:GetCluster",
+    "dsql:GetVpcEndpointServiceName",
+    "dsql:ListTagsForResource"
+   ]
+  },
+  "aws_dsql_cluster_policy": {
+   "list": [
+    "dsql:GetClusterPolicy",
+    "dsql:ListClusters"
+   ]
+  },
+  "aws_dynamodb_table": {
+   "list": [
+    "dynamodb:ListTables"
+   ],
+   "read": [
+    "dynamodb:DescribeContinuousBackups",
+    "dynamodb:DescribeTable",
+    "dynamodb:DescribeTimeToLive",
+    "dynamodb:ListTagsOfResource",
+    "kms:DescribeKey"
+   ]
+  },
+  "aws_ebs_volume": {
+   "list": [
+    "ec2:DescribeVolumes"
+   ]
+  },
+  "aws_ec2_network_insights_access_scope": {
+   "list": [
+    "ec2:DescribeNetworkInsightsAccessScopes"
+   ],
+   "read": [
+    "ec2:GetNetworkInsightsAccessScopeContent"
+   ]
+  },
+  "aws_ec2_secondary_network": {
+   "list": [
+    "ec2:DescribeSecondaryNetworks"
+   ],
+   "read": [
+    "ec2:DescribeTags"
+   ]
+  },
+  "aws_ec2_secondary_subnet": {
+   "list": [
+    "ec2:DescribeSecondarySubnets"
+   ],
+   "read": [
+    "ec2:DescribeTags"
+   ]
+  },
+  "aws_ec2_transit_gateway_metering_policy": {
+   "list": [
+    "ec2:DescribeTransitGatewayMeteringPolicies"
+   ],
+   "read": [
+    "ec2:DescribeTags"
+   ]
+  },
+  "aws_ecr_lifecycle_policy": {
+   "list": [
+    "ecr:DescribeRepositories",
+    "ecr:GetLifecyclePolicy"
+   ]
+  },
+  "aws_ecr_repository": {
+   "list": [
+    "ecr:DescribeRepositories"
+   ],
+   "read": [
+    "ecr:ListTagsForResource"
+   ]
+  },
+  "aws_ecr_repository_policy": {
+   "list": [
+    "ecr:DescribeRepositories",
+    "ecr:GetRepositoryPolicy"
+   ]
+  },
+  "aws_ecs_cluster": {
+   "list": [
+    "ecs:ListClusters"
+   ],
+   "read": [
+    "ecs:DescribeClusters"
+   ]
+  },
+  "aws_ecs_daemon_task_definition": {
+   "list": [
+    "ecs:DescribeDaemonTaskDefinition",
+    "ecs:ListDaemonTaskDefinitions"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_ecs_task_definition": {
+   "list": [
+    "ecs:DescribeTaskDefinition",
+    "ecs:ListTaskDefinitions"
+   ]
+  },
+  "aws_eip": {
+   "list": [
+    "ec2:DescribeAddresses"
+   ]
+  },
+  "aws_eks_cluster": {
+   "list": [
+    "eks:ListClusters"
+   ],
+   "read": [
+    "eks:DescribeCluster"
+   ]
+  },
+  "aws_elb": {
+   "list": [
+    "elasticloadbalancing:DescribeLoadBalancers"
+   ],
+   "read": [
+    "elasticloadbalancing:DescribeLoadBalancerAttributes",
+    "elasticloadbalancing:DescribeTags"
+   ]
+  },
+  "aws_fis_safety_lever_state": {
+   "list": [
+    "fis:GetSafetyLever"
+   ]
+  },
+  "aws_flow_log": {
+   "list": [
+    "ec2:DescribeFlowLogs"
+   ]
+  },
+  "aws_glue_catalog": {
+   "list": [
+    "glue:GetCatalogs",
+    "glue:GetTags"
+   ]
+  },
+  "aws_glue_job": {
+   "list": [
+    "glue:GetJobs"
+   ],
+   "read": [
+    "glue:GetTags"
+   ]
+  },
+  "aws_iam_access_key": {
+   "list": [
+    "iam:ListAccessKeys",
+    "iam:ListUsers"
+   ],
+   "global": true
+  },
+  "aws_iam_group": {
+   "list": [
+    "iam:ListGroups"
+   ],
+   "global": true
+  },
+  "aws_iam_group_policy_attachment": {
+   "list": [
+    "iam:ListAttachedGroupPolicies",
+    "iam:ListGroups"
+   ],
+   "global": true
+  },
+  "aws_iam_instance_profile": {
+   "list": [
+    "iam:ListInstanceProfiles"
+   ],
+   "read": [
+    "iam:GetInstanceProfile"
+   ],
+   "global": true
+  },
+  "aws_iam_openid_connect_provider": {
+   "list": [
+    "iam:ListOpenIDConnectProviders"
+   ],
+   "read": [
+    "iam:GetOpenIDConnectProvider"
+   ],
+   "global": true
+  },
+  "aws_iam_policy": {
+   "list": [
+    "iam:ListPolicies"
+   ],
+   "read": [
+    "iam:GetPolicyVersion"
+   ],
+   "global": true
+  },
+  "aws_iam_role": {
+   "list": [
+    "iam:ListRoles"
+   ],
+   "global": true
+  },
+  "aws_iam_role_policy_attachment": {
+   "list": [
+    "iam:ListAttachedRolePolicies",
+    "iam:ListRoles"
+   ],
+   "global": true
+  },
+  "aws_iam_user": {
+   "list": [
+    "iam:ListUsers"
+   ],
+   "read": [
+    "iam:ListUserTags"
+   ],
+   "global": true
+  },
+  "aws_iam_user_policy_attachment": {
+   "list": [
+    "iam:ListAttachedUserPolicies",
+    "iam:ListUsers"
+   ],
+   "global": true
+  },
+  "aws_instance": {
+   "list": [
+    "ec2:DescribeInstanceTypes",
+    "ec2:DescribeInstances"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_internet_gateway": {
+   "list": [
+    "ec2:DescribeInternetGateways"
+   ]
+  },
+  "aws_key_pair": {
+   "list": [
+    "ec2:DescribeKeyPairs"
+   ]
+  },
+  "aws_kinesis_firehose_delivery_stream": {
+   "list": [
+    "firehose:ListDeliveryStreams"
+   ],
+   "read": [
+    "firehose:DescribeDeliveryStream",
+    "firehose:ListTagsForDeliveryStream"
+   ]
+  },
+  "aws_kms_alias": {
+   "list": [
+    "kms:ListAliases"
+   ]
+  },
+  "aws_kms_key": {
+   "list": [
+    "kms:DescribeKey",
+    "kms:GetKeyPolicy",
+    "kms:GetKeyRotationStatus",
+    "kms:ListKeys",
+    "kms:ListResourceTags"
+   ]
+  },
+  "aws_lambda_capacity_provider": {
+   "list": [
+    "lambda:ListCapacityProviders"
+   ],
+   "read": [
+    "lambda:ListTags"
+   ]
+  },
+  "aws_lambda_event_source_mapping": {
+   "list": [
+    "lambda:ListEventSourceMappings"
+   ],
+   "read": [
+    "lambda:GetEventSourceMapping",
+    "lambda:ListTags"
+   ]
+  },
+  "aws_lambda_function": {
+   "list": [
+    "lambda:GetFunction",
+    "lambda:GetFunctionCodeSigningConfig",
+    "lambda:ListFunctions",
+    "lambda:ListVersionsByFunction"
+   ]
+  },
+  "aws_lambda_function_scaling_config": {
+   "list": [
+    "lambda:ListCapacityProviders",
+    "lambda:ListFunctionVersionsByCapacityProvider"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_lambda_layer_version": {
+   "list": [
+    "lambda:ListLayerVersions",
+    "lambda:ListLayers"
+   ],
+   "read_unconfirmed": true
+  },
+  "aws_lambda_resource_policy": {
+   "list": [
+    "lambda:GetResourcePolicy",
+    "lambda:ListFunctions"
+   ]
+  },
+  "aws_lambdacore_network_connector": {
+   "list": [
+    "lambda:ListNetworkConnectors"
+   ],
+   "read": [
+    "lambda:GetNetworkConnector"
+   ]
+  },
+  "aws_lambdamicrovms_image": {
+   "list": [
+    "lambda:ListMicrovmImages"
+   ],
+   "read": [
+    "lambda:GetMicrovmImage"
+   ]
+  },
+  "aws_lambdamicrovms_microvm": {
+   "list": [
+    "lambda:ListMicrovms"
+   ],
+   "read": [
+    "lambda:GetMicrovm"
+   ]
+  },
+  "aws_lambdaweb_function": {
+   "list": [
+    "lambda:ListWebFunctions"
+   ],
+   "read": [
+    "lambda:GetWebFunction",
+    "lambda:ListTags"
+   ]
+  },
+  "aws_launch_template": {
+   "list": [
+    "ec2:DescribeLaunchTemplateVersions",
+    "ec2:DescribeLaunchTemplates"
+   ],
+   "read": [
+    "ec2:DescribeInstanceTypes",
+    "ec2:DescribeTags"
+   ]
+  },
+  "aws_lb": {
+   "list": [
+    "elasticloadbalancing:DescribeLoadBalancers"
+   ],
+   "read": [
+    "elasticloadbalancing:DescribeCapacityReservation",
+    "elasticloadbalancing:DescribeLoadBalancerAttributes",
+    "elasticloadbalancing:DescribeTags"
+   ]
+  },
+  "aws_lb_target_group": {
+   "list": [
+    "elasticloadbalancing:DescribeTargetGroups"
+   ],
+   "read": [
+    "elasticloadbalancing:DescribeTags",
+    "elasticloadbalancing:DescribeTargetGroupAttributes"
+   ]
+  },
+  "aws_mailmanager_archive": {
+   "list": [
+    "ses:ListArchives"
+   ],
+   "read": [
+    "ses:GetArchive",
+    "ses:ListTagsForResource"
+   ]
+  },
+  "aws_mailmanager_ingress_point": {
+   "list": [
+    "ses:ListIngressPoints"
+   ],
+   "read": [
+    "ses:GetIngressPoint",
+    "ses:ListTagsForResource"
+   ]
+  },
+  "aws_mailmanager_relay": {
+   "list": [
+    "ses:ListRelays"
+   ],
+   "read": [
+    "ses:GetRelay",
+    "ses:ListTagsForResource"
+   ]
+  },
+  "aws_mailmanager_rule_set": {
+   "list": [
+    "ses:ListRuleSets"
+   ],
+   "read": [
+    "ses:GetRuleSet",
+    "ses:ListTagsForResource"
+   ]
+  },
+  "aws_mailmanager_traffic_policy": {
+   "list": [
+    "ses:ListTrafficPolicies"
+   ],
+   "read": [
+    "ses:GetTrafficPolicy",
+    "ses:ListTagsForResource"
+   ]
+  },
+  "aws_msk_cluster": {
+   "list": [
+    "kafka:ListClusters"
+   ],
+   "read": [
+    "kafka:GetBootstrapBrokers"
+   ]
+  },
+  "aws_msk_serverless_cluster": {
+   "list": [
+    "kafka:ListClustersV2"
+   ],
+   "read": [
+    "kafka:GetBootstrapBrokers"
+   ]
+  },
+  "aws_nat_gateway": {
+   "list": [
+    "ec2:DescribeNatGateways"
+   ]
+  },
+  "aws_network_acl": {
+   "list": [
+    "ec2:DescribeNetworkAcls"
+   ],
+   "read_unconfirmed": true
+  },
+  "aws_network_acl_rule": {
+   "list": [
+    "ec2:DescribeNetworkAcls"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_network_interface": {
+   "list": [
+    "ec2:DescribeNetworkInterfaces"
+   ]
+  },
+  "aws_networkfirewall_container_association": {
+   "list": [
+    "network-firewall:ListContainerAssociations",
+    "network-firewall:ListTagsForResource"
+   ],
+   "read": [
+    "network-firewall:DescribeContainerAssociation"
+   ]
+  },
+  "aws_networksecuritymanager_admin_account": {
+   "list": [
+    "network-security-manager:GetAdminAccount",
+    "network-security-manager:ListAdminAccounts"
+   ]
+  },
+  "aws_networksecuritymanager_deployment": {
+   "list": [
+    "network-security-manager:ListDeployments"
+   ],
+   "read": [
+    "network-security-manager:GetDeployment",
+    "network-security-manager:ListTagsForResource"
+   ]
+  },
+  "aws_networksecuritymanager_policy": {
+   "list": [
+    "network-security-manager:ListPolicies"
+   ],
+   "read": [
+    "network-security-manager:GetPolicy",
+    "network-security-manager:ListTagsForResource"
+   ]
+  },
+  "aws_networksecuritymanager_rule": {
+   "list": [
+    "network-security-manager:ListRules"
+   ],
+   "read": [
+    "network-security-manager:GetRule",
+    "network-security-manager:ListTagsForResource"
+   ]
+  },
+  "aws_networksecuritymanager_scope": {
+   "list": [
+    "network-security-manager:ListScopes"
+   ],
+   "read": [
+    "network-security-manager:GetScope"
+   ],
+   "read_unconfirmed": true
+  },
+  "aws_networksecuritymanager_template": {
+   "list": [
+    "network-security-manager:ListTemplates"
+   ],
+   "read": [
+    "network-security-manager:GetTemplate",
+    "network-security-manager:ListTagsForResource"
+   ]
+  },
+  "aws_observabilityadmin_telemetry_rule": {
+   "list": [
+    "observabilityadmin:GetTelemetryRule",
+    "observabilityadmin:ListTelemetryRules"
+   ],
+   "read": [
+    "observabilityadmin:ListTagsForResource"
+   ]
+  },
+  "aws_observabilityadmin_telemetry_rule_for_organization": {
+   "list": [
+    "observabilityadmin:GetTelemetryRuleForOrganization",
+    "observabilityadmin:ListTelemetryRulesForOrganization"
+   ],
+   "read": [
+    "observabilityadmin:ListTagsForResource"
+   ]
+  },
+  "aws_opensearchserverless_collection": {
+   "list": [
+    "aoss:BatchGetCollection",
+    "aoss:ListCollections"
+   ],
+   "read": [
+    "aoss:ListTagsForResource"
+   ]
+  },
+  "aws_opensearchserverless_collection_group": {
+   "list": [
+    "aoss:ListCollectionGroups"
+   ],
+   "read": [
+    "aoss:BatchGetCollectionGroup",
+    "aoss:ListTagsForResource"
+   ]
+  },
+  "aws_opensearchserverless_vpc_endpoint": {
+   "list": [
+    "aoss:ListVpcEndpoints"
+   ],
+   "read": [
+    "aoss:BatchGetVpcEndpoint",
+    "ec2:DescribeVpcEndpoints"
+   ],
+   "read_unconfirmed": true
+  },
+  "aws_organizations_aws_service_access": {
+   "list": [
+    "organizations:ListAWSServiceAccessForOrganization"
+   ],
+   "global": true
+  },
+  "aws_osis_pipeline": {
+   "list": [
+    "osis:GetPipeline",
+    "osis:ListPipelines"
+   ]
+  },
+  "aws_osis_pipeline_endpoint": {
+   "list": [
+    "osis:ListPipelineEndpoints"
+   ]
+  },
+  "aws_osis_resource_policy": {
+   "list": [
+    "osis:GetResourcePolicy",
+    "osis:ListPipelines"
+   ]
+  },
+  "aws_pinpointsmsvoicev2_pool": {
+   "list": [
+    "sms-voice:DescribePools",
+    "sms-voice:ListPoolOriginationIdentities"
+   ],
+   "read": [
+    "sms-voice:ListTagsForResource"
+   ]
+  },
+  "aws_pinpointsmsvoicev2_protect_configuration": {
+   "list": [
+    "sms-voice:DescribeProtectConfigurations"
+   ],
+   "read": [
+    "sms-voice:GetProtectConfigurationCountryRuleSet",
+    "sms-voice:ListTagsForResource"
+   ]
+  },
+  "aws_pinpointsmsvoicev2_sender_id": {
+   "list": [
+    "sms-voice:DescribeSenderIds"
+   ],
+   "read": [
+    "sms-voice:ListTagsForResource"
+   ]
+  },
+  "aws_pricingplanmanager_subscription": {
+   "list": [
+    "pricingplanmanager:ListSubscriptions"
+   ],
+   "read": [
+    "pricingplanmanager:GetSubscription"
+   ],
+   "global": true
+  },
+  "aws_prometheus_scraper": {
+   "list": [
+    "aps:ListScrapers"
+   ],
+   "read": [
+    "aps:DescribeScraper"
+   ]
+  },
+  "aws_prometheus_scraper_logging_configuration": {
+   "list": [
+    "aps:DescribeScraperLoggingConfiguration",
+    "aps:ListScrapers"
+   ]
+  },
+  "aws_quicksight_account_custom_permission": {
+   "list": [
+    "quicksight:DescribeAccountCustomPermission"
+   ]
+  },
+  "aws_ram_principal_association": {
+   "list": [
+    "ram:GetResourceShareAssociations"
+   ]
+  },
+  "aws_ram_resource_association": {
+   "list": [
+    "ram:GetResourceShareAssociations"
+   ]
+  },
+  "aws_rds_cluster": {
+   "list": [
+    "rds:DescribeDBClusters"
+   ]
+  },
+  "aws_rds_cluster_instance": {
+   "list": [
+    "rds:DescribeDBClusters",
+    "rds:DescribeDBInstances"
+   ]
+  },
+  "aws_rds_tenant_database": {
+   "list": [
+    "rds:DescribeTenantDatabases"
+   ]
+  },
+  "aws_rekognition_collection": {
+   "list": [
+    "rekognition:ListCollections"
+   ],
+   "read": [
+    "rekognition:DescribeCollection",
+    "rekognition:ListTagsForResource"
+   ]
+  },
+  "aws_resiliencehubv2_policy": {
+   "list": [
+    "resiliencehub:ListPolicies"
+   ],
+   "read": [
+    "resiliencehub:GetPolicy"
+   ]
+  },
+  "aws_resiliencehubv2_service": {
+   "list": [
+    "resiliencehub:ListServices"
+   ],
+   "read": [
+    "resiliencehub:GetService"
+   ]
+  },
+  "aws_resiliencehubv2_system": {
+   "list": [
+    "resiliencehub:ListSystems"
+   ],
+   "read": [
+    "resiliencehub:GetSystem"
+   ]
+  },
+  "aws_route53_resolver_rule": {
+   "list": [
+    "route53resolver:ListResolverRules"
+   ],
+   "read": [
+    "route53resolver:ListTagsForResource"
+   ]
+  },
+  "aws_route53_resolver_rule_association": {
+   "list": [
+    "route53resolver:ListResolverRuleAssociations"
+   ]
+  },
+  "aws_route53_zone": {
+   "list": [
+    "route53:ListHostedZones"
+   ],
+   "read": [
+    "route53:GetHostedZone",
+    "route53:ListTagsForResource"
+   ],
+   "global": true
+  },
+  "aws_route_table": {
+   "list": [
+    "ec2:DescribeNetworkInterfaces",
+    "ec2:DescribeRouteTables"
+   ]
+  },
+  "aws_s3_bucket": {
+   "list": [
+    "s3:ListAllMyBuckets",
+    "s3:ListBucket"
+   ],
+   "read": [
+    "s3:ListTagsForResource"
+   ]
+  },
+  "aws_s3_bucket_acl": {
+   "list": [
+    "s3:ListAllMyBuckets"
+   ],
+   "read": [
+    "s3:GetBucketAcl"
+   ]
+  },
+  "aws_s3_bucket_cors_configuration": {
+   "list": [
+    "s3:GetBucketCORS",
+    "s3:ListAllMyBuckets"
+   ]
+  },
+  "aws_s3_bucket_lifecycle_configuration": {
+   "list": [
+    "s3:GetLifecycleConfiguration",
+    "s3:ListAllMyBuckets"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_s3_bucket_logging": {
+   "list": [
+    "s3:GetBucketLogging",
+    "s3:ListAllMyBuckets"
+   ]
+  },
+  "aws_s3_bucket_notification": {
+   "list": [
+    "s3:GetBucketNotification",
+    "s3:ListAllMyBuckets"
+   ]
+  },
+  "aws_s3_bucket_ownership_controls": {
+   "list": [
+    "s3:ListAllMyBuckets"
+   ],
+   "read": [
+    "s3:GetBucketOwnershipControls"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_s3_bucket_policy": {
+   "list": [
+    "s3:GetBucketPolicy",
+    "s3:ListAllMyBuckets"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_s3_bucket_public_access_block": {
+   "list": [
+    "s3:GetBucketPublicAccessBlock",
+    "s3:ListAllMyBuckets"
+   ]
+  },
+  "aws_s3_bucket_server_side_encryption_configuration": {
+   "list": [
+    "s3:GetEncryptionConfiguration",
+    "s3:ListAllMyBuckets"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_s3_bucket_versioning": {
+   "list": [
+    "s3:ListAllMyBuckets"
+   ],
+   "read": [
+    "s3:GetBucketVersioning"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_s3control_multi_region_access_point": {
+   "list": [
+    "s3:ListMultiRegionAccessPoints"
+   ]
+  },
+  "aws_s3control_multi_region_access_point_routes": {
+   "list": [
+    "s3:ListMultiRegionAccessPoints"
+   ],
+   "read": [
+    "s3:GetMultiRegionAccessPointRoutes"
+   ]
+  },
+  "aws_s3files_file_system": {
+   "list": [
+    "s3files:GetFileSystem",
+    "s3files:ListFileSystems"
+   ],
+   "read": [
+    "s3files:ListTagsForResource"
+   ]
+  },
+  "aws_sagemaker_algorithm": {
+   "list": [
+    "sagemaker:DescribeAlgorithm",
+    "sagemaker:ListAlgorithms"
+   ],
+   "read": [
+    "sagemaker:ListTags"
+   ]
+  },
+  "aws_sagemaker_hub_content_reference": {
+   "list": [
+    "sagemaker:DescribeHubContent",
+    "sagemaker:ListHubContents",
+    "sagemaker:ListHubs"
+   ],
+   "read": [
+    "sagemaker:ListTags"
+   ]
+  },
+  "aws_sagemaker_hyper_parameter_tuning_job": {
+   "list": [
+    "sagemaker:ListHyperParameterTuningJobs"
+   ],
+   "read": [
+    "sagemaker:DescribeHyperParameterTuningJob",
+    "sagemaker:ListTags"
+   ]
+  },
+  "aws_sagemaker_inference_component": {
+   "list": [
+    "sagemaker:ListInferenceComponents"
+   ],
+   "read": [
+    "sagemaker:DescribeInferenceComponent",
+    "sagemaker:ListTags"
+   ]
+  },
+  "aws_sagemaker_training_job": {
+   "list": [
+    "sagemaker:ListTrainingJobs"
+   ],
+   "read": [
+    "sagemaker:DescribeTrainingJob",
+    "sagemaker:ListTags"
+   ]
+  },
+  "aws_scheduler_schedule": {
+   "list": [
+    "scheduler:ListSchedules"
+   ],
+   "read": [
+    "scheduler:GetSchedule"
+   ]
+  },
+  "aws_secretsmanager_secret": {
+   "list": [
+    "secretsmanager:ListSecrets"
+   ],
+   "read": [
+    "secretsmanager:DescribeSecret"
+   ],
+   "read_unconfirmed": true
+  },
+  "aws_secretsmanager_secret_policy": {
+   "list": [
+    "secretsmanager:GetResourcePolicy",
+    "secretsmanager:ListSecrets"
+   ]
+  },
+  "aws_security_group": {
+   "list": [
+    "ec2:DescribeSecurityGroups"
+   ]
+  },
+  "aws_securityhub_automation_rule_v2": {
+   "list": [
+    "securityhub:GetAutomationRuleV2",
+    "securityhub:ListAutomationRulesV2"
+   ],
+   "read": [
+    "securityhub:ListTagsForResource"
+   ]
+  },
+  "aws_securityhub_connector_v2": {
+   "list": [
+    "securityhub:GetConnectorV2",
+    "securityhub:ListConnectorsV2"
+   ],
+   "read": [
+    "securityhub:ListTagsForResource"
+   ]
+  },
+  "aws_securityhub_insight": {
+   "list": [
+    "securityhub:GetInsights"
+   ]
+  },
+  "aws_sfn_state_machine": {
+   "list": [
+    "states:ListStateMachines"
+   ],
+   "read": [
+    "states:DescribeStateMachine",
+    "states:ListStateMachineVersions",
+    "states:ListTagsForResource"
+   ]
+  },
+  "aws_sns_topic": {
+   "list": [
+    "sns:ListTopics"
+   ],
+   "read": [
+    "sns:GetTopicAttributes"
+   ],
+   "read_unconfirmed": true
+  },
+  "aws_sns_topic_policy": {
+   "list": [
+    "sns:ListTopics"
+   ],
+   "read": [
+    "sns:GetTopicAttributes"
+   ],
+   "read_unconfirmed": true
+  },
+  "aws_sqs_queue": {
+   "list": [
+    "sqs:ListQueues"
+   ],
+   "read": [
+    "sqs:GetQueueAttributes"
+   ],
+   "read_unconfirmed": true
+  },
+  "aws_sqs_queue_policy": {
+   "list": [
+    "sqs:GetQueueAttributes",
+    "sqs:ListQueues"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_ssm_association": {
+   "list": [
+    "ssm:ListAssociations"
+   ],
+   "read": [
+    "ssm:DescribeAssociation",
+    "ssm:ListTagsForResource"
+   ]
+  },
+  "aws_ssm_document": {
+   "list": [
+    "ssm:ListDocuments"
+   ],
+   "read": [
+    "ssm:DescribeDocument",
+    "ssm:DescribeDocumentPermission",
+    "ssm:GetDocument"
+   ]
+  },
+  "aws_ssm_parameter": {
+   "list": [
+    "ssm:DescribeParameters"
+   ],
+   "read": [
+    "ssm:GetParameter",
+    "ssm:ListTagsForResource"
+   ]
+  },
+  "aws_ssm_patch_baseline": {
+   "list": [
+    "ssm:DescribePatchBaselines"
+   ],
+   "read": [
+    "ssm:GetPatchBaseline",
+    "ssm:ListTagsForResource"
+   ]
+  },
+  "aws_ssm_patch_group": {
+   "list": [
+    "ssm:DescribePatchGroups"
+   ]
+  },
+  "aws_subnet": {
+   "list": [
+    "ec2:DescribeSubnets"
+   ]
+  },
+  "aws_vpc": {
+   "list": [
+    "ec2:DescribeVpcs"
+   ],
+   "read": [
+    "ec2:DescribeNetworkAcls",
+    "ec2:DescribeRouteTables",
+    "ec2:DescribeSecurityGroups",
+    "ec2:DescribeVpcAttribute"
+   ]
+  },
+  "aws_vpc_endpoint": {
+   "list": [
+    "ec2:DescribeVpcEndpoints"
+   ],
+   "read": [
+    "ec2:DescribeNetworkInterfaces",
+    "ec2:DescribePrefixLists"
+   ]
+  },
+  "aws_vpc_endpoint_route_table_association": {
+   "list": [
+    "ec2:DescribeVpcEndpoints"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_vpc_security_group_egress_rule": {
+   "list": [
+    "ec2:DescribeSecurityGroupRules"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "aws_vpc_security_group_ingress_rule": {
+   "list": [
+    "ec2:DescribeSecurityGroupRules"
+   ]
+  },
+  "aws_workmail_organization": {
+   "list": [
+    "workmail:DescribeOrganization",
+    "workmail:ListOrganizations"
+   ],
+   "read": [
+    "workmail:ListTagsForResource"
+   ]
+  },
+  "aws_workspaces_pool": {
+   "list": [
+    "workspaces:DescribeWorkspacesPools"
+   ],
+   "read": [
+    "workspaces:DescribeTags"
+   ]
+  }
+ },
+ "actions": {
+  "account-access:GetApplication": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:account-access:${Region}:${Account}:application/${ResourceId}"
+   ]
+  },
+  "account-access:ListApplications": {
+   "level": "List",
+   "resources": []
+  },
+  "account-access:ListTagsForResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:account-access:${Region}:${Account}:application/${ResourceId}"
+   ]
+  },
+  "acm:DescribeCertificate": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:acm:${Region}:${Account}:certificate/${CertificateId}"
+   ]
+  },
+  "acm:ListCertificates": {
+   "level": "List",
+   "resources": []
+  },
+  "acm:ListTagsForCertificate": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:acm:${Region}:${Account}:certificate/${CertificateId}"
+   ]
+  },
+  "agent-registry:GetRegistry": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:agent-registry:${Region}:${Account}:registry/${RegistryId}"
+   ]
+  },
+  "agent-registry:ListRegistries": {
+   "level": "List",
+   "resources": []
+  },
+  "agent-registry:ListTagsForResource": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:agent-registry:${Region}:${Account}:registry/${RegistryId}",
+    "arn:${Partition}:agent-registry:${Region}:${Account}:registry/${RegistryId}/record/${RecordId}"
+   ]
+  },
+  "aidevops:ListAgentSpaces": {
+   "level": "List",
+   "resources": []
+  },
+  "aidevops:ListTagsForResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:aidevops:${Region}:${Account}:agentspace/${AgentSpaceId}",
+    "arn:${Partition}:aidevops:${Region}:${Account}:private-connection/${Name}",
+    "arn:${Partition}:aidevops:${Region}:${Account}:service/${ServiceId}"
+   ]
+  },
+  "aoss:BatchGetCollection": {
+   "level": "Read",
+   "resources": []
+  },
+  "aoss:BatchGetCollectionGroup": {
+   "level": "Read",
+   "resources": []
+  },
+  "aoss:BatchGetVpcEndpoint": {
+   "level": "Read",
+   "resources": []
+  },
+  "aoss:ListCollectionGroups": {
+   "level": "List",
+   "resources": []
+  },
+  "aoss:ListCollections": {
+   "level": "List",
+   "resources": []
+  },
+  "aoss:ListTagsForResource": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:aoss:${Region}:${Account}:collection-group/${CollectionGroupId}",
+    "arn:${Partition}:aoss:${Region}:${Account}:collection/${CollectionId}",
+    "arn:${Partition}:aoss:${Region}:${Account}:collection/${CollectionId}/ingestion-job/${IngestionJobId}",
+    "arn:${Partition}:aoss:${Region}:${Account}:collection/${CollectionId}/ingestion-stream/${IngestionStreamId}"
+   ]
+  },
+  "aoss:ListVpcEndpoints": {
+   "level": "List",
+   "resources": []
+  },
+  "apigateway:GET": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:apigateway:${Region}:${Account}:/domainnameaccessassociations",
+    "arn:${Partition}:apigateway:${Region}:${Account}:/domainnames/${DomainName}+${DomainIdentifier}",
+    "arn:${Partition}:apigateway:${Region}::/account",
+    "arn:${Partition}:apigateway:${Region}::/apikeys",
+    "arn:${Partition}:apigateway:${Region}::/apikeys/${ApiKeyId}",
+    "arn:${Partition}:apigateway:${Region}::/apis",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/authorizers",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/authorizers/${AuthorizerId}",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/cors",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/deployments",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/deployments/${DeploymentId}",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/exports/${Specification}",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/integrations",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/integrations/${IntegrationId}",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/integrations/${IntegrationId}/integrationresponses",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/integrations/${IntegrationId}/integrationresponses/${IntegrationResponseId}",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/models",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/models/${ModelId}",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/models/${ModelId}/template",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/routes",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/routes/${RouteId}",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/routes/${RouteId}/requestparameters/${RequestParameterKey}",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/routes/${RouteId}/routeresponses",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/routes/${RouteId}/routeresponses/${RouteResponseId}",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/stages",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/stages/${StageName}",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/stages/${StageName}/accesslogsettings",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/stages/${StageName}/cache/authorizers",
+    "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/stages/${StageName}/routesettings/${RouteKey}",
+    "arn:${Partition}:apigateway:${Region}::/clientcertificates",
+    "arn:${Partition}:apigateway:${Region}::/clientcertificates/${ClientCertificateId}",
+    "arn:${Partition}:apigateway:${Region}::/domainnames",
+    "arn:${Partition}:apigateway:${Region}::/domainnames/${DomainName}",
+    "arn:${Partition}:apigateway:${Region}::/domainnames/${DomainName}+${DomainIdentifier}/basepathmappings",
+    "arn:${Partition}:apigateway:${Region}::/domainnames/${DomainName}+${DomainIdentifier}/basepathmappings/${BasePath}",
+    "arn:${Partition}:apigateway:${Region}::/domainnames/${DomainName}/apimappings",
+    "arn:${Partition}:apigateway:${Region}::/domainnames/${DomainName}/apimappings/${ApiMappingId}",
+    "arn:${Partition}:apigateway:${Region}::/domainnames/${DomainName}/basepathmappings",
+    "arn:${Partition}:apigateway:${Region}::/domainnames/${DomainName}/basepathmappings/${BasePath}",
+    "arn:${Partition}:apigateway:${Region}::/restapis",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/authorizers",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/authorizers/${AuthorizerId}",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/deployments",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/deployments/${DeploymentId}",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/documentation/parts",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/documentation/parts/${DocumentationPartId}",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/documentation/versions",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/documentation/versions/${DocumentationVersionId}",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/gatewayresponses",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/gatewayresponses/${ResponseType}",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/models",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/models/${ModelName}",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/requestvalidators",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/requestvalidators/${RequestValidatorId}",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/resources",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/resources/${ResourceId}",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/resources/${ResourceId}/methods/${HttpMethodType}",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/resources/${ResourceId}/methods/${HttpMethodType}/integration",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/resources/${ResourceId}/methods/${HttpMethodType}/integration/responses/${StatusCode}",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/resources/${ResourceId}/methods/${HttpMethodType}/responses/${StatusCode}",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/stages",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/stages/${StageName}",
+    "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/stages/${StageName}/sdks/${SdkType}",
+    "arn:${Partition}:apigateway:${Region}::/tags/${UrlEncodedResourceARN}",
+    "arn:${Partition}:apigateway:${Region}::/usageplans",
+    "arn:${Partition}:apigateway:${Region}::/usageplans/${UsagePlanId}",
+    "arn:${Partition}:apigateway:${Region}::/usageplans/${UsagePlanId}/keys",
+    "arn:${Partition}:apigateway:${Region}::/usageplans/${UsagePlanId}/keys/${Id}",
+    "arn:${Partition}:apigateway:${Region}::/vpclinks",
+    "arn:${Partition}:apigateway:${Region}::/vpclinks/${VpcLinkId}"
+   ]
+  },
+  "appflow:DescribeConnectorProfiles": {
+   "level": "Read",
+   "resources": []
+  },
+  "appflow:DescribeFlow": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:appflow:${Region}:${Account}:flow/${FlowName}"
+   ]
+  },
+  "appflow:ListFlows": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:appflow:${Region}:${Account}:flow/${FlowName}"
+   ]
+  },
+  "aps:DescribeScraper": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:aps:${Region}:${Account}:scraper/${ScraperId}"
+   ]
+  },
+  "aps:DescribeScraperLoggingConfiguration": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:aps:${Region}:${Account}:scraper/${ScraperId}"
+   ]
+  },
+  "aps:ListScrapers": {
+   "level": "List",
+   "resources": []
+  },
+  "arc-zonal-shift:GetManagedResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:elasticloadbalancing:${Region}:${Account}:loadbalancer/app/${LoadBalancerName}/${LoadBalancerId}",
+    "arn:${Partition}:elasticloadbalancing:${Region}:${Account}:loadbalancer/net/${LoadBalancerName}/${LoadBalancerId}"
+   ]
+  },
+  "arc-zonal-shift:ListManagedResources": {
+   "level": "List",
+   "resources": []
+  },
+  "autoscaling:DescribeAutoScalingGroups": {
+   "level": "List",
+   "resources": []
+  },
+  "backup:DescribeBackupVault": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:backup:${Region}:${Account}:backup-vault:${BackupVaultName}"
+   ]
+  },
+  "backup:GetBackupPlan": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:backup:${Region}:${Account}:backup-plan:${BackupPlanId}"
+   ]
+  },
+  "backup:GetBackupSelection": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:backup:${Region}:${Account}:backup-plan:${BackupPlanId}"
+   ]
+  },
+  "backup:ListBackupPlans": {
+   "level": "List",
+   "resources": []
+  },
+  "backup:ListBackupSelections": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:backup:${Region}:${Account}:backup-plan:${BackupPlanId}"
+   ]
+  },
+  "backup:ListBackupVaults": {
+   "level": "List",
+   "resources": []
+  },
+  "backup:ListTags": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:${Vendor}:${Region}:*:${ResourceType}:${RecoveryPointId}",
+    "arn:${Partition}:backup:${Region}:${Account}:accesspoint/${AccessPointName}",
+    "arn:${Partition}:backup:${Region}:${Account}:backup-plan:${BackupPlanId}",
+    "arn:${Partition}:backup:${Region}:${Account}:backup-vault:${BackupVaultName}",
+    "arn:${Partition}:backup:${Region}:${Account}:framework:${FrameworkName}-${FrameworkId}",
+    "arn:${Partition}:backup:${Region}:${Account}:legal-hold:${LegalHoldId}",
+    "arn:${Partition}:backup:${Region}:${Account}:report-plan:${ReportPlanName}-${ReportPlanId}",
+    "arn:${Partition}:backup:${Region}:${Account}:restore-testing-plan:${RestoreTestingPlanName}-${RestoreTestingPlanId}",
+    "arn:${Partition}:backup:${Region}:${Account}:tiering-configuration:${TieringConfigurationName}-${TieringConfigurationId}"
+   ]
+  },
+  "batch:DescribeJobDefinitions": {
+   "level": "Read",
+   "resources": []
+  },
+  "batch:DescribeJobQueues": {
+   "level": "Read",
+   "resources": []
+  },
+  "bedrock-agentcore:GetGateway": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:gateway/${GatewayId}"
+   ]
+  },
+  "bedrock-agentcore:GetHarness": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:harness/${HarnessId}"
+   ]
+  },
+  "bedrock-agentcore:GetOnlineEvaluationConfig": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:online-evaluation-config/${OnlineEvaluationConfigId}"
+   ]
+  },
+  "bedrock-agentcore:GetPolicyEngine": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:policy-engine/${PolicyEngineId}"
+   ]
+  },
+  "bedrock-agentcore:GetRegistry": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:registry/${RegistryId}"
+   ]
+  },
+  "bedrock-agentcore:GetResourcePolicy": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:gateway/${GatewayId}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:runtime/${RuntimeId}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:runtime/${RuntimeId}/runtime-endpoint/${Name}"
+   ]
+  },
+  "bedrock-agentcore:ListAgentRuntimeEndpoints": {
+   "level": "List",
+   "resources": []
+  },
+  "bedrock-agentcore:ListAgentRuntimes": {
+   "level": "List",
+   "resources": []
+  },
+  "bedrock-agentcore:ListBrowserProfiles": {
+   "level": "List",
+   "resources": []
+  },
+  "bedrock-agentcore:ListEvaluators": {
+   "level": "List",
+   "resources": []
+  },
+  "bedrock-agentcore:ListGateways": {
+   "level": "List",
+   "resources": []
+  },
+  "bedrock-agentcore:ListHarnesses": {
+   "level": "List",
+   "resources": []
+  },
+  "bedrock-agentcore:ListOnlineEvaluationConfigs": {
+   "level": "List",
+   "resources": []
+  },
+  "bedrock-agentcore:ListPolicyEngines": {
+   "level": "List",
+   "resources": []
+  },
+  "bedrock-agentcore:ListRegistries": {
+   "level": "List",
+   "resources": []
+  },
+  "bedrock-agentcore:ListTagsForResource": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:browser-custom/${BrowserId}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:browser-profile/${BrowserProfileId}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:capacity-provider/${CapacityProviderId}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:code-interpreter-custom/${CodeInterpreterId}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:evaluator/${EvaluatorId}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:gateway/${GatewayId}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:harness/${HarnessId}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:memory/${MemoryId}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:online-evaluation-config/${OnlineEvaluationConfigId}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:payment-manager/${PaymentManagerId}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:policy-engine/${PolicyEngineId}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:runtime/${RuntimeId}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:runtime/${RuntimeId}/runtime-endpoint/${Name}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:token-vault/${TokenVaultId}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:token-vault/${TokenVaultId}/apikeycredentialprovider/${Name}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:token-vault/${TokenVaultId}/oauth2credentialprovider/${Name}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:token-vault/${TokenVaultId}/paymentcredentialprovider/${Name}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:workload-identity-directory/${DirectoryId}",
+    "arn:${Partition}:bedrock-agentcore:${Region}:${Account}:workload-identity-directory/${DirectoryId}/workload-identity/${WorkloadIdentityName}"
+   ]
+  },
+  "bedrock:GetBlueprint": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:bedrock:${Region}:${Account}:blueprint/${BlueprintId}"
+   ]
+  },
+  "bedrock:GetDataAutomationLibrary": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:bedrock:${Region}:${Account}:data-automation-library/${DataAutomationLibraryId}"
+   ]
+  },
+  "bedrock:GetDataAutomationProject": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:bedrock:${Region}:${Account}:data-automation-project/${ProjectId}"
+   ]
+  },
+  "bedrock:GetEvaluationJob": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:bedrock:${Region}:${Account}:evaluation-job/${ResourceId}"
+   ]
+  },
+  "bedrock:GetModelInvocationJob": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:bedrock:${Region}:${Account}:model-invocation-job/${JobIdentifier}"
+   ]
+  },
+  "bedrock:GetResourcePolicy": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:bedrock:${Region}:${Account}:custom-model/${ResourceId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:guardrail-profile/${ResourceId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:guardrail/${GuardrailId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:knowledge-base/${KnowledgeBaseId}"
+   ]
+  },
+  "bedrock:ListBlueprints": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:bedrock:${Region}:${Account}:data-automation-project/${ProjectId}"
+   ]
+  },
+  "bedrock:ListDataAutomationLibraries": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:bedrock:${Region}:${Account}:data-automation-project/${ProjectId}"
+   ]
+  },
+  "bedrock:ListDataAutomationProjects": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:bedrock:${Region}:${Account}:blueprint/${BlueprintId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:data-automation-project/${ProjectId}"
+   ]
+  },
+  "bedrock:ListEvaluationJobs": {
+   "level": "List",
+   "resources": []
+  },
+  "bedrock:ListGuardrails": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:bedrock:${Region}:${Account}:guardrail/${GuardrailId}"
+   ]
+  },
+  "bedrock:ListModelInvocationJobs": {
+   "level": "List",
+   "resources": []
+  },
+  "bedrock:ListTagsForResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:bedrock:${Region}:${Account}:advanced-prompt-optimization-job/${ResourceId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:agent-alias/${AgentId}/${AgentAliasId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:agent/${AgentId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:application-inference-profile/${ResourceId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:async-invoke/${ResourceId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:automated-reasoning-policy/${AutomatedReasoningPolicyId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:automated-reasoning-policy/${AutomatedReasoningPolicyId}:${AutomatedReasoningPolicyVersion}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:blueprint-optimization-invocation/${ResourceId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:blueprint/${BlueprintId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:custom-model-deployment/${ResourceId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:custom-model/${ResourceId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:data-automation-invocation/${JobId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:data-automation-library-ingestion-job/${IngestionJobId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:data-automation-library/${DataAutomationLibraryId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:data-automation-project/${ProjectId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:evaluation-job/${ResourceId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:flow/${FlowId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:flow/${FlowId}/alias/${FlowAliasId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:guardrail/${GuardrailId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:imported-model/${ResourceId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:knowledge-base/${KnowledgeBaseId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:model-copy-job/${ResourceId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:model-customization-job/${ResourceId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:model-evaluation-job/${ResourceId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:model-import-job/${ResourceId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:model-invocation-job/${JobIdentifier}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:prompt-router/${ResourceId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:prompt/${PromptId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:prompt/${PromptId}:${PromptVersion}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:provisioned-model/${ResourceId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:retrieval-instruction/${RetrievalInstructionId}",
+    "arn:${Partition}:bedrock:${Region}:${Account}:session/${SessionId}"
+   ]
+  },
+  "cleanrooms:GetCollaboration": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:cleanrooms:${Region}:${Account}:collaboration/${CollaborationId}"
+   ]
+  },
+  "cleanrooms:GetConfiguredTable": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:cleanrooms:${Region}:${Account}:configuredtable/${ConfiguredTableId}"
+   ]
+  },
+  "cleanrooms:GetMembership": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:cleanrooms:${Region}:${Account}:membership/${MembershipId}"
+   ]
+  },
+  "cleanrooms:ListCollaborations": {
+   "level": "List",
+   "resources": []
+  },
+  "cleanrooms:ListConfiguredTables": {
+   "level": "List",
+   "resources": []
+  },
+  "cleanrooms:ListMembers": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:cleanrooms:${Region}:${Account}:collaboration/${CollaborationId}"
+   ]
+  },
+  "cleanrooms:ListMemberships": {
+   "level": "List",
+   "resources": []
+  },
+  "cleanrooms:ListTagsForResource": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:cleanrooms:${Region}:${Account}:collaboration/${CollaborationId}",
+    "arn:${Partition}:cleanrooms:${Region}:${Account}:configuredtable/${ConfiguredTableId}",
+    "arn:${Partition}:cleanrooms:${Region}:${Account}:membership/${MembershipId}",
+    "arn:${Partition}:cleanrooms:${Region}:${Account}:membership/${MembershipId}/analysistemplate/${AnalysisTemplateId}",
+    "arn:${Partition}:cleanrooms:${Region}:${Account}:membership/${MembershipId}/configuredaudiencemodelassociation/${ConfiguredAudienceModelAssociationId}",
+    "arn:${Partition}:cleanrooms:${Region}:${Account}:membership/${MembershipId}/configuredtableassociation/${ConfiguredTableAssociationId}",
+    "arn:${Partition}:cleanrooms:${Region}:${Account}:membership/${MembershipId}/intermediatetable/${IntermediateTableId}",
+    "arn:${Partition}:cleanrooms:${Region}:${Account}:membership/${MembershipId}/privacybudgettemplate/${PrivacyBudgetTemplateId}"
+   ]
+  },
+  "cloudfront:ListDistributions": {
+   "level": "List",
+   "resources": []
+  },
+  "cloudfront:ListKeyValueStores": {
+   "level": "List",
+   "resources": []
+  },
+  "cloudwatch:DescribeAlarms": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:cloudwatch:${Region}:${Account}:alarm:${AlarmName}"
+   ]
+  },
+  "cloudwatch:GetAlarmMuteRule": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:cloudwatch:${Region}:${Account}:alarm-mute-rule:${AlarmMuteRuleName}"
+   ]
+  },
+  "cloudwatch:GetDomain": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:cloudwatch:${Region}:${Account}:domain/${DomainId}"
+   ]
+  },
+  "cloudwatch:GetSpace": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:cloudwatch:${Region}:${Account}:space/${SpaceId}"
+   ]
+  },
+  "cloudwatch:GetView": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:cloudwatch:${Region}:${Account}:view/${ViewName}/${ViewId}"
+   ]
+  },
+  "cloudwatch:ListAccessGrants": {
+   "level": "List",
+   "resources": []
+  },
+  "cloudwatch:ListAlarmMuteRules": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:cloudwatch:${Region}:${Account}:alarm-mute-rule:${AlarmMuteRuleName}"
+   ]
+  },
+  "cloudwatch:ListDomains": {
+   "level": "List",
+   "resources": []
+  },
+  "cloudwatch:ListSpaces": {
+   "level": "List",
+   "resources": []
+  },
+  "cloudwatch:ListTagsForResource": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:cloudwatch:${Region}:${Account}:alarm-mute-rule:${AlarmMuteRuleName}",
+    "arn:${Partition}:cloudwatch:${Region}:${Account}:alarm:${AlarmName}",
+    "arn:${Partition}:cloudwatch:${Region}:${Account}:dataset/${DatasetId}",
+    "arn:${Partition}:cloudwatch:${Region}:${Account}:insight-rule/${InsightRuleName}",
+    "arn:${Partition}:cloudwatch:${Region}:${Account}:metric-stream/${MetricStreamName}",
+    "arn:${Partition}:cloudwatch:${Region}:${Account}:service/${ServiceName}-${UniqueAttributesHex}",
+    "arn:${Partition}:cloudwatch:${Region}:${Account}:slo/${SloName}",
+    "arn:${Partition}:cloudwatch::${Account}:dashboard/${DashboardName}"
+   ]
+  },
+  "cloudwatch:ListViews": {
+   "level": "List",
+   "resources": []
+  },
+  "codebuild:BatchGetProjects": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:codebuild:${Region}:${Account}:project/${ProjectName}"
+   ]
+  },
+  "codebuild:ListProjects": {
+   "level": "List",
+   "resources": []
+  },
+  "codepipeline:GetPipeline": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:codepipeline:${Region}:${Account}:${PipelineName}"
+   ]
+  },
+  "codepipeline:ListPipelines": {
+   "level": "List",
+   "resources": []
+  },
+  "codepipeline:ListTagsForResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:codepipeline:${Region}:${Account}:${PipelineName}",
+    "arn:${Partition}:codepipeline:${Region}:${Account}:actiontype:${Owner}/${Category}/${Provider}/${Version}",
+    "arn:${Partition}:codepipeline:${Region}:${Account}:webhook:${WebhookName}"
+   ]
+  },
+  "config:DescribeConfigRules": {
+   "level": "List",
+   "resources": []
+  },
+  "config:ListTagsForResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:config:${Region}:${Account}:aggregation-authorization/${AggregatorAccount}/${AggregatorRegion}",
+    "arn:${Partition}:config:${Region}:${Account}:config-aggregator/${AggregatorId}",
+    "arn:${Partition}:config:${Region}:${Account}:config-rule/${ConfigRuleId}",
+    "arn:${Partition}:config:${Region}:${Account}:configuration-recorder/${RecorderName}/${RecorderId}",
+    "arn:${Partition}:config:${Region}:${Account}:conformance-pack/${ConformancePackName}/${ConformancePackId}",
+    "arn:${Partition}:config:${Region}:${Account}:connector/${Provider}/${ProviderId}/${ConnectorId}",
+    "arn:${Partition}:config:${Region}:${Account}:organization-config-rule/${OrganizationConfigRuleId}",
+    "arn:${Partition}:config:${Region}:${Account}:organization-conformance-pack/${OrganizationConformancePackId}",
+    "arn:${Partition}:config:${Region}:${Account}:stored-query/${StoredQueryName}/${StoredQueryId}"
+   ]
+  },
+  "dms:ListDataProviders": {
+   "level": "Read",
+   "resources": []
+  },
+  "dms:ListInstanceProfiles": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:dms:${Region}:${Account}:instance-profile:*"
+   ]
+  },
+  "dms:ListMigrationProjects": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:dms:${Region}:${Account}:data-provider:*",
+    "arn:${Partition}:dms:${Region}:${Account}:instance-profile:*",
+    "arn:${Partition}:dms:${Region}:${Account}:migration-project:*"
+   ]
+  },
+  "dms:ListTagsForResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:dms:${Region}:${Account}:assessment-run:*",
+    "arn:${Partition}:dms:${Region}:${Account}:cert:*",
+    "arn:${Partition}:dms:${Region}:${Account}:data-migration:*",
+    "arn:${Partition}:dms:${Region}:${Account}:data-provider:*",
+    "arn:${Partition}:dms:${Region}:${Account}:endpoint:*",
+    "arn:${Partition}:dms:${Region}:${Account}:es:*",
+    "arn:${Partition}:dms:${Region}:${Account}:individual-assessment:*",
+    "arn:${Partition}:dms:${Region}:${Account}:instance-profile:*",
+    "arn:${Partition}:dms:${Region}:${Account}:migration-project:*",
+    "arn:${Partition}:dms:${Region}:${Account}:rep:*",
+    "arn:${Partition}:dms:${Region}:${Account}:replication-config:*",
+    "arn:${Partition}:dms:${Region}:${Account}:subgrp:*",
+    "arn:${Partition}:dms:${Region}:${Account}:task:*"
+   ]
+  },
+  "dsql:GetCluster": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:dsql:${Region}:${Account}:cluster/${Identifier}"
+   ]
+  },
+  "dsql:GetClusterPolicy": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:dsql:${Region}:${Account}:cluster/${Identifier}"
+   ]
+  },
+  "dsql:GetVpcEndpointServiceName": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:dsql:${Region}:${Account}:cluster/${Identifier}"
+   ]
+  },
+  "dsql:ListClusters": {
+   "level": "List",
+   "resources": []
+  },
+  "dsql:ListTagsForResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:dsql:${Region}:${Account}:cluster/${ClusterId}/stream/${StreamId}",
+    "arn:${Partition}:dsql:${Region}:${Account}:cluster/${Identifier}"
+   ]
+  },
+  "dynamodb:DescribeContinuousBackups": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:dynamodb:${Region}:${Account}:table/${TableName}"
+   ]
+  },
+  "dynamodb:DescribeTable": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:dynamodb:${Region}:${Account}:table/${TableName}"
+   ]
+  },
+  "dynamodb:DescribeTimeToLive": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:dynamodb:${Region}:${Account}:table/${TableName}"
+   ]
+  },
+  "dynamodb:ListTables": {
+   "level": "List",
+   "resources": []
+  },
+  "dynamodb:ListTagsOfResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:dynamodb:${Region}:${Account}:table/${TableName}",
+    "arn:${Partition}:dynamodb:${Region}:${Account}:table/${TableName}/stream/${StreamLabel}"
+   ]
+  },
+  "ec2:DescribeAddresses": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeFlowLogs": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeImageAttribute": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:ec2:${Region}::image/${ImageId}"
+   ]
+  },
+  "ec2:DescribeImages": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeInstanceTypes": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeInstances": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeInternetGateways": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeKeyPairs": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeLaunchTemplateVersions": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeLaunchTemplates": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeNatGateways": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeNetworkAcls": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeNetworkInsightsAccessScopes": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeNetworkInterfaces": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribePrefixLists": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeRouteTables": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeSecondaryNetworks": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeSecondarySubnets": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeSecurityGroupRules": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeSecurityGroups": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeSubnets": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeTags": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeTransitGatewayMeteringPolicies": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeVolumes": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeVpcAttribute": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:ec2:${Region}:${Account}:vpc/${VpcId}"
+   ]
+  },
+  "ec2:DescribeVpcEndpoints": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:DescribeVpcs": {
+   "level": "List",
+   "resources": []
+  },
+  "ec2:GetNetworkInsightsAccessScopeContent": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ec2:${Region}:${Account}:network-insights-access-scope/${NetworkInsightsAccessScopeId}"
+   ]
+  },
+  "ecr:DescribeRepositories": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ecr:${Region}:${Account}:repository/${RepositoryName}"
+   ]
+  },
+  "ecr:GetLifecyclePolicy": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ecr:${Region}:${Account}:repository/${RepositoryName}"
+   ]
+  },
+  "ecr:GetRepositoryPolicy": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ecr:${Region}:${Account}:repository/${RepositoryName}"
+   ]
+  },
+  "ecr:ListTagsForResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ecr:${Region}:${Account}:repository/${RepositoryName}"
+   ]
+  },
+  "ecs:DescribeClusters": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ecs:${Region}:${Account}:cluster/${ClusterName}"
+   ]
+  },
+  "ecs:DescribeDaemonTaskDefinition": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ecs:${Region}:${Account}:daemon-task-definition/${DaemonTaskDefinitionFamilyName}:${DaemonTaskDefinitionRevisionNumber}"
+   ]
+  },
+  "ecs:DescribeTaskDefinition": {
+   "level": "Read",
+   "resources": []
+  },
+  "ecs:ListClusters": {
+   "level": "List",
+   "resources": []
+  },
+  "ecs:ListDaemonTaskDefinitions": {
+   "level": "List",
+   "resources": []
+  },
+  "ecs:ListTaskDefinitions": {
+   "level": "List",
+   "resources": []
+  },
+  "eks:DescribeCluster": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:eks:${Region}:${Account}:cluster/${ClusterName}"
+   ]
+  },
+  "eks:ListClusters": {
+   "level": "List",
+   "resources": []
+  },
+  "elasticloadbalancing:DescribeCapacityReservation": {
+   "level": "Read",
+   "resources": []
+  },
+  "elasticloadbalancing:DescribeLoadBalancerAttributes": {
+   "level": "Read",
+   "resources": []
+  },
+  "elasticloadbalancing:DescribeLoadBalancers": {
+   "level": "List",
+   "resources": []
+  },
+  "elasticloadbalancing:DescribeTags": {
+   "level": "Read",
+   "resources": []
+  },
+  "elasticloadbalancing:DescribeTargetGroupAttributes": {
+   "level": "Read",
+   "resources": []
+  },
+  "elasticloadbalancing:DescribeTargetGroups": {
+   "level": "Read",
+   "resources": []
+  },
+  "events:DescribeRule": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:events:${Region}:${Account}:rule/${EventBusName}/${RuleName}",
+    "arn:${Partition}:events:${Region}:${Account}:rule/${RuleName}"
+   ]
+  },
+  "events:ListRules": {
+   "level": "List",
+   "resources": []
+  },
+  "firehose:DescribeDeliveryStream": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:firehose:${Region}:${Account}:deliverystream/${DeliveryStreamName}"
+   ]
+  },
+  "firehose:ListDeliveryStreams": {
+   "level": "List",
+   "resources": []
+  },
+  "firehose:ListTagsForDeliveryStream": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:firehose:${Region}:${Account}:deliverystream/${DeliveryStreamName}"
+   ]
+  },
+  "fis:GetSafetyLever": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:fis:${Region}:${Account}:safety-lever/${Id}"
+   ]
+  },
+  "glue:GetCatalogs": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:glue:${Region}:${Account}:catalog",
+    "arn:${Partition}:glue:${Region}:${Account}:catalog/${CatalogName}"
+   ]
+  },
+  "glue:GetJobs": {
+   "level": "Read",
+   "resources": []
+  },
+  "glue:GetTags": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:glue:${Region}:${Account}:blueprint/${BlueprintName}",
+    "arn:${Partition}:glue:${Region}:${Account}:catalog/${CatalogName}",
+    "arn:${Partition}:glue:${Region}:${Account}:connection/${ConnectionName}",
+    "arn:${Partition}:glue:${Region}:${Account}:connectionType:${ConnectionTypeName}",
+    "arn:${Partition}:glue:${Region}:${Account}:crawler/${CrawlerName}",
+    "arn:${Partition}:glue:${Region}:${Account}:customEntityType/${CustomEntityTypeId}",
+    "arn:${Partition}:glue:${Region}:${Account}:database/${DatabaseName}",
+    "arn:${Partition}:glue:${Region}:${Account}:devEndpoint/${DevEndpointName}",
+    "arn:${Partition}:glue:${Region}:${Account}:job/${JobName}",
+    "arn:${Partition}:glue:${Region}:${Account}:trigger/${TriggerName}",
+    "arn:${Partition}:glue:${Region}:${Account}:usageProfile/${UsageProfileId}",
+    "arn:${Partition}:glue:${Region}:${Account}:workflow/${WorkflowName}"
+   ]
+  },
+  "iam:GetInstanceProfile": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:iam::${Account}:instance-profile/${InstanceProfileNameWithPath}"
+   ]
+  },
+  "iam:GetOpenIDConnectProvider": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:iam::${Account}:oidc-provider/${OidcProviderName}"
+   ]
+  },
+  "iam:GetPolicyVersion": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:iam::${Account}:policy/${PolicyNameWithPath}"
+   ]
+  },
+  "iam:ListAccessKeys": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:iam::${Account}:user/${UserNameWithPath}"
+   ]
+  },
+  "iam:ListAttachedGroupPolicies": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:iam::${Account}:group/${GroupNameWithPath}"
+   ]
+  },
+  "iam:ListAttachedRolePolicies": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:iam::${Account}:role/${RoleNameWithPath}"
+   ]
+  },
+  "iam:ListAttachedUserPolicies": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:iam::${Account}:user/${UserNameWithPath}"
+   ]
+  },
+  "iam:ListGroups": {
+   "level": "List",
+   "resources": []
+  },
+  "iam:ListInstanceProfiles": {
+   "level": "List",
+   "resources": []
+  },
+  "iam:ListOpenIDConnectProviders": {
+   "level": "List",
+   "resources": []
+  },
+  "iam:ListPolicies": {
+   "level": "List",
+   "resources": []
+  },
+  "iam:ListRoles": {
+   "level": "List",
+   "resources": []
+  },
+  "iam:ListUserTags": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:iam::${Account}:user/${UserNameWithPath}"
+   ]
+  },
+  "iam:ListUsers": {
+   "level": "List",
+   "resources": []
+  },
+  "kafka:GetBootstrapBrokers": {
+   "level": "Read",
+   "resources": []
+  },
+  "kafka:ListClusters": {
+   "level": "List",
+   "resources": []
+  },
+  "kafka:ListClustersV2": {
+   "level": "List",
+   "resources": []
+  },
+  "kms:DescribeKey": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:kms:${Region}:${Account}:key/${KeyId}"
+   ]
+  },
+  "kms:GetKeyPolicy": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:kms:${Region}:${Account}:key/${KeyId}"
+   ]
+  },
+  "kms:GetKeyRotationStatus": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:kms:${Region}:${Account}:key/${KeyId}"
+   ]
+  },
+  "kms:ListAliases": {
+   "level": "List",
+   "resources": []
+  },
+  "kms:ListKeys": {
+   "level": "List",
+   "resources": []
+  },
+  "kms:ListResourceTags": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:kms:${Region}:${Account}:key/${KeyId}"
+   ]
+  },
+  "lambda:GetEventSourceMapping": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:lambda:${Region}:${Account}:event-source-mapping:${UUID}"
+   ]
+  },
+  "lambda:GetFunction": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:lambda:${Region}:${Account}:function:${FunctionName}"
+   ]
+  },
+  "lambda:GetFunctionCodeSigningConfig": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:lambda:${Region}:${Account}:function:${FunctionName}"
+   ]
+  },
+  "lambda:GetMicrovm": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:lambda:${Region}:${Account}:microvm-image:${MicrovmImageName}"
+   ]
+  },
+  "lambda:GetMicrovmImage": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:lambda:${Region}:${Account}:microvm-image:${MicrovmImageName}"
+   ]
+  },
+  "lambda:GetNetworkConnector": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:lambda:${Region}:${Account}:network-connector:${NetworkConnectorId}"
+   ]
+  },
+  "lambda:GetResourcePolicy": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:lambda:${Region}:${Account}:function:${FunctionName}",
+    "arn:${Partition}:lambda:${Region}:${Account}:web-function/${FunctionName}"
+   ]
+  },
+  "lambda:GetWebFunction": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:lambda:${Region}:${Account}:web-function/${FunctionName}"
+   ]
+  },
+  "lambda:ListCapacityProviders": {
+   "level": "List",
+   "resources": []
+  },
+  "lambda:ListEventSourceMappings": {
+   "level": "List",
+   "resources": []
+  },
+  "lambda:ListFunctionVersionsByCapacityProvider": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:lambda:${Region}:${Account}:capacity-provider:${CapacityProviderName}"
+   ]
+  },
+  "lambda:ListFunctions": {
+   "level": "List",
+   "resources": []
+  },
+  "lambda:ListLayerVersions": {
+   "level": "List",
+   "resources": []
+  },
+  "lambda:ListLayers": {
+   "level": "List",
+   "resources": []
+  },
+  "lambda:ListMicrovmImages": {
+   "level": "List",
+   "resources": []
+  },
+  "lambda:ListMicrovms": {
+   "level": "List",
+   "resources": []
+  },
+  "lambda:ListNetworkConnectors": {
+   "level": "List",
+   "resources": []
+  },
+  "lambda:ListTags": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:lambda:${Region}:${Account}:capacity-provider:${CapacityProviderName}",
+    "arn:${Partition}:lambda:${Region}:${Account}:code-signing-config:${CodeSigningConfigId}",
+    "arn:${Partition}:lambda:${Region}:${Account}:event-source-mapping:${UUID}",
+    "arn:${Partition}:lambda:${Region}:${Account}:function:${FunctionName}",
+    "arn:${Partition}:lambda:${Region}:${Account}:microvm-image:${MicrovmImageName}",
+    "arn:${Partition}:lambda:${Region}:${Account}:network-connector:${NetworkConnectorId}",
+    "arn:${Partition}:lambda:${Region}:${Account}:web-function/${FunctionName}"
+   ]
+  },
+  "lambda:ListVersionsByFunction": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:lambda:${Region}:${Account}:function:${FunctionName}"
+   ]
+  },
+  "lambda:ListWebFunctions": {
+   "level": "List",
+   "resources": []
+  },
+  "logs:DescribeLogGroups": {
+   "level": "List",
+   "resources": []
+  },
+  "logs:ListTagsForResource": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:logs:${Region}:${Account}:anomaly-detector:${DetectorId}",
+    "arn:${Partition}:logs:${Region}:${Account}:delivery-destination:${DeliveryDestinationName}",
+    "arn:${Partition}:logs:${Region}:${Account}:delivery-source:${DeliverySourceName}",
+    "arn:${Partition}:logs:${Region}:${Account}:delivery:${DeliveryName}",
+    "arn:${Partition}:logs:${Region}:${Account}:destination:${DestinationName}",
+    "arn:${Partition}:logs:${Region}:${Account}:log-group:${LogGroupName}",
+    "arn:${Partition}:logs:${Region}:${Account}:lookup-table:${LookupTableName}"
+   ]
+  },
+  "network-firewall:DescribeContainerAssociation": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:network-firewall:${Region}:${Account}:container-association/${Name}"
+   ]
+  },
+  "network-firewall:ListContainerAssociations": {
+   "level": "List",
+   "resources": []
+  },
+  "network-firewall:ListTagsForResource": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:network-firewall:${Region}:${Account}:container-association/${Name}",
+    "arn:${Partition}:network-firewall:${Region}:${Account}:firewall-policy-v2/${Name}",
+    "arn:${Partition}:network-firewall:${Region}:${Account}:firewall-policy/${Name}",
+    "arn:${Partition}:network-firewall:${Region}:${Account}:firewall-rulegroup/${Name}",
+    "arn:${Partition}:network-firewall:${Region}:${Account}:firewall/${Name}",
+    "arn:${Partition}:network-firewall:${Region}:${Account}:ips-rulegroup/${Name}",
+    "arn:${Partition}:network-firewall:${Region}:${Account}:stateful-rulegroup/${Name}",
+    "arn:${Partition}:network-firewall:${Region}:${Account}:stateless-rulegroup/${Name}",
+    "arn:${Partition}:network-firewall:${Region}:${Account}:tls-configuration/${Name}",
+    "arn:${Partition}:network-firewall:${Region}:${Account}:vpc-endpoint-association/${Name}"
+   ]
+  },
+  "network-security-manager:GetAdminAccount": {
+   "level": "Read",
+   "resources": []
+  },
+  "network-security-manager:GetDeployment": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:deployment:${DeploymentId}",
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:deployment:${DeploymentId}:${VersionNumber}"
+   ]
+  },
+  "network-security-manager:GetPolicy": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:policy:${PolicyId}",
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:policy:${PolicyId}:${VersionNumber}"
+   ]
+  },
+  "network-security-manager:GetRule": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:rule:${RuleId}",
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:rule:${RuleId}:${VersionNumber}"
+   ]
+  },
+  "network-security-manager:GetScope": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:scope:${ScopeId}",
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:scope:${ScopeId}:${VersionNumber}"
+   ]
+  },
+  "network-security-manager:GetTemplate": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:template:${TemplateId}",
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:template:${TemplateId}:${VersionNumber}"
+   ]
+  },
+  "network-security-manager:ListAdminAccounts": {
+   "level": "List",
+   "resources": []
+  },
+  "network-security-manager:ListDeployments": {
+   "level": "List",
+   "resources": []
+  },
+  "network-security-manager:ListPolicies": {
+   "level": "List",
+   "resources": []
+  },
+  "network-security-manager:ListRules": {
+   "level": "List",
+   "resources": []
+  },
+  "network-security-manager:ListScopes": {
+   "level": "List",
+   "resources": []
+  },
+  "network-security-manager:ListTagsForResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:deployment:${DeploymentId}",
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:deployment:${DeploymentId}:${VersionNumber}",
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:policy:${PolicyId}",
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:policy:${PolicyId}:${VersionNumber}",
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:rule:${RuleId}",
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:rule:${RuleId}:${VersionNumber}",
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:scope:${ScopeId}",
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:scope:${ScopeId}:${VersionNumber}",
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:template:${TemplateId}",
+    "arn:${Partition}:network-security-manager:${Region}:${Account}:template:${TemplateId}:${VersionNumber}"
+   ]
+  },
+  "network-security-manager:ListTemplates": {
+   "level": "List",
+   "resources": []
+  },
+  "observabilityadmin:GetTelemetryRule": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:observabilityadmin:${Region}:${Account}:telemetry-rule/${TelemetryRuleName}"
+   ]
+  },
+  "observabilityadmin:GetTelemetryRuleForOrganization": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:observabilityadmin:${Region}:${Account}:organization-telemetry-rule/${TelemetryRuleName}"
+   ]
+  },
+  "observabilityadmin:ListTagsForResource": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:observabilityadmin:${Region}:${Account}:dataset-integration/${DatasetIntegrationIdentifier}",
+    "arn:${Partition}:observabilityadmin:${Region}:${Account}:organization-centralization-rule/${CentralizationRuleName}",
+    "arn:${Partition}:observabilityadmin:${Region}:${Account}:organization-telemetry-rule/${TelemetryRuleName}",
+    "arn:${Partition}:observabilityadmin:${Region}:${Account}:s3tableintegration/${S3TableIntegrationIdentifier}",
+    "arn:${Partition}:observabilityadmin:${Region}:${Account}:telemetry-pipeline/${TelemetryPipelineIdentifier}",
+    "arn:${Partition}:observabilityadmin:${Region}:${Account}:telemetry-rule/${TelemetryRuleName}"
+   ]
+  },
+  "observabilityadmin:ListTelemetryRules": {
+   "level": "List",
+   "resources": []
+  },
+  "observabilityadmin:ListTelemetryRulesForOrganization": {
+   "level": "List",
+   "resources": []
+  },
+  "organizations:ListAWSServiceAccessForOrganization": {
+   "level": "List",
+   "resources": []
+  },
+  "osis:GetPipeline": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:osis:${Region}:${Account}:pipeline/${PipelineName}"
+   ]
+  },
+  "osis:GetResourcePolicy": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:osis:${Region}:${Account}:pipeline/${PipelineName}"
+   ]
+  },
+  "osis:ListPipelineEndpoints": {
+   "level": "List",
+   "resources": []
+  },
+  "osis:ListPipelines": {
+   "level": "List",
+   "resources": []
+  },
+  "pricingplanmanager:GetSubscription": {
+   "level": "Read",
+   "resources": []
+  },
+  "pricingplanmanager:ListSubscriptions": {
+   "level": "Read",
+   "resources": []
+  },
+  "quicksight:DescribeAccountCustomPermission": {
+   "level": "Read",
+   "resources": []
+  },
+  "ram:GetResourceShareAssociations": {
+   "level": "Read",
+   "resources": []
+  },
+  "rds:DescribeDBClusters": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:rds:${Region}:${Account}:cluster:${DbClusterInstanceName}"
+   ]
+  },
+  "rds:DescribeDBInstances": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:rds:${Region}:${Account}:db:${DbInstanceName}"
+   ]
+  },
+  "rds:DescribeDBParameterGroups": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:rds:${Region}:${Account}:pg:${ParameterGroupName}"
+   ]
+  },
+  "rds:DescribeDBParameters": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:rds:${Region}:${Account}:pg:${ParameterGroupName}"
+   ]
+  },
+  "rds:DescribeDBSubnetGroups": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:rds:${Region}:${Account}:subgrp:${SubnetGroupName}"
+   ]
+  },
+  "rds:DescribeTenantDatabases": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:rds:${Region}:${Account}:db:${DbInstanceName}",
+    "arn:${Partition}:rds:${Region}:${Account}:tenant-database:${TenantResourceId}"
+   ]
+  },
+  "rds:ListTagsForResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:rds:${Region}:${Account}:auto-backup:${DbInstanceAutomatedBackupId}",
+    "arn:${Partition}:rds:${Region}:${Account}:cev:${Engine}/${EngineVersion}/${CustomDbEngineVersionId}",
+    "arn:${Partition}:rds:${Region}:${Account}:cluster-auto-backup:${DbClusterAutomatedBackupId}",
+    "arn:${Partition}:rds:${Region}:${Account}:cluster-endpoint:${DbClusterEndpoint}",
+    "arn:${Partition}:rds:${Region}:${Account}:cluster-pg:${ClusterParameterGroupName}",
+    "arn:${Partition}:rds:${Region}:${Account}:cluster-snapshot:${ClusterSnapshotName}",
+    "arn:${Partition}:rds:${Region}:${Account}:cluster:${DbClusterInstanceName}",
+    "arn:${Partition}:rds:${Region}:${Account}:db-capacity-reservation:${DBCapacityReservationIdentifier}",
+    "arn:${Partition}:rds:${Region}:${Account}:db-proxy-endpoint:${DbProxyEndpointId}",
+    "arn:${Partition}:rds:${Region}:${Account}:db-proxy:${DbProxyId}",
+    "arn:${Partition}:rds:${Region}:${Account}:db:${DbInstanceName}",
+    "arn:${Partition}:rds:${Region}:${Account}:es:${SubscriptionName}",
+    "arn:${Partition}:rds:${Region}:${Account}:integration:${IntegrationIdentifier}",
+    "arn:${Partition}:rds:${Region}:${Account}:og:${OptionGroupName}",
+    "arn:${Partition}:rds:${Region}:${Account}:pg:${ParameterGroupName}",
+    "arn:${Partition}:rds:${Region}:${Account}:ri:${ReservedDbInstanceName}",
+    "arn:${Partition}:rds:${Region}:${Account}:secgrp:${SecurityGroupName}",
+    "arn:${Partition}:rds:${Region}:${Account}:shard-group:${DbShardGroupResourceId}",
+    "arn:${Partition}:rds:${Region}:${Account}:snapshot-tenant-database:${SnapshotName}:${TenantResourceId}",
+    "arn:${Partition}:rds:${Region}:${Account}:snapshot:${SnapshotName}",
+    "arn:${Partition}:rds:${Region}:${Account}:subgrp:${SubnetGroupName}",
+    "arn:${Partition}:rds:${Region}:${Account}:target-group:${TargetGroupId}",
+    "arn:${Partition}:rds:${Region}:${Account}:tenant-database:${TenantResourceId}",
+    "arn:${Partition}:rds::${Account}:global-cluster:${GlobalCluster}"
+   ]
+  },
+  "rekognition:DescribeCollection": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:rekognition:${Region}:${Account}:collection/${CollectionId}"
+   ]
+  },
+  "rekognition:ListCollections": {
+   "level": "Read",
+   "resources": []
+  },
+  "rekognition:ListTagsForResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:rekognition:${Region}:${Account}:collection/${CollectionId}",
+    "arn:${Partition}:rekognition:${Region}:${Account}:project/${ProjectName}/${CreationTimestamp}",
+    "arn:${Partition}:rekognition:${Region}:${Account}:project/${ProjectName}/dataset/${DatasetType}/${CreationTimestamp}",
+    "arn:${Partition}:rekognition:${Region}:${Account}:project/${ProjectName}/version/${VersionName}/${CreationTimestamp}",
+    "arn:${Partition}:rekognition:${Region}:${Account}:streamprocessor/${StreamprocessorId}"
+   ]
+  },
+  "resiliencehub:GetPolicy": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:resiliencehub:${Region}:${Account}:policy/${PolicyId}"
+   ]
+  },
+  "resiliencehub:GetService": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:resiliencehub:${Region}:${Account}:service/${ServiceId}"
+   ]
+  },
+  "resiliencehub:GetSystem": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:resiliencehub:${Region}:${Account}:system/${SystemId}"
+   ]
+  },
+  "resiliencehub:ListPolicies": {
+   "level": "Read",
+   "resources": []
+  },
+  "resiliencehub:ListServices": {
+   "level": "Read",
+   "resources": []
+  },
+  "resiliencehub:ListSystems": {
+   "level": "Read",
+   "resources": []
+  },
+  "route53:GetHostedZone": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:route53:::hostedzone/${Id}"
+   ]
+  },
+  "route53:ListHostedZones": {
+   "level": "List",
+   "resources": []
+  },
+  "route53:ListTagsForResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:route53:::healthcheck/${Id}",
+    "arn:${Partition}:route53:::hostedzone/${Id}"
+   ]
+  },
+  "route53resolver:ListResolverRuleAssociations": {
+   "level": "List",
+   "resources": []
+  },
+  "route53resolver:ListResolverRules": {
+   "level": "List",
+   "resources": []
+  },
+  "route53resolver:ListTagsForResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:route53resolver:${Region}:${Account}:firewall-domain-list/${ResourceId}",
+    "arn:${Partition}:route53resolver:${Region}:${Account}:firewall-rule-group-association/${ResourceId}",
+    "arn:${Partition}:route53resolver:${Region}:${Account}:firewall-rule-group/${ResourceId}",
+    "arn:${Partition}:route53resolver:${Region}:${Account}:outpost-resolver/${ResourceId}",
+    "arn:${Partition}:route53resolver:${Region}:${Account}:resolver-endpoint/${ResourceId}",
+    "arn:${Partition}:route53resolver:${Region}:${Account}:resolver-query-log-config/${ResourceId}",
+    "arn:${Partition}:route53resolver:${Region}:${Account}:resolver-rule/${ResourceId}"
+   ]
+  },
+  "s3:GetBucketAcl": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:s3:${Region}:${Account}:accesspoint/${AccessPointName}",
+    "arn:${Partition}:s3:::${BucketName}"
+   ]
+  },
+  "s3:GetBucketCORS": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:s3:${Region}:${Account}:accesspoint/${AccessPointName}",
+    "arn:${Partition}:s3:::${BucketName}"
+   ]
+  },
+  "s3:GetBucketLogging": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:s3:::${BucketName}"
+   ]
+  },
+  "s3:GetBucketNotification": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:s3:${Region}:${Account}:accesspoint/${AccessPointName}",
+    "arn:${Partition}:s3:::${BucketName}"
+   ]
+  },
+  "s3:GetBucketOwnershipControls": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:s3:::${BucketName}"
+   ]
+  },
+  "s3:GetBucketPolicy": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:s3:${Region}:${Account}:accesspoint/${AccessPointName}",
+    "arn:${Partition}:s3:::${BucketName}"
+   ]
+  },
+  "s3:GetBucketPublicAccessBlock": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:s3:::${BucketName}"
+   ]
+  },
+  "s3:GetBucketVersioning": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:s3:::${BucketName}"
+   ]
+  },
+  "s3:GetEncryptionConfiguration": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:s3:::${BucketName}"
+   ]
+  },
+  "s3:GetLifecycleConfiguration": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:s3:::${BucketName}"
+   ]
+  },
+  "s3:GetMultiRegionAccessPointRoutes": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:s3::${Account}:accesspoint/${AccessPointAlias}"
+   ]
+  },
+  "s3:ListAllMyBuckets": {
+   "level": "List",
+   "resources": []
+  },
+  "s3:ListBucket": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:s3:${Region}:${Account}:accesspoint/${AccessPointName}",
+    "arn:${Partition}:s3:::${BucketName}"
+   ],
+   "data_plane": true
+  },
+  "s3:ListMultiRegionAccessPoints": {
+   "level": "List",
+   "resources": []
+  },
+  "s3:ListTagsForResource": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:s3:${Region}:${Account}:access-grants/default",
+    "arn:${Partition}:s3:${Region}:${Account}:access-grants/default/grant/${Token}",
+    "arn:${Partition}:s3:${Region}:${Account}:access-grants/default/location/${Token}",
+    "arn:${Partition}:s3:${Region}:${Account}:accesspoint/${AccessPointName}",
+    "arn:${Partition}:s3:${Region}:${Account}:storage-lens-group/${Name}",
+    "arn:${Partition}:s3:::${BucketName}"
+   ]
+  },
+  "s3files:GetFileSystem": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:s3files:${Region}:${Account}:file-system/${FileSystemId}"
+   ]
+  },
+  "s3files:ListFileSystems": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:s3files:${Region}:${Account}:file-system/${FileSystemId}"
+   ]
+  },
+  "s3files:ListTagsForResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:s3files:${Region}:${Account}:file-system/${FileSystemId}",
+    "arn:${Partition}:s3files:${Region}:${Account}:file-system/${FileSystemId}/access-point/${AccessPointId}"
+   ]
+  },
+  "sagemaker:DescribeAlgorithm": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:sagemaker:${Region}:${Account}:algorithm/${AlgorithmName}"
+   ]
+  },
+  "sagemaker:DescribeHubContent": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:sagemaker:${Region}:${Account}:hub-content/${HubName}/${HubContentType}/${HubContentName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:hub/${HubName}"
+   ]
+  },
+  "sagemaker:DescribeHyperParameterTuningJob": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:sagemaker:${Region}:${Account}:hyper-parameter-tuning-job/${HyperParameterTuningJobName}"
+   ]
+  },
+  "sagemaker:DescribeInferenceComponent": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:sagemaker:${Region}:${Account}:inference-component/${InferenceComponentName}"
+   ]
+  },
+  "sagemaker:DescribeTrainingJob": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:sagemaker:${Region}:${Account}:training-job/${TrainingJobName}"
+   ]
+  },
+  "sagemaker:ListAlgorithms": {
+   "level": "List",
+   "resources": []
+  },
+  "sagemaker:ListHubContents": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:sagemaker:${Region}:${Account}:hub/${HubName}"
+   ]
+  },
+  "sagemaker:ListHubs": {
+   "level": "List",
+   "resources": []
+  },
+  "sagemaker:ListHyperParameterTuningJobs": {
+   "level": "List",
+   "resources": []
+  },
+  "sagemaker:ListInferenceComponents": {
+   "level": "List",
+   "resources": []
+  },
+  "sagemaker:ListTags": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:sagemaker:${Region}:${Account}:action/${ActionName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:ai-benchmark-job/${AIBenchmarkJobName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:ai-recommendation-job/${AIRecommendationJobName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:ai-workload-config/${AIWorkloadConfigName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:algorithm/${AlgorithmName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:app-image-config/${AppImageConfigName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:app/${DomainId}/${UserProfileName}/${AppType}/${AppName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:artifact/${HashOfArtifactSource}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:automl-job/${AutoMLJobJobName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:cluster-scheduler-config/${ClusterSchedulerConfigId}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:cluster/${ClusterId}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:code-repository/${CodeRepositoryName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:compilation-job/${CompilationJobName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:compute-quota/${ComputeQuotaId}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:context/${ContextName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:data-quality-job-definition/${DataQualityJobDefinitionName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:device-fleet/${DeviceFleetName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:device-fleet/${DeviceFleetName}/device/${DeviceName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:domain/${DomainId}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:edge-deployment/${EdgeDeploymentPlanName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:edge-packaging-job/${EdgePackagingJobName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:endpoint-config/${EndpointConfigName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:endpoint/${EndpointName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:experiment-trial-component/${TrialComponentName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:experiment-trial/${TrialName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:experiment/${ExperimentName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:feature-group/${FeatureGroupName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:flow-definition/${FlowDefinitionName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:hub-content/${HubName}/${HubContentType}/${HubContentName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:hub/${HubName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:human-task-ui/${HumanTaskUiName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:hyper-parameter-tuning-job/${HyperParameterTuningJobName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:image/${ImageName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:inference-component/${InferenceComponentName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:inference-recommendations-job/${InferenceRecommendationsJobName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:job/${JobCategory}/${JobName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:labeling-job/${LabelingJobName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:mlflow-app/${MLflowAppId}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:mlflow-tracking-server/${MlflowTrackingServerName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:model-bias-job-definition/${ModelBiasJobDefinitionName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:model-card/${ModelCardName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:model-explainability-job-definition/${ModelExplainabilityJobDefinitionName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:model-package-group/${ModelPackageGroupName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:model-package/${ModelPackageName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:model-quality-job-definition/${ModelQualityJobDefinitionName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:model/${ModelName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:monitoring-schedule/${MonitoringScheduleName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:notebook-instance-lifecycle-config/${NotebookInstanceLifecycleConfigName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:notebook-instance/${NotebookInstanceName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:optimization-job/${OptimizationJobName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:partner-app/${AppId}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:pipeline/${PipelineName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:pipeline/${PipelineName}/execution/${RandomString}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:processing-job/${ProcessingJobName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:project/${ProjectName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:reserved-capacity/${RandomString}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:space/${DomainId}/${SpaceName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:studio-lifecycle-config/${StudioLifecycleConfigName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:training-job/${TrainingJobName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:training-plan/${TrainingPlanName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:transform-job/${TransformJobName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:user-profile/${DomainId}/${UserProfileName}",
+    "arn:${Partition}:sagemaker:${Region}:${Account}:workteam/${WorkteamName}"
+   ]
+  },
+  "sagemaker:ListTrainingJobs": {
+   "level": "List",
+   "resources": []
+  },
+  "scheduler:GetSchedule": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:scheduler:${Region}:${Account}:schedule/${GroupName}/${ScheduleName}"
+   ]
+  },
+  "scheduler:ListSchedules": {
+   "level": "List",
+   "resources": []
+  },
+  "secretsmanager:DescribeSecret": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:secretsmanager:${Region}:${Account}:secret:${SecretId}"
+   ]
+  },
+  "secretsmanager:GetResourcePolicy": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:secretsmanager:${Region}:${Account}:secret:${SecretId}"
+   ]
+  },
+  "secretsmanager:ListSecrets": {
+   "level": "List",
+   "resources": []
+  },
+  "securityhub:GetAutomationRuleV2": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:securityhub:${Region}:${Account}:automation-rulev2/${AutomationRuleV2Id}"
+   ]
+  },
+  "securityhub:GetConnectorV2": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:securityhub:${Region}:${Account}:connectorv2/${ConnectorV2Id}"
+   ]
+  },
+  "securityhub:GetInsights": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:securityhub:${Region}:${Account}:hub/default"
+   ]
+  },
+  "securityhub:ListAutomationRulesV2": {
+   "level": "List",
+   "resources": []
+  },
+  "securityhub:ListConnectorsV2": {
+   "level": "List",
+   "resources": []
+  },
+  "securityhub:ListTagsForResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:securityhub:${Region}:${Account}:automation-rule/${AutomationRuleId}",
+    "arn:${Partition}:securityhub:${Region}:${Account}:configuration-policy/${ConfigurationPolicyId}",
+    "arn:${Partition}:securityhub:${Region}:${Account}:hub/default"
+   ]
+  },
+  "ses:GetArchive": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ses:${Region}:${Account}:mailmanager-archive/${ArchiveId}"
+   ]
+  },
+  "ses:GetIngressPoint": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ses:${Region}:${Account}:mailmanager-ingress-point/${IngressPointId}"
+   ]
+  },
+  "ses:GetRelay": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ses:${Region}:${Account}:mailmanager-smtp-relay/${RelayId}"
+   ]
+  },
+  "ses:GetRuleSet": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ses:${Region}:${Account}:mailmanager-rule-set/${RuleSetId}"
+   ]
+  },
+  "ses:GetTrafficPolicy": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ses:${Region}:${Account}:mailmanager-traffic-policy/${TrafficPolicyId}"
+   ]
+  },
+  "ses:ListArchives": {
+   "level": "List",
+   "resources": []
+  },
+  "ses:ListIngressPoints": {
+   "level": "List",
+   "resources": []
+  },
+  "ses:ListRelays": {
+   "level": "List",
+   "resources": []
+  },
+  "ses:ListRuleSets": {
+   "level": "List",
+   "resources": []
+  },
+  "ses:ListTagsForResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ses:${Region}:${Account}:addon-instance/${AddonInstanceId}",
+    "arn:${Partition}:ses:${Region}:${Account}:addon-subscription/${AddonSubscriptionId}",
+    "arn:${Partition}:ses:${Region}:${Account}:configuration-set/${ConfigurationSetName}",
+    "arn:${Partition}:ses:${Region}:${Account}:contact-list/${ContactListName}",
+    "arn:${Partition}:ses:${Region}:${Account}:custom-verification-email-template/${TemplateName}",
+    "arn:${Partition}:ses:${Region}:${Account}:dedicated-ip-pool/${DedicatedIPPool}",
+    "arn:${Partition}:ses:${Region}:${Account}:deliverability-test-report/${ReportId}",
+    "arn:${Partition}:ses:${Region}:${Account}:identity/${IdentityName}",
+    "arn:${Partition}:ses:${Region}:${Account}:mailmanager-archive/${ArchiveId}",
+    "arn:${Partition}:ses:${Region}:${Account}:mailmanager-ingress-point/${IngressPointId}",
+    "arn:${Partition}:ses:${Region}:${Account}:mailmanager-rule-set/${RuleSetId}",
+    "arn:${Partition}:ses:${Region}:${Account}:mailmanager-smtp-relay/${RelayId}",
+    "arn:${Partition}:ses:${Region}:${Account}:mailmanager-traffic-policy/${TrafficPolicyId}",
+    "arn:${Partition}:ses:${Region}:${Account}:template/${TemplateName}",
+    "arn:${Partition}:ses:${Region}:${Account}:tenant/${TenantName}/${TenantId}"
+   ]
+  },
+  "ses:ListTrafficPolicies": {
+   "level": "List",
+   "resources": []
+  },
+  "sms-voice:DescribePools": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:sms-voice:${Region}:${Account}:pool/${PoolId}"
+   ]
+  },
+  "sms-voice:DescribeProtectConfigurations": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:sms-voice:${Region}:${Account}:protect-configuration/${ProtectConfigurationId}"
+   ]
+  },
+  "sms-voice:DescribeSenderIds": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:sms-voice:${Region}:${Account}:sender-id/${SenderId}/${IsoCountryCode}"
+   ]
+  },
+  "sms-voice:GetProtectConfigurationCountryRuleSet": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:sms-voice:${Region}:${Account}:protect-configuration/${ProtectConfigurationId}"
+   ]
+  },
+  "sms-voice:ListPoolOriginationIdentities": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:sms-voice:${Region}:${Account}:pool/${PoolId}"
+   ]
+  },
+  "sms-voice:ListTagsForResource": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:sms-voice:${Region}:${Account}:configuration-set/${ConfigurationSetName}",
+    "arn:${Partition}:sms-voice:${Region}:${Account}:notify-configuration/${NotifyConfigurationId}",
+    "arn:${Partition}:sms-voice:${Region}:${Account}:opt-out-list/${OptOutListName}",
+    "arn:${Partition}:sms-voice:${Region}:${Account}:phone-number/${PhoneNumberId}",
+    "arn:${Partition}:sms-voice:${Region}:${Account}:pool/${PoolId}",
+    "arn:${Partition}:sms-voice:${Region}:${Account}:protect-configuration/${ProtectConfigurationId}",
+    "arn:${Partition}:sms-voice:${Region}:${Account}:rcs-agent/${RcsAgentId}",
+    "arn:${Partition}:sms-voice:${Region}:${Account}:registration-attachment/${RegistrationAttachmentId}",
+    "arn:${Partition}:sms-voice:${Region}:${Account}:registration/${RegistrationId}",
+    "arn:${Partition}:sms-voice:${Region}:${Account}:sender-id/${SenderId}/${IsoCountryCode}",
+    "arn:${Partition}:sms-voice:${Region}:${Account}:verified-destination-number/${VerifiedDestinationNumberId}"
+   ]
+  },
+  "sns:GetTopicAttributes": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:sns:${Region}:${Account}:${TopicName}"
+   ]
+  },
+  "sns:ListTopics": {
+   "level": "List",
+   "resources": []
+  },
+  "sqs:GetQueueAttributes": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:sqs:${Region}:${Account}:${QueueName}"
+   ]
+  },
+  "sqs:ListQueues": {
+   "level": "Read",
+   "resources": []
+  },
+  "ssm:DescribeAssociation": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ssm:${Region}:${Account}:association/${AssociationId}"
+   ]
+  },
+  "ssm:DescribeDocument": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ssm:${Region}:${Account}:document/${DocumentName}"
+   ]
+  },
+  "ssm:DescribeDocumentPermission": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ssm:${Region}:${Account}:document/${DocumentName}"
+   ]
+  },
+  "ssm:DescribeParameters": {
+   "level": "List",
+   "resources": []
+  },
+  "ssm:DescribePatchBaselines": {
+   "level": "List",
+   "resources": []
+  },
+  "ssm:DescribePatchGroups": {
+   "level": "List",
+   "resources": []
+  },
+  "ssm:GetDocument": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ssm:${Region}:${Account}:document/${DocumentName}"
+   ]
+  },
+  "ssm:GetParameter": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ssm:${Region}:${Account}:parameter/${ParameterNameWithoutLeadingSlash}"
+   ]
+  },
+  "ssm:GetPatchBaseline": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:ssm:${Region}:${Account}:patchbaseline/${PatchBaselineIdResourceId}"
+   ]
+  },
+  "ssm:ListAssociations": {
+   "level": "List",
+   "resources": []
+  },
+  "ssm:ListDocuments": {
+   "level": "List",
+   "resources": []
+  },
+  "ssm:ListTagsForResource": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:ssm:${Region}:${Account}:association/${AssociationId}",
+    "arn:${Partition}:ssm:${Region}:${Account}:automation-execution/${AutomationExecutionId}",
+    "arn:${Partition}:ssm:${Region}:${Account}:cloud-connector/${CloudConnectorId}",
+    "arn:${Partition}:ssm:${Region}:${Account}:document/${DocumentName}",
+    "arn:${Partition}:ssm:${Region}:${Account}:maintenancewindow/${ResourceId}",
+    "arn:${Partition}:ssm:${Region}:${Account}:managed-instance/${InstanceId}",
+    "arn:${Partition}:ssm:${Region}:${Account}:opsitem/${ResourceId}",
+    "arn:${Partition}:ssm:${Region}:${Account}:opsmetadata/${ResourceId}",
+    "arn:${Partition}:ssm:${Region}:${Account}:parameter/${ParameterNameWithoutLeadingSlash}",
+    "arn:${Partition}:ssm:${Region}:${Account}:patchbaseline/${PatchBaselineIdResourceId}"
+   ]
+  },
+  "states:DescribeStateMachine": {
+   "level": "Read",
+   "resources": [
+    "arn:${Partition}:states:${Region}:${Account}:stateMachine:${StateMachineName}"
+   ]
+  },
+  "states:ListStateMachineVersions": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:states:${Region}:${Account}:stateMachine:${StateMachineName}"
+   ]
+  },
+  "states:ListStateMachines": {
+   "level": "List",
+   "resources": []
+  },
+  "states:ListTagsForResource": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:states:${Region}:${Account}:activity:${ActivityName}",
+    "arn:${Partition}:states:${Region}:${Account}:stateMachine:${StateMachineName}"
+   ]
+  },
+  "workmail:DescribeOrganization": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:workmail:${Region}:${Account}:organization/${ResourceId}"
+   ]
+  },
+  "workmail:ListOrganizations": {
+   "level": "List",
+   "resources": []
+  },
+  "workmail:ListTagsForResource": {
+   "level": "List",
+   "resources": [
+    "arn:${Partition}:workmail:${Region}:${Account}:organization/${ResourceId}"
+   ]
+  },
+  "workspaces:DescribeTags": {
+   "level": "Read",
+   "resources": []
+  },
+  "workspaces:DescribeWorkspacesPools": {
+   "level": "List",
+   "resources": []
+  }
+ }
+}

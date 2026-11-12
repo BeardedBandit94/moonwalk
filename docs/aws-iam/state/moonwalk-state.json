@@ -1,0 +1,42 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "MoonwalkListStates1",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::example-terraform-states"
+      ]
+    },
+    {
+      "Sid": "MoonwalkReadStates",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::example-terraform-states/*.tfstate"
+      ]
+    },
+    {
+      "Sid": "MoonwalkDecryptStates1",
+      "Effect": "Allow",
+      "Action": [
+        "kms:Decrypt"
+      ],
+      "Resource": [
+        "arn:aws:kms:eu-west-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "kms:ViaService": [
+            "s3.eu-west-1.amazonaws.com"
+          ]
+        }
+      }
+    }
+  ]
+}

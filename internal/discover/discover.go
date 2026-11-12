@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -36,11 +37,20 @@ type Result struct {
 	// Errors holds what the query reported as errors, such as a type it
 	// was not allowed to list. With any, the listing is incomplete.
 	Errors []string
+	// Denied holds the actions that the errors say the listing was not
+	// allowed, such as "ec2:DescribeVpcs": what its credentials' policy
+	// lacks.
+	Denied []string
 	// Capped names the list blocks that returned exactly as many resources
 	// as a list block returns when it has no limit of its own, and so have
 	// probably been cut short.
 	Capped []string
 }
+
+// denied finds the action in the way AWS words a refusal: "... is not
+// authorized to perform: ec2:DescribeVpcs because no identity-based
+// policy allows ...".
+var denied = regexp.MustCompile(`not authorized to perform: ([a-z0-9-]+:[A-Za-z0-9]+)`)
 
 // defaultLimit is how many resources a list block returns unless it sets
 // a limit. Terraform stops there without saying so.
@@ -118,6 +128,12 @@ func Load(g *graph.Graph, source string, r io.Reader) (Result, error) {
 		}
 		if d := m.Diagnostic; d != nil && d.Severity == "error" {
 			res.Errors = append(res.Errors, strings.TrimSpace(d.Summary+": "+d.Detail))
+			for _, match := range denied.FindAllStringSubmatch(d.Summary+" "+d.Detail, -1) {
+				if !slices.Contains(res.Denied, match[1]) {
+					res.Denied = append(res.Denied, match[1])
+					sort.Strings(res.Denied)
+				}
+			}
 		}
 		if st := m.Start; st != nil {
 			region, _ := st.InputConfig["region"].(string)
