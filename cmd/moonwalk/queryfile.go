@@ -6,8 +6,11 @@ import (
 	"io"
 	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
+
+	"github.com/BeardedBandit94/moonwalk/internal/awsiam"
 )
 
 // listLimit is the limit written into every list block. Without one a
@@ -41,6 +44,9 @@ type queryFileOptions struct {
 	types         []string // Patterns of resource types to list; none means all.
 	provider      string   // Local name of the one provider to write for; "" means all.
 	identityOnly  bool     // Leave out include_resource.
+	// allow names the AWS actions that are withheld from a policy by
+	// default and wanted all the same; see awsiam.Withheld.
+	allow []string
 }
 
 // writeQueryFile writes a .tfquery.hcl file that lists every resource type
@@ -69,14 +75,7 @@ func writeQueryFile(w io.Writer, schema []byte, o queryFileOptions) error {
 			if len(o.types) > 0 && !matchesAnyPattern(o.types, t) {
 				continue
 			}
-			required := false
-			for _, a := range schema.Block.Attributes {
-				required = required || a.Required
-			}
-			for _, bt := range schema.Block.BlockTypes {
-				required = required || bt.MinItems > 0
-			}
-			if required {
+			if needsArgument(schema.Block.Attributes, schema.Block.BlockTypes) {
 				needArgument = append(needArgument, t)
 			} else {
 				listable = append(listable, t)
@@ -86,6 +85,21 @@ func writeQueryFile(w io.Writer, schema []byte, o queryFileOptions) error {
 		sort.Strings(needArgument)
 		if len(listable)+len(needArgument) == 0 {
 			continue
+		}
+		// For AWS, the file asks for what the policy from 'moonwalk
+		// iam-policy' allows and no more: a type that cannot be listed, or
+		// not with its attributes, without an action that reads what is
+		// stored is left out, or listed by identity alone.
+		var plan awsiam.Plan
+		if name == "aws" {
+			perms, err := awsiam.Load()
+			if err != nil {
+				return err
+			}
+			if plan, err = perms.Plan(awsiam.Options{Types: listable, IdentityOnly: o.identityOnly, Allow: o.allow}); err != nil {
+				return err
+			}
+			listable = slices.DeleteFunc(listable, func(t string) bool { return plan.LeftOut[t] != "" })
 		}
 
 		fmt.Fprintf(&b, "# Lists what exists through the %s provider: %d resource types.\n", name, len(listable))
@@ -100,6 +114,24 @@ func writeQueryFile(w io.Writer, schema []byte, o queryFileOptions) error {
 				fmt.Fprintf(&b, "#   %s\n", line)
 			}
 		}
+		withheld := func(title string, types map[string]string) {
+			if len(types) == 0 {
+				return
+			}
+			var entries []string
+			for t, action := range types {
+				entries = append(entries, fmt.Sprintf("%s (%s)", t, action))
+			}
+			sort.Strings(entries)
+			fmt.Fprintf(&b, "#\n# %s\n", title)
+			for _, e := range entries {
+				fmt.Fprintf(&b, "#   %s\n", e)
+			}
+		}
+		withheld("Left out, because listing them takes an action that reads what is stored in the\n"+
+			"# service, which the policy from 'moonwalk iam-policy' withholds. To include one, give\n"+
+			"# both commands -allow with the action:", plan.LeftOut)
+		withheld("Listed without attributes, for the same reason:", plan.IdentityBecause)
 		b.WriteByte('\n')
 		for _, t := range listable {
 			// The argument that says where to list, and the places asked for.
@@ -110,13 +142,14 @@ func writeQueryFile(w io.Writer, schema []byte, o queryFileOptions) error {
 				// A subscription ID can start with a digit; a block name cannot.
 				argument, places, prefix = "subscription_id", o.subscriptions, "sub_"
 			}
+			identityOnly := o.identityOnly || plan.IdentityBecause[t] != ""
 			if len(places) == 0 {
-				writeListBlock(&b, t, "all", name, "", "", o.identityOnly)
+				writeListBlock(&b, t, "all", name, "", "", identityOnly)
 				written++
 				continue
 			}
 			for _, place := range places {
-				writeListBlock(&b, t, prefix+label(place), name, argument, place, o.identityOnly)
+				writeListBlock(&b, t, prefix+label(place), name, argument, place, identityOnly)
 				written++
 			}
 		}
@@ -126,6 +159,26 @@ func writeQueryFile(w io.Writer, schema []byte, o queryFileOptions) error {
 	}
 	_, err := io.WriteString(w, b.String())
 	return err
+}
+
+// needsArgument reports whether a list block of a type cannot be written
+// without naming something, usually a parent resource.
+func needsArgument(attributes map[string]struct {
+	Required bool `json:"required"`
+}, blocks map[string]struct {
+	MinItems int `json:"min_items"`
+}) bool {
+	for _, a := range attributes {
+		if a.Required {
+			return true
+		}
+	}
+	for _, b := range blocks {
+		if b.MinItems > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func writeListBlock(b *strings.Builder, resourceType, name, provider, argument, place string, identityOnly bool) {

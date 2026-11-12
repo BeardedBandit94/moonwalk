@@ -35,6 +35,7 @@ const usage = `Usage:
   moonwalk collect    [options] <state>...
   moonwalk diff       [options] <older> <newer>
   moonwalk query-file [options] <schema>
+  moonwalk iam-policy [options] [<schema>]
   moonwalk version
 
 Reads Terraform or OpenTofu states ('terraform show -json' output or raw
@@ -53,6 +54,10 @@ Reads Terraform or OpenTofu states ('terraform show -json' output or raw
   query-file  writes a query file for 'terraform query', which lists what
               exists in the cloud, from the output of 'terraform providers
               schema -json' (a file, or - for standard input)
+  iam-policy  writes the AWS IAM policies that running that query file
+              takes, and that reading states from S3 takes: every action
+              named in full, reads only, limited to resources where AWS
+              allows it
 
 Add the configuration with -code to see where each resource is declared and
 the resources that are written but not applied yet. With -code and no state,
@@ -114,6 +119,26 @@ Options for query-file:
   -identity-only  do not ask for each resource's attributes, which is
                faster and needs fewer permissions but leaves moonwalk
                unable to place a resource in its network
+  -allow       comma-separated AWS actions that read what a service stores
+               and are left out unless named: lambda:GetFunction,
+               s3:ListBucket, ssm:GetParameter. Without them, Lambda
+               functions and S3 buckets are not listed, and SSM parameters
+               are listed without attributes. Give iam-policy the same.
+
+Options for iam-policy:
+  -type, -identity-only, -allow   as for query-file, so that the policy
+               matches the query file written with the same options
+  -region      comma-separated regions to allow the actions in; global
+               services, such as IAM, are not held to them
+  -account     the 12-digit account the policy is for, to limit resources
+               to it wherever an action can be limited
+  -partition   aws (default), aws-us-gov or aws-cn
+  -state       s3://bucket/key or s3://bucket/prefix/ to allow reading
+               states from, as its own policy. May be given repeatedly.
+  -kms-key     ARN of the KMS key those states are encrypted with. May be
+               given repeatedly.
+  -out         directory to write the policy documents to; needed when
+               there is more than one, since IAM limits a policy's size
 
 Options for graph:
   -direct      leave out dependencies that others already imply
@@ -174,8 +199,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		_, err := fmt.Fprintln(stdout, "moonwalk", buildVersion())
 		return err
 	}
-	if len(args) == 0 || !slices.Contains([]string{"serve", "view", "graph", "collect", "diff", "query-file"}, args[0]) {
-		return fmt.Errorf("expected one of the commands serve, view, graph, collect, diff or query-file\n\n%s", usage)
+	if len(args) == 0 || !slices.Contains([]string{"serve", "view", "graph", "collect", "diff", "query-file", "iam-policy"}, args[0]) {
+		return fmt.Errorf("expected one of the commands serve, view, graph, collect, diff, query-file or iam-policy\n\n%s", usage)
 	}
 	command := args[0]
 	switch command {
@@ -183,6 +208,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		return runQueryFile(args[1:], stdin, stdout)
 	case "diff":
 		return runDiff(args[1:], stdin, stdout, stderr)
+	case "iam-policy":
+		return runIAMPolicy(args[1:], stdin, stdout, stderr)
 	}
 	var o options
 	fs := flag.NewFlagSet(command, flag.ContinueOnError)
@@ -394,6 +421,7 @@ func runQueryFile(args []string, stdin io.Reader, stdout io.Writer) error {
 	types := fs.String("type", "", "")
 	provider := fs.String("provider", "", "")
 	identityOnly := fs.Bool("identity-only", false, "")
+	allow := fs.String("allow", "", "")
 	if err := fs.Parse(args); err != nil {
 		return fmt.Errorf("%w\n\n%s", err, usage)
 	}
@@ -411,7 +439,7 @@ func runQueryFile(args []string, stdin io.Reader, stdout io.Writer) error {
 		return err
 	}
 	return writeQueryFile(stdout, schema, queryFileOptions{
-		regions: list(*regions), subscriptions: list(*subscriptions), types: list(*types), provider: *provider, identityOnly: *identityOnly,
+		regions: list(*regions), subscriptions: list(*subscriptions), types: list(*types), provider: *provider, identityOnly: *identityOnly, allow: list(*allow),
 	})
 }
 
@@ -498,6 +526,10 @@ func loadGraph(args, codeDirs []string, stdin io.Reader, stderr io.Writer) (*gra
 		}
 		for _, e := range res.Errors {
 			fmt.Fprintf(stderr, "moonwalk: the listing in %s is incomplete, so resources may be missing from it: %s\n", l.source, e)
+		}
+		if len(res.Denied) > 0 {
+			fmt.Fprintf(stderr, "moonwalk: the credentials that made the listing in %s were refused %s: %s. "+
+				"Add them to the policy, or leave those types out of the query file.\n", l.source, plural(len(res.Denied), "action"), strings.Join(res.Denied, ", "))
 		}
 		for _, block := range res.Capped {
 			fmt.Fprintf(stderr, "moonwalk: %s in %s returned exactly 100 resources, where a list block stops unless it sets a limit. "+
