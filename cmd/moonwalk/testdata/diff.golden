@@ -1,0 +1,15 @@
+1 added, 1 removed, 1 changed
+
+Added
+  + terraform_data.queue
+
+Removed
+  - terraform_data.gateway
+
+Changed
+  ~ terraform_data.server
+      attributes: input, output
+
+Dependencies removed
+  - terraform_data.server → terraform_data.subnet[0]
+  - terraform_data.server → terraform_data.subnet[1]

@@ -1,0 +1,21 @@
+{
+  "added": [
+    "app::terraform_data.queue"
+  ],
+  "removed": [
+    "app::terraform_data.gateway"
+  ],
+  "changed": [
+    {
+      "id": "app::terraform_data.server",
+      "what": [
+        "attributes: input, output"
+      ]
+    }
+  ],
+  "dependencies_added": [],
+  "dependencies_removed": [
+    "app::terraform_data.server → app::terraform_data.subnet[0]",
+    "app::terraform_data.server → app::terraform_data.subnet[1]"
+  ]
+}

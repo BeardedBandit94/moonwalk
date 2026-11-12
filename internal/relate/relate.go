@@ -12,15 +12,17 @@ import (
 
 // Result counts what Enrich changed.
 type Result struct {
-	Contained int // Containment edges added.
-	Glue      int // Resources marked as glue.
+	CrossState int // Dependencies added between resources in different sources.
+	Contained  int // Containment edges added.
+	Glue       int // Resources marked as glue.
 }
 
 // Enrich applies every derivation in this package to g.
 func Enrich(g *graph.Graph) Result {
 	return Result{
-		Contained: Containment(g),
-		Glue:      MarkGlue(g),
+		CrossState: CrossState(g),
+		Contained:  Containment(g),
+		Glue:       MarkGlue(g),
 	}
 }
 

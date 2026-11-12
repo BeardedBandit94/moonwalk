@@ -176,8 +176,11 @@ func TestWriteJSONMatchesTheStandardEncoder(t *testing.T) {
 	if err := full.AddEdge(Edge{From: "a", To: "c", Kind: EdgeLinks, Via: "b"}); err != nil {
 		t.Fatal(err)
 	}
-	for name, g := range map[string]*Graph{"full": full, "empty": New()} {
+	for name, g := range map[string]*Graph{"full": full, "empty": New(), "snapshot": full} {
 		d := g.Document()
+		if name == "snapshot" {
+			d.Kind, d.Created = "moonwalk-snapshot", "2026-11-12T08:00:00Z"
+		}
 		var want, got bytes.Buffer
 		enc := json.NewEncoder(&want)
 		enc.SetIndent("", "  ")
@@ -189,6 +192,25 @@ func TestWriteJSONMatchesTheStandardEncoder(t *testing.T) {
 		}
 		if got.String() != want.String() {
 			t.Errorf("%s:\n--- WriteJSON\n%s--- encoding/json\n%s", name, got.String(), want.String())
+		}
+
+		// The compact form says the same, with a line for each node and
+		// edge and no space to spare.
+		var compact, squeezed bytes.Buffer
+		if err := d.WriteCompact(&compact); err != nil {
+			t.Fatal(err)
+		}
+		if err := json.Compact(&squeezed, want.Bytes()); err != nil {
+			t.Fatal(err)
+		}
+		if oneLine := strings.ReplaceAll(compact.String(), "\n", ""); oneLine != squeezed.String() {
+			t.Errorf("%s:\n--- WriteCompact\n%s--- encoding/json, compacted\n%s", name, compact.String(), squeezed.String())
+		}
+		if name == "snapshot" {
+			lines := strings.Split(strings.TrimSuffix(compact.String(), "\n"), "\n")
+			if want := 9 + len(d.Nodes) + len(d.Edges); len(lines) != want {
+				t.Errorf("compact form has %d lines, want %d:\n%s", len(lines), want, compact.String())
+			}
 		}
 	}
 }

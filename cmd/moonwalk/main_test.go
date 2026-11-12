@@ -2,9 +2,11 @@ package main
 
 import (
 	"bytes"
+	"compress/gzip"
 	"flag"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -324,10 +326,14 @@ func TestDiscovery(t *testing.T) {
 			}
 		}
 	}
-	// A listing's attributes are never printed: it does not say which are secret.
-	out, err := runCLI(t, "", "graph", "-format", "json", "-attributes", found+"query.jsonl")
+	// A listing's attributes are never printed: it does not say which are
+	// secret. The warning says so, and does not blame an old Terraform.
+	out, warnings, err := runCLIWithWarnings(t, "", "graph", "-format", "json", "-attributes", "cloud="+found+"query.jsonl")
 	if err != nil || strings.Contains(out, "cidr_block") || !strings.Contains(out, `"attributes_withheld": true`) {
 		t.Errorf("listing attributes: %v", err)
+	}
+	if !strings.Contains(warnings, "attribute values of cloud are withheld: a listing") || strings.Contains(warnings, "show -json") {
+		t.Errorf("listing attributes: warning %q", warnings)
 	}
 	// With one state and one listing, code needs no name: it belongs to the state.
 	out, err = runCLI(t, "", "view", "-group-by", "source", "-code", code, "prod="+found+"managed.tfstate", "cloud="+found+"query.jsonl")
@@ -337,7 +343,7 @@ func TestDiscovery(t *testing.T) {
 	// An error in the listing is passed on as a warning.
 	listing := `{"@level":"info","type":"version","terraform":"1.14.0"}` + "\n" +
 		`{"@level":"error","type":"diagnostic","diagnostic":{"severity":"error","summary":"Error listing","detail":"AccessDenied"}}` + "\n"
-	_, warnings, err := runCLIWithWarnings(t, listing, "graph", "cloud=-")
+	_, warnings, err = runCLIWithWarnings(t, listing, "graph", "cloud=-")
 	if err != nil || !strings.Contains(warnings, "incomplete") || !strings.Contains(warnings, "AccessDenied") {
 		t.Errorf("listing error: err %v, warnings %q", err, warnings)
 	}
@@ -501,6 +507,230 @@ func TestFingerprintFollowsTheFiles(t *testing.T) {
 	}
 }
 
+// at pins the time snapshots are stamped with.
+func at(t *testing.T, when time.Time) {
+	t.Helper()
+	was := now
+	now = func() time.Time { return when }
+	t.Cleanup(func() { now = was })
+}
+
+// collect writes a snapshot of the given inputs to a file and returns its
+// path.
+func collect(t *testing.T, args ...string) string {
+	t.Helper()
+	out, err := runCLI(t, "", append([]string{"collect"}, args...)...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "snapshot.json")
+	if err := os.WriteFile(path, []byte(out), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func TestCollect(t *testing.T) {
+	at(t, time.Date(2026, 11, 12, 8, 0, 0, 0, time.UTC))
+	out, err := runCLI(t, "", "collect", "-code", code, "net="+fixtures+"network.tfstate")
+	if err != nil {
+		t.Fatal(err)
+	}
+	golden(t, "collect.golden", out)
+}
+
+// Whatever was loaded, a snapshot of it shows the same as it did, in every
+// output, and from standard input as from a file.
+func TestSnapshotShowsWhatWasCollected(t *testing.T) {
+	inputs := map[string][]string{
+		"states":    {"prod=" + fixtures + "raw.tfstate", "lab=" + fixtures + "secrets.tfstate"},
+		"show":      {fixtures + "show.json"},
+		"plan":      {"-code", planCode, "p=" + fixtures + "plan.json"},
+		"drift":     {fixtures + "drift.json"},
+		"code":      {"-code", code, "net=" + fixtures + "network.tfstate"},
+		"listing":   {"net=" + found + "managed.tfstate", found + "query.jsonl"},
+		"withheld":  {"old=" + fixtures + "unmarked.tfstate"},
+		"code only": {"-code", "plan=" + code},
+	}
+	outputs := [][]string{
+		{"graph"},
+		{"graph", "-format", "json", "-attributes"},
+		{"graph", "-direct"},
+		{"view"},
+		{"view", "-format", "json", "-group-by", "source,region,network", "-glue"},
+	}
+	for name, in := range inputs {
+		snap := collect(t, in...)
+		data, err := os.ReadFile(snap)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, output := range outputs {
+			want, err := runCLI(t, "", append(slices.Clone(output), in...)...)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err := runCLI(t, "", append(slices.Clone(output), snap)...)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != want {
+				t.Errorf("%s as %v: the snapshot shows something else than what it was collected from:\n%s", name, output, got)
+			}
+			piped, err := runCLI(t, string(data), append(slices.Clone(output), "-")...)
+			if err != nil || piped != want {
+				t.Errorf("%s as %v: the snapshot on standard input shows something else (err %v)", name, output, err)
+			}
+		}
+	}
+}
+
+// Two snapshots collected apart are linked when loaded together, and a
+// snapshot loads next to a state.
+func TestSnapshotsTogether(t *testing.T) {
+	want, err := runCLI(t, "", "view", "network="+fixtures+"remote-network.tfstate", "app="+fixtures+"remote-app.tfstate")
+	if err != nil {
+		t.Fatal(err)
+	}
+	network := collect(t, "network="+fixtures+"remote-network.tfstate")
+	app := collect(t, "app="+fixtures+"remote-app.tfstate")
+	for name, args := range map[string][]string{
+		"two snapshots":        {network, app},
+		"a snapshot and state": {network, "app=" + fixtures + "remote-app.tfstate"},
+		// The name given to a snapshot's file goes unused.
+		"a named snapshot": {"ignored=" + network, app},
+	} {
+		got, err := runCLI(t, "", append([]string{"view"}, args...)...)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != want {
+			t.Errorf("%s:\n%s\nwant\n%s", name, got, want)
+		}
+	}
+	if !strings.Contains(want, "-> network / ") {
+		t.Errorf("the two states should be linked:\n%s", want)
+	}
+
+	// Compressed, a snapshot reads the same, and so does a state.
+	zipped := func(path string) string {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var b bytes.Buffer
+		zw := gzip.NewWriter(&b)
+		zw.Write(data)
+		zw.Close()
+		out := filepath.Join(t.TempDir(), "zipped.gz")
+		if err := os.WriteFile(out, b.Bytes(), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	if got, err := runCLI(t, "", "view", zipped(network), "app="+zipped(fixtures+"remote-app.tfstate")); err != nil || got != want {
+		t.Errorf("compressed inputs (err %v):\n%s", err, got)
+	}
+	cut := filepath.Join(t.TempDir(), "cut.gz")
+	if data, _ := os.ReadFile(zipped(network)); os.WriteFile(cut, data[:len(data)/2], 0o644) != nil {
+		t.Fatal("cannot write")
+	}
+	if _, err := runCLI(t, "", "view", cut); err == nil {
+		t.Error("a compressed file cut short: no error")
+	}
+
+	// A snapshot of snapshots is the same as one of the states.
+	both := collect(t, network, app)
+	if got, _ := runCLI(t, "", "view", both); got != want {
+		t.Errorf("snapshot of two snapshots:\n%s", got)
+	}
+
+	// The same source twice is refused, whichever way it arrives.
+	for name, args := range map[string][]string{
+		"same snapshot twice":         {network, network},
+		"snapshot and its own state":  {network, "network=" + fixtures + "remote-network.tfstate"},
+		"state and then its snapshot": {"network=" + fixtures + "remote-network.tfstate", network},
+	} {
+		if _, err := runCLI(t, "", append([]string{"view"}, args...)...); err == nil {
+			t.Errorf("%s: no error", name)
+		}
+	}
+}
+
+func TestCollectWarnsOfWithheldAttributes(t *testing.T) {
+	out, warnings, err := runCLIWithWarnings(t, "", "collect", "old="+fixtures+"unmarked.tfstate")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(warnings, "old") || strings.Contains(out, `"attributes":`) {
+		t.Errorf("warnings %q; a snapshot of an unmarked state must hold no attributes", warnings)
+	}
+	for _, s := range []string{"8%exVpqbOs%l", "$2a$10$Yh49MOe", "hunter2"} {
+		if strings.Contains(out, s) {
+			t.Errorf("the snapshot contains the secret %q", s)
+		}
+	}
+}
+
+func TestDiff(t *testing.T) {
+	before, after := fixtures+"diff-before.tfstate", fixtures+"diff-after.tfstate"
+	out, err := runCLI(t, "", "diff", before, after)
+	if err != nil {
+		t.Fatal(err)
+	}
+	golden(t, "diff.golden", out)
+	out, err = runCLI(t, "", "diff", "-format", "json", "app="+before, "app="+after)
+	if err != nil {
+		t.Fatal(err)
+	}
+	golden(t, "diff-json.golden", out)
+
+	// Snapshots compare as what they were collected from, with each other
+	// and with a state.
+	want, _ := runCLI(t, "", "diff", "app="+before, "app="+after)
+	snapBefore, snapAfter := collect(t, "app="+before), collect(t, "app="+after)
+	for name, args := range map[string][]string{
+		"two snapshots":      {snapBefore, snapAfter},
+		"snapshot and state": {snapBefore, "app=" + after},
+		"state and snapshot": {"app=" + before, snapAfter},
+	} {
+		got, err := runCLI(t, "", append([]string{"diff"}, args...)...)
+		if err != nil || got != want {
+			t.Errorf("%s (err %v):\n%s\nwant\n%s", name, err, got, want)
+		}
+	}
+	for name, args := range map[string][]string{
+		"a state and itself":       {before, before},
+		"a state and its snapshot": {"app=" + before, snapBefore},
+	} {
+		if got, err := runCLI(t, "", append([]string{"diff"}, args...)...); err != nil || got != "No differences\n" {
+			t.Errorf("%s (err %v):\n%s", name, err, got)
+		}
+	}
+
+	// What a cloud listing found that no state holds is a difference.
+	out, err = runCLI(t, "", "diff", "net="+found+"managed.tfstate", collect(t, "net="+found+"managed.tfstate", "cloud="+found+"query.jsonl"))
+	if err != nil || !strings.Contains(out, "+ cloud::aws_subnet.") {
+		t.Errorf("listing against state (err %v):\n%s", err, out)
+	}
+
+	_, err = runCLI(t, "", "diff", collect(t, "a="+before, "b="+fixtures+"raw.tfstate"), collect(t, "c="+after, "d="+fixtures+"raw.tfstate"))
+	if err == nil || !strings.Contains(err.Error(), "a, b") || !strings.Contains(err.Error(), "c, d") {
+		t.Errorf("sides with no source in common: error should name the sources, got %v", err)
+	}
+	for name, args := range map[string][]string{
+		"one input":      {before},
+		"three inputs":   {before, after, after},
+		"unknown format": {"-format", "dot", before, after},
+		"unknown flag":   {"-depth", "2", before, after},
+		"missing file":   {before, "does-not-exist.tfstate"},
+	} {
+		if _, err := runCLI(t, "", append([]string{"diff"}, args...)...); err == nil {
+			t.Errorf("%s: no error", name)
+		}
+	}
+}
+
 func TestErrors(t *testing.T) {
 	cases := map[string][]string{
 		"no command":       {},
@@ -518,6 +748,8 @@ func TestErrors(t *testing.T) {
 		"negative depth":   {"view", "-depth", "-1", fixtures + "raw.tfstate"},
 		"graph-only flag":  {"view", "-attributes", fixtures + "raw.tfstate"},
 		"view-only flag":   {"graph", "-depth", "2", fixtures + "raw.tfstate"},
+		"collect format":   {"collect", "-format", "json", fixtures + "raw.tfstate"},
+		"collect nothing":  {"collect"},
 	}
 	for name, args := range cases {
 		if _, err := runCLI(t, "", args...); err == nil {

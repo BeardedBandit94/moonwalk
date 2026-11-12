@@ -71,6 +71,11 @@
   ],
   "edges": [
     {
+      "from": "cloud::aws_subnet.subnet-0aa000000000000b2@123456789012/us-east-1",
+      "to": "prod::aws_vpc.main",
+      "kind": "depends_on"
+    },
+    {
       "from": "prod::aws_subnet.private[0]",
       "to": "prod::aws_vpc.main",
       "kind": "depends_on"

@@ -231,3 +231,92 @@ func TestEnrich(t *testing.T) {
 		t.Errorf("got %+v, want %+v", got, want)
 	}
 }
+
+// The fixtures are real OpenTofu states: one that makes a network and two
+// subnets and publishes their IDs as outputs, and one that reads those
+// outputs through terraform_remote_state and uses the second subnet.
+func TestCrossStateThroughRemoteState(t *testing.T) {
+	g := graph.New()
+	for source, file := range map[string]string{"network": "remote-network.tfstate", "app": "remote-app.tfstate"} {
+		f, err := os.Open("../tfstate/testdata/" + file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = tfstate.Load(g, source, f)
+		f.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if added := CrossState(g); added != 4 {
+		t.Errorf("added %d edges, want 4", added)
+	}
+	var crossing []string
+	for _, e := range g.Edges() {
+		if strings.HasPrefix(e.From, "app::") && strings.HasPrefix(e.To, "network::") {
+			crossing = append(crossing, e.From+" > "+e.To)
+		}
+	}
+	same(t, "edges from app to network", crossing, []string{
+		// The data source read three IDs from the other state's outputs.
+		"app::data.terraform_remote_state.network > network::terraform_data.subnet[0]",
+		"app::data.terraform_remote_state.network > network::terraform_data.subnet[1]",
+		"app::data.terraform_remote_state.network > network::terraform_data.vpc",
+		// The server holds one of them under an argument named subnet_id.
+		"app::terraform_data.server > network::terraform_data.subnet[1]",
+	})
+	// Doing it again adds nothing.
+	if again := CrossState(g); again != 0 {
+		t.Errorf("a second pass added %d edges", again)
+	}
+}
+
+func TestCrossStateRules(t *testing.T) {
+	const aws = `"provider":"provider[\"registry.terraform.io/hashicorp/aws\"]"`
+	g := graph.New()
+	loadString(t, g, "net", `{"version":4,"terraform_version":"1.9.5","resources":[
+	  {"mode":"managed","type":"aws_vpc","name":"main",`+aws+`,
+	   "instances":[{"attributes":{"id":"vpc-0123456789","arn":"arn:aws:ec2:us-east-1:111111111111:vpc/vpc-0123456789"}}]},
+	  {"mode":"managed","type":"aws_s3_bucket","name":"logs",`+aws+`,
+	   "instances":[{"attributes":{"id":"default","bucket":"default","arn":"arn:aws:s3:::default"}}]},
+	  {"mode":"managed","type":"aws_kms_key","name":"a",`+aws+`,"instances":[{"attributes":{"id":"key-shared-1"}}]},
+	  {"mode":"managed","type":"aws_kms_key","name":"b",`+aws+`,"instances":[{"attributes":{"id":"key-shared-1"}}]},
+	  {"mode":"managed","type":"aws_subnet","name":"inside",`+aws+`,
+	   "instances":[{"attributes":{"id":"subnet-0000000001","vpc_id":"vpc-0123456789"},"dependencies":["aws_vpc.main"]}]}]}`)
+	loadString(t, g, "app", `{"version":4,"terraform_version":"1.9.5","resources":[
+	  {"mode":"data","type":"aws_vpc","name":"read",`+aws+`,"instances":[{"attributes":{"id":"vpc-0123456789"}}]},
+	  {"mode":"managed","type":"aws_security_group","name":"by_key",`+aws+`,
+	   "instances":[{"attributes":{"id":"sg-0000000001","vpc_id":"vpc-0123456789"}}]},
+	  {"mode":"managed","type":"aws_iam_policy","name":"by_arn",`+aws+`,
+	   "instances":[{"attributes":{"id":"p-0000000001","policy":"arn:aws:ec2:us-east-1:111111111111:vpc/vpc-0123456789"}}]},
+	  {"mode":"managed","type":"aws_instance","name":"mentions",`+aws+`,
+	   "instances":[{"attributes":{"id":"i-0000000001","tags":{"note":"vpc-0123456789"},"user_data":"default","key_id":"key-shared-1"}}]},
+	  {"mode":"managed","type":"aws_lb","name":"listed",`+aws+`,
+	   "instances":[{"attributes":{"id":"lb-0000000001","subnet_ids":["subnet-0000000001"]}}]}]}`)
+	// In a state of its own, since a value marked sensitive is redacted
+	// wherever that state repeats it.
+	loadString(t, g, "db", `{"version":4,"terraform_version":"1.9.5","resources":[
+	  {"mode":"managed","type":"aws_db_instance","name":"secret",`+aws+`,
+	   "instances":[{"attributes":{"id":"db-0000000001","vpc_id":"vpc-0123456789"},"sensitive_attributes":[[{"type":"get_attr","value":"vpc_id"}]]}]}]}`)
+	CrossState(g)
+	var crossing []string
+	for _, e := range g.Edges() {
+		if !strings.HasPrefix(e.From, "net::") {
+			crossing = append(crossing, e.From+" > "+e.To)
+		}
+	}
+	same(t, "edges out of app", crossing, []string{
+		// An ARN names its resource wherever it is written.
+		"app::aws_iam_policy.by_arn > net::aws_vpc.main",
+		// An element of a list goes by the list's name.
+		"app::aws_lb.listed > net::aws_subnet.inside",
+		// A plain ID counts under an argument named like a reference.
+		"app::aws_security_group.by_key > net::aws_vpc.main",
+		// A data source reads the resource whose ID it has; the managed
+		// resource, not the data source, owns that ID.
+		"app::data.aws_vpc.read > net::aws_vpc.main",
+		// Nothing for the instance: a tag is not a reference, "default" is
+		// too plain to stand for a bucket, and two keys share the third
+		// value. Nothing for the database, whose reference is redacted.
+	})
+}

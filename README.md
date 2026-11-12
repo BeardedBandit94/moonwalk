@@ -6,8 +6,10 @@ and the live cloud environment side by side in a single interactive view.
 
 ## Status
 
-Early. What works today: loading state and exploring its resource graph in
-the browser, or printing it, either collapsed into groups or in full.
+Early. What works today: loading state, code, plans and listings of the
+cloud into one graph and exploring it in the browser, or printing it, either
+collapsed into groups or in full; collecting that graph into snapshots to
+look at together; and comparing two of them.
 
 ### The explorer
 
@@ -250,6 +252,13 @@ question, nothing is changed.
   `count` or `for_each` as a dependency on every instance. Where a
   resource's attributes hold a value that only some instances have, such as
   one subnet's ID, the other dependencies are dropped.
+- **Links between states.** A resource that holds the ID or ARN of a
+  resource in another state depends on it. The value has to appear where a
+  reference would: under an attribute named like one (`vpc_id`,
+  `role_arn`, `subnet_ids`), as a path such as an ARN, among the outputs
+  of a `terraform_remote_state` data source, or as the ID of a data
+  source that looked the resource up. An ID that two resources claim
+  links nothing.
 - **Glue.** A resource named as an association, attachment or membership
   that only joins two others is folded into a link between them, shown as
   `--`. So is a security group rule between two groups. `-glue` shows such
@@ -288,7 +297,92 @@ go run ./cmd/moonwalk graph network=network.tfstate app=app.tfstate
 go run ./cmd/moonwalk graph live=./environments
 ```
 
-Dependencies between resources in different states are not detected yet.
+A resource that names one in another state is linked to it; see
+[what moonwalk works out](#what-moonwalk-works-out).
+
+State kept in a remote backend, such as an S3 bucket, is read through
+Terraform, which already knows where it is and how to get at it:
+
+```bash
+terraform state pull | go run ./cmd/moonwalk view prod=-
+```
+
+### Snapshots
+
+`collect` writes everything it loaded, with every relationship it worked
+out, to one file. The other commands read that file in place of a state:
+
+```bash
+go run ./cmd/moonwalk collect -code . prod=terraform.tfstate found.jsonl > prod.snapshot.json
+```
+
+```bash
+go run ./cmd/moonwalk serve prod.snapshot.json
+```
+
+This is how to look at an estate that no single set of credentials can
+read. Collect in each account, pipeline or team, where the state and the
+cloud can be reached; pass the snapshots on; and load them together, where
+the resources of one are linked to those of another:
+
+```bash
+go run ./cmd/moonwalk serve network.snapshot.json payments.snapshot.json data.snapshot.json
+```
+
+A snapshot keeps the source names it was collected under, so give each
+state a name that is unique across all of them. It holds one resource on
+each line, and compresses to a few hundredths of its size; moonwalk reads
+any input compressed with gzip:
+
+```bash
+go run ./cmd/moonwalk collect prod=terraform.tfstate | gzip > prod.snapshot.json.gz
+```
+
+A snapshot of 100,000 resources is about 100 MB, under 4 MB compressed, and
+loads faster than the state it was made from.
+
+A snapshot holds attribute values as moonwalk would show them: sensitive
+ones redacted, and none at all from a state that does not mark them (see
+[attributes and secrets](#attributes-and-secrets)). It still describes your
+infrastructure in detail, so share it as you would share that. The code
+shown in the explorer comes from the directory given with `-code`, and is
+not in a snapshot.
+
+### What changed
+
+`diff` compares two snapshots, states or plans, the older one first:
+
+```bash
+go run ./cmd/moonwalk diff monday.snapshot.json friday.snapshot.json
+```
+
+```
+1 added, 1 removed, 1 changed
+
+Added
+  + terraform_data.queue
+
+Removed
+  - terraform_data.gateway
+
+Changed
+  ~ terraform_data.server
+      attributes: input, output
+
+Dependencies removed
+  - terraform_data.server → terraform_data.subnet[0]
+  - terraform_data.server → terraform_data.subnet[1]
+```
+
+A resource counts as changed when its status, drift, planned change,
+account or region differs, when it enters or leaves the code or the cloud
+listing, or when an attribute differs. Attributes are named and their values
+are not printed. Collected on a schedule, snapshots that include a listing
+of the cloud show what appeared outside Terraform between two dates.
+
+Resources are matched by source name and address. Two single states are
+matched by address alone, whatever they are called. `-format json` prints
+the same as JSON.
 
 ### Account and region
 
@@ -303,8 +397,8 @@ regions, such as IAM, get the region `global`.
 ### Attributes and secrets
 
 State stores secrets in plain text. moonwalk prints attribute values only
-when asked, with `graph -format json -attributes`, and replaces sensitive values
-with `"(sensitive)"`:
+when asked, with `graph -format json -attributes`, in the explorer and in
+snapshots, and replaces sensitive values with `"(sensitive)"`:
 
 - values the state marks as sensitive;
 - any other copy of such a value elsewhere in the same state, since
@@ -328,8 +422,8 @@ An OpenTofu state encrypted at rest cannot be read directly; pipe
 
 ### JSON output
 
-Both commands take `-format json`, and the output carries a
-`schema_version`. It changes only when a field is removed or changes meaning.
+`view`, `graph` and `diff` take `-format json`. The output of the first two,
+and a snapshot, carry a `schema_version`. It changes only when a field is removed or changes meaning.
 
 ## Layout
 
@@ -340,7 +434,8 @@ Both commands take `-format json`, and the output carries a
 | `internal/tfstate` | Adapter from Terraform and OpenTofu state to the graph |
 | `internal/tfcode` | Adapter from Terraform and OpenTofu configuration to the graph |
 | `internal/discover` | Adapter from `terraform query` output to the graph |
-| `internal/relate` | Relationships inferred from attributes: containment, glue |
+| `internal/relate` | Relationships inferred from attributes: containment, glue, links between states |
+| `internal/snapshot` | A graph written to a file and read back, and the comparison of two |
 | `internal/view` | Grouping of a graph, filters, and the collapsed views of it |
 | `internal/web` | The explorer: a JSON API over the graph and the browser front end |
 | `e2e` | A browser test of the explorer; not part of the build |
