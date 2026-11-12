@@ -1,0 +1,32 @@
+# Dependency updates, once a week, a pull request per group.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # The AWS SDK releases its modules together and often.
+      aws-sdk:
+        patterns:
+          - "github.com/aws/*"
+      hashicorp:
+        patterns:
+          - "github.com/hashicorp/*"
+          - "github.com/zclconf/go-cty"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+
+  # The browser test's one dependency.
+  - package-ecosystem: npm
+    directory: /e2e
+    schedule:
+      interval: monthly

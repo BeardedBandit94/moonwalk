@@ -2,6 +2,9 @@
 // graph built from state: resources that a state already holds are left as
 // they are, and the rest are added with the status "unmanaged".
 //
+// Reading an estate as managed, unmanaged or drifted follows driftctl
+// (github.com/snyk/driftctl), which made that the way to describe one.
+//
 // The input is the output of `terraform query -json`. Terraform does the
 // listing through the provider, with its own credentials, pagination and
 // rate limiting; moonwalk only reads the result.

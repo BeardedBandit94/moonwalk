@@ -1,0 +1,35 @@
+moonwalk
+Copyright 2026 The moonwalk authors
+
+Licensed under the Apache License, Version 2.0; see the file LICENSE.
+
+moonwalk's binaries and container images are built from the software
+below. The full licence of each, at the version used, is in the file
+THIRD_PARTY_LICENSES that ships with every release.
+
+  HCL                      github.com/hashicorp/hcl            MPL-2.0
+  terraform-json           github.com/hashicorp/terraform-json MPL-2.0
+  go-version               github.com/hashicorp/go-version     MPL-2.0
+      Copyright IBM Corp. Used unmodified; the source is at the
+      addresses given.
+  go-cty                   github.com/zclconf/go-cty           MIT
+      Copyright Martin Atkins and contributors.
+  go-textseg               github.com/apparentlymart/go-textseg MIT
+      Copyright Martin Atkins. Its Unicode tables come from the Unicode
+      Character Database, under the Unicode licence.
+  AWS SDK for Go v2        github.com/aws/aws-sdk-go-v2        Apache-2.0
+  Smithy for Go            github.com/aws/smithy-go            Apache-2.0
+      Copyright Amazon.com, Inc. or its affiliates.
+  levenshtein              github.com/agext/levenshtein        Apache-2.0
+  go-wordwrap              github.com/mitchellh/go-wordwrap    MIT
+      Copyright Mitchell Hashimoto.
+  Go text                  golang.org/x/text                   BSD-3-Clause
+  The Go runtime and standard library   go.dev                 BSD-3-Clause
+      Copyright The Go Authors.
+
+No source code from other projects is copied into moonwalk. Ideas are, and
+the README's Credits section names where they came from.
+
+Terraform and OpenTofu are trademarks of their owners. moonwalk is an
+independent project and is not affiliated with or endorsed by them or by
+any cloud provider.

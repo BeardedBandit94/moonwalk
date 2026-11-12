@@ -10,6 +10,10 @@ import (
 // other, marks them as glue, and adds an EdgeLinks edge between the two.
 // It returns how many it marked.
 //
+// Folding such resources into the line between the two they join is what
+// Inframap (github.com/cycloidio/inframap) does to make a provider's graph
+// readable; the idea is taken from there, the rules and the code are not.
+//
 // A resource counts as glue when its type is named as an association,
 // attachment or membership, or is a security group rule, nothing depends
 // on it, and it depends directly

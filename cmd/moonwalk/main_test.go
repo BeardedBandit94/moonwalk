@@ -825,3 +825,65 @@ func TestQueryFileForAzure(t *testing.T) {
 		t.Errorf("no subscriptions: %v\n%s", err, out)
 	}
 }
+
+func TestVersion(t *testing.T) {
+	was := version
+	t.Cleanup(func() { version = was })
+	version = "1.2.3"
+	for _, arg := range []string{"version", "-version", "--version"} {
+		out, err := runCLI(t, "", arg)
+		if err != nil || out != "moonwalk 1.2.3\n" {
+			t.Errorf("%s: %q, %v", arg, out, err)
+		}
+	}
+	// Without a release's version there is still something to report.
+	version = ""
+	if out, err := runCLI(t, "", "version"); err != nil || !strings.HasPrefix(out, "moonwalk ") || len(out) < len("moonwalk x\n") {
+		t.Errorf("unreleased build: %q, %v", out, err)
+	}
+}
+
+// Whatever goes wrong while reading a state, what moonwalk says about it
+// holds none of the state's values: an error names the input and the
+// problem, never the content.
+func TestErrorsAndWarningsCarryNoSecrets(t *testing.T) {
+	secrets := map[string][]string{
+		"secrets.tfstate":    {"hunter2", "4@Sze931N+:r", "$2a$10$INNvf"},
+		"secrets.show.json":  {"hunter2", "4@Sze931N+:r", "$2a$10$INNvf"},
+		"unmarked.tfstate":   {"8%exVpqbOs%l", "$2a$10$Yh49MOe", "hunter2"},
+		"unmarked.show.json": {">p6)+4Lqi@J?", "$2a$10$NOV6SnY", "hunter2"},
+	}
+	for file, values := range secrets {
+		data, err := os.ReadFile(fixtures + file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		text := string(data)
+		// The file cut short just after each secret, and with a secret
+		// where a number or a list belongs.
+		var broken []string
+		for _, s := range values {
+			if i := strings.Index(text, s); i >= 0 {
+				broken = append(broken, text[:i+len(s)], text[:i+len(s)/2])
+			}
+			broken = append(broken,
+				strings.Replace(text, `"version":`, `"version": "`+s+`", "x":`, 1),
+				strings.Replace(text, `"resources":`, `"resources": "`+s+`", "y":`, 1),
+				text+s)
+		}
+		for i, input := range broken {
+			for _, command := range [][]string{{"graph", "-format", "json", "-attributes", "-"}, {"view", "-"}, {"collect", "-"}, {"diff", "-", fixtures + "raw.tfstate"}} {
+				out, warnings, err := runCLIWithWarnings(t, input, command...)
+				said := out + warnings
+				if err != nil {
+					said += err.Error()
+				}
+				for _, s := range values {
+					if strings.Contains(said, s) {
+						t.Errorf("%s, damaged copy %d, %v: the secret %q is in what moonwalk said:\n%s", file, i, command, s, said)
+					}
+				}
+			}
+		}
+	}
+}

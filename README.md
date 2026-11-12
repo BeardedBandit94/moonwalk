@@ -4,6 +4,31 @@ An explorer for infrastructure as code. moonwalk reads Terraform and OpenTofu
 state into one normalized resource graph, with the goal of showing code, state
 and the live cloud environment side by side in a single interactive view.
 
+## Install
+
+With Go 1.25 or later:
+
+```bash
+go install github.com/BeardedBandit94/moonwalk/cmd/moonwalk@latest
+```
+
+Or as a container image, built from a checkout:
+
+```bash
+docker build -t moonwalk .
+```
+
+```bash
+docker run --rm --user "$(id -u)" -p 127.0.0.1:7878:7878 -v "$PWD:/work:ro" moonwalk serve -addr 0.0.0.0:7878 /work/terraform.tfstate
+```
+
+In a container the explorer has to listen on every address to be reached
+at all; publishing the port on `127.0.0.1`, as above, keeps it to this
+machine.
+
+The examples below run moonwalk from a checkout with `go run ./cmd/moonwalk`;
+with it installed, that is just `moonwalk`.
+
 ## Status
 
 Early. What works today: loading state, code, plans and listings of the
@@ -557,6 +582,77 @@ go test ./internal/tfstate -fuzz FuzzLoad -fuzztime 1m
 go test ./internal/tfstate -run '^$' -bench Load100k
 ```
 
+### Releasing
+
+Pushing a tag publishes that version:
+
+```bash
+git tag v0.1.0
+```
+
+```bash
+git push origin v0.1.0
+```
+
+The release workflow tests the tag, builds archives for Linux, macOS and
+Windows on amd64 and arm64 with their checksums, attaches them and a
+Homebrew formula to a release on GitHub, and pushes a container image to
+`ghcr.io`. A tag with a suffix, such as `v0.2.0-rc1`, becomes a pre-release.
+`scripts/build-release.sh 0.1.0 dist` builds the same archives locally, and
+every pull request builds them, and the image, without publishing.
+
+## Credits
+
+moonwalk builds on other people's work.
+
+**Built with.** These are compiled into the binary, unmodified; their
+licences ship with every release, in `THIRD_PARTY_LICENSES`.
+
+- [HCL](https://github.com/hashicorp/hcl),
+  [terraform-json](https://github.com/hashicorp/terraform-json) and
+  [go-version](https://github.com/hashicorp/go-version), by HashiCorp, for
+  reading configuration and Terraform's JSON formats. MPL-2.0.
+- [go-cty](https://github.com/zclconf/go-cty), by Martin Atkins, the type
+  system under HCL. MIT.
+- The [AWS SDK for Go v2](https://github.com/aws/aws-sdk-go-v2), for
+  reading states from S3. Apache-2.0.
+- [Go](https://go.dev) and its standard library. BSD-3-Clause.
+
+The browser test drives the explorer with
+[Playwright](https://playwright.dev) (Apache-2.0), and the test fixtures
+were made with [OpenTofu](https://opentofu.org) and Terraform.
+
+**Ideas from.** No code is taken from these projects, but moonwalk would
+look different without them:
+
+- [Inframap](https://github.com/cycloidio/inframap) (MIT) showed that a
+  graph of infrastructure becomes readable once the resources that only
+  join two others are folded into the line between them. moonwalk's glue
+  links are that idea.
+- [Rover](https://github.com/im2nguyen/rover) (MIT) showed state and plans
+  explored interactively in the browser, served by the tool itself.
+- [driftctl](https://github.com/snyk/driftctl) (Apache-2.0) established
+  the three-way reading of an estate that moonwalk shows: managed,
+  unmanaged and drifted.
+- [Terraformer](https://github.com/GoogleCloudPlatform/terraformer)
+  (Apache-2.0) showed what exists in a cloud described in Terraform's own
+  terms.
+- [Steampipe](https://github.com/turbot/steampipe) (AGPL-3.0) and
+  [Fix Inventory](https://github.com/someengineering/fixinventory)
+  (Apache-2.0) showed many accounts and clouds brought into one model that
+  can be asked questions.
+
+And to Terraform and OpenTofu themselves: moonwalk reads the formats they
+define, and leaves listing the cloud to `terraform query`. Terraform and
+OpenTofu are trademarks of their owners; moonwalk is an independent
+project, not affiliated with or endorsed by them.
+
+## Security
+
+State holds secrets, and moonwalk is careful with them; see
+[attributes and secrets](#attributes-and-secrets). To report a
+vulnerability, see [SECURITY.md](SECURITY.md).
+
 ## License
 
-Apache-2.0
+Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
