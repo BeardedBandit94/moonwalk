@@ -84,8 +84,24 @@ func labels(d view.Document, kind view.Kind) []string {
 func TestMeta(t *testing.T) {
 	var m metaResponse
 	getJSON(t, serve(t), "/api/meta", &m)
-	if m.Resources != 19 || strings.Join(m.Sources, ",") != "lab,net" || m.Budget != view.Budget || len(m.Dimensions) != 5 {
+	if m.Resources != 19 || strings.Join(m.Sources, ",") != "lab,net" || m.Budget != view.Budget || len(m.Dimensions) != len(view.AllDimensions()) || len(m.ResourceGroups) != 0 {
 		t.Errorf("got %+v", m)
+	}
+}
+
+// With Azure resources loaded, their resource groups are listed, which
+// is what makes the explorer offer to group by them.
+func TestMetaListsResourceGroups(t *testing.T) {
+	ts := serveStates(t, map[string]string{"az": "azure.tfstate"})
+	var m metaResponse
+	getJSON(t, ts, "/api/meta", &m)
+	if strings.Join(m.ResourceGroups, ",") != "rg-app,rg-shared" {
+		t.Errorf("resource groups = %v", m.ResourceGroups)
+	}
+	var d view.Document
+	getJSON(t, ts, "/api/view?group_by=account,resource_group,network", &d)
+	if got := labels(d, view.KindResGroup); strings.Join(got, ",") != "rg-app,rg-shared" {
+		t.Errorf("resource group items = %v", got)
 	}
 }
 

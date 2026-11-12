@@ -60,12 +60,15 @@ Each <state> is one of:
   path         a state file; or the JSON form of a plan ('terraform show
                -json <planfile>'), which shows the state the plan was made
                against with its changes and any drift marked; or the output
-               of 'terraform query -json' or of an AWS CLI resource listing,
-               whose resources are shown as unmanaged unless a state holds
-               them; or a snapshot written by 'moonwalk collect', which
-               keeps the names it was collected under. Any of these may
-               be compressed with gzip.
+               of 'terraform query -json', or a resource listing made with
+               the AWS or Azure command line, whose resources are shown as
+               unmanaged unless a state holds them; or a snapshot written by
+               'moonwalk collect', which keeps the names it was collected
+               under. Any of these may be compressed with gzip.
   directory    every .tfstate file below it, hidden directories excluded
+  s3://bucket/key   a state in S3, read with the credentials the AWS
+               command line would use; with a key that ends in / or no
+               key, every object below it whose key ends in .tfstate
   -            standard input, named "stdin"
   name=<any of the above>   the same, under a name of your choosing
 
@@ -84,7 +87,7 @@ Options for view, graph and diff:
 
 Options for view:
   -group-by    comma-separated levels, outermost first, from source,
-               account, region, module and network
+               account, resource_group (Azure), region, module and network
                (default: source,account,region,module)
   -depth       how many levels to expand (default: as many as fit in 300
                items)
@@ -101,6 +104,8 @@ Options for view:
 Options for query-file:
   -region      comma-separated regions to list in; without it, each type is
                listed in the provider's own region
+  -subscription  comma-separated Azure subscription IDs to list in; without
+               it, each type is listed in the provider's own subscription
   -type        comma-separated patterns of resource types to list, such as
                'aws_iam_*'; without it, every type the provider can list
   -provider    write for this provider only, such as aws
@@ -353,6 +358,7 @@ func runQueryFile(args []string, stdin io.Reader, stdout io.Writer) error {
 	fs := flag.NewFlagSet("query-file", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	regions := fs.String("region", "", "")
+	subscriptions := fs.String("subscription", "", "")
 	types := fs.String("type", "", "")
 	provider := fs.String("provider", "", "")
 	identityOnly := fs.Bool("identity-only", false, "")
@@ -373,7 +379,7 @@ func runQueryFile(args []string, stdin io.Reader, stdout io.Writer) error {
 		return err
 	}
 	return writeQueryFile(stdout, schema, queryFileOptions{
-		regions: list(*regions), types: list(*types), provider: *provider, identityOnly: *identityOnly,
+		regions: list(*regions), subscriptions: list(*subscriptions), types: list(*types), provider: *provider, identityOnly: *identityOnly,
 	})
 }
 
@@ -402,8 +408,12 @@ func gunzip(data []byte) ([]byte, error) {
 // works out containment and glue. It returns
 // the configurations by the source each belongs to.
 func loadGraph(args, codeDirs []string, stdin io.Reader, stderr io.Writer) (*graph.Graph, map[string]*tfcode.Config, error) {
-	inputs, err := resolveInputs(args)
+	from := &sources{stdin: stdin}
+	inputs, err := resolveInputs(args, from)
 	if err != nil {
+		return nil, nil, err
+	}
+	if err := from.fetch(inputs); err != nil {
 		return nil, nil, err
 	}
 	g := graph.New()
@@ -416,7 +426,7 @@ func loadGraph(args, codeDirs []string, stdin io.Reader, stderr io.Writer) (*gra
 	var listings []listing
 	snapshots := 0
 	for _, in := range inputs {
-		data, err := in.read(stdin)
+		data, err := from.read(in)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -432,7 +442,7 @@ func loadGraph(args, codeDirs []string, stdin io.Reader, stderr io.Writer) (*gra
 			snapshots++
 			continue
 		}
-		if discover.IsQueryOutput(data) || discover.IsARNListing(data) {
+		if discover.IsQueryOutput(data) || discover.IsAzureListing(data) || discover.IsARNListing(data) {
 			listings = append(listings, listing{in.source, data})
 			continue
 		}
@@ -443,7 +453,11 @@ func loadGraph(args, codeDirs []string, stdin io.Reader, stderr io.Writer) (*gra
 	states := len(inputs) - len(listings) - snapshots
 	for _, l := range listings {
 		load := discover.Load
-		if discover.IsARNListing(l.data) {
+		switch {
+		case discover.IsQueryOutput(l.data):
+		case discover.IsAzureListing(l.data):
+			load = discover.LoadAzure
+		default:
 			load = discover.LoadARNs
 		}
 		res, err := load(g, l.source, bytes.NewReader(l.data))
@@ -578,9 +592,15 @@ func watch(args, codeDirs []string, every time.Duration, changed func()) {
 // fingerprint summarizes the files the arguments name: which there are,
 // and each one's size and modification time. For a code directory those
 // are the configuration files below it, hidden directories excluded. ok is
-// false if the states include standard input, which cannot be watched.
+// false if the states include standard input or something remote, which
+// are not watched.
 func fingerprint(args, codeDirs []string) (print string, ok bool) {
-	inputs, err := resolveInputs(args)
+	for _, arg := range args {
+		if _, path := splitName(arg); isRemote(path) {
+			return "", false
+		}
+	}
+	inputs, err := resolveInputs(args, &sources{})
 	if err != nil {
 		return "unreadable: " + err.Error(), true
 	}

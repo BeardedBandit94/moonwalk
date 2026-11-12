@@ -85,6 +85,11 @@ func TestGraphGolden(t *testing.T) {
 		{"discover-graph.golden", []string{"graph", "-format", "json", "-attributes", "cloud=" + found + "query.jsonl", "prod=" + found + "managed.tfstate"}},
 		{"drift-view.golden", []string{"view", "-group-by", "source", "d=" + fixtures + "drift.json"}},
 		{"network-view-filter.golden", []string{"view", "-format", "json", "-type", "aws_iam_*,aws_vpc", "-region", "global", "net=" + fixtures + "network.tfstate"}},
+		{"azure-view.golden", []string{"view", "az=" + fixtures + "azure.tfstate"}},
+		{"azure-view-by-group.golden", []string{"view", "-group-by", "account,resource_group,network", "az=" + fixtures + "azure.tfstate"}},
+		{"azure-graph.golden", []string{"graph", "-format", "json", "az=" + fixtures + "azure.tfstate"}},
+		{"azure-discover.golden", []string{"view", "-group-by", "resource_group", "-status", "unmanaged", "az=" + fixtures + "azure.tfstate",
+			"cloud=" + found + "az-resource-list.json", "groups=" + found + "az-group-list.json"}},
 	}
 	for _, c := range cases {
 		got, err := runCLI(t, "", c.args...)
@@ -760,5 +765,63 @@ func TestErrors(t *testing.T) {
 	_, err := runCLI(t, "", "graph", fixtures+"encrypted.tfstate")
 	if err == nil || !strings.Contains(err.Error(), "tofu show -json") {
 		t.Errorf("encrypted state: error should say how to decrypt, got %v", err)
+	}
+}
+
+// Azure listings are told apart from states and from AWS listings, and
+// what they find beyond the state shows as unmanaged, in its resource
+// group, whichever of the three commands made the listing.
+func TestAzureListings(t *testing.T) {
+	for _, file := range []string{"az-resource-list.json", "az-graph-query.json"} {
+		out, err := runCLI(t, "", "view", "-status", "unmanaged", "-group-by", "resource_group", "az="+fixtures+"azure.tfstate", "cloud="+found+file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, want := range []string{"4 resources in", "rg-sandbox  (resource group, 3 resources, 3 unmanaged)", "azurerm_storage_account.stmanual01  (unmanaged)", "azurerm_public_ip.pip-test  (unmanaged)"} {
+			if !strings.Contains(out, want) {
+				t.Errorf("%s: missing %q in:\n%s", file, want, out)
+			}
+		}
+		// What the state holds is not listed again, however its ID is spelled.
+		if strings.Contains(out, "vnet-app") || strings.Contains(out, "vm-web") {
+			t.Errorf("%s: a managed resource shows as unmanaged:\n%s", file, out)
+		}
+	}
+	// Compressed and from standard input, like any input.
+	data, err := os.ReadFile(found + "az-group-list.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := runCLI(t, string(data), "graph", "cloud=-")
+	if err != nil || !strings.Contains(out, "azurerm_resource_group.rg-sandbox") || strings.Contains(out, "NetworkWatcherRG") {
+		t.Errorf("group list on standard input (err %v):\n%s", err, out)
+	}
+}
+
+func TestQueryFileForAzure(t *testing.T) {
+	const azure = `{"format_version":"1.0","provider_schemas":{"registry.terraform.io/hashicorp/azurerm":{"list_resource_schemas":{
+	  "azurerm_storage_account":{"block":{"attributes":{"resource_group_name":{"type":"string","optional":true},"subscription_id":{"type":"string","optional":true}}}},
+	  "azurerm_subnet":{"block":{"attributes":{"virtual_network_id":{"type":"string","required":true}}}}}}}}`
+	out, err := runCLI(t, azure, "query-file", "-subscription", "11111111-2222-3333-4444-555555555555,aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "-region", "eu-west-1", "-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		// A block name cannot start with a digit, as a subscription ID can.
+		`list "azurerm_storage_account" "sub_11111111_2222_3333_4444_555555555555"`,
+		`subscription_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"`,
+		"azurerm_subnet", // Named as left out: it needs its network.
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+	if strings.Count(out, "\nlist ") != 2 || strings.Contains(out, "region") {
+		t.Errorf("want one block per subscription and no region:\n%s", out)
+	}
+	// Without subscriptions, once, in the provider's own.
+	out, err = runCLI(t, azure, "query-file", "-")
+	if err != nil || strings.Count(out, "\nlist ") != 1 || strings.Contains(out, "config {") {
+		t.Errorf("no subscriptions: %v\n%s", err, out)
 	}
 }

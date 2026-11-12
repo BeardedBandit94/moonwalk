@@ -15,6 +15,12 @@ const GROUPINGS = [
   ['region', 'Region only'],
 ];
 
+// Offered as well when the states hold Azure resource groups.
+const RESOURCE_GROUPINGS = [
+  ['source,account,resource_group,module', 'State, account, resource group, module'],
+  ['account,resource_group,network', 'Account, resource group, network'],
+];
+
 const state = {
   groupBy: GROUPINGS[0][0],
   open: null, // Set of expanded group IDs, or null to let the server choose.
@@ -127,6 +133,12 @@ function noteGeneration(generation) {
 async function loadMeta() {
   const next = await getJSON('api/meta');
   meta = next;
+  if ((meta.resource_groups || []).length) {
+    const menu = $('group-by');
+    for (const [value, label] of RESOURCE_GROUPINGS) {
+      if (![...menu.options].some((o) => o.value === value)) menu.append(new Option(label, value));
+    }
+  }
   fillFilter('account', 'All accounts', meta.accounts);
   fillFilter('region', 'All regions', meta.regions);
   fillFilter('status', 'Any status', meta.statuses);
@@ -519,6 +531,7 @@ async function showResource(id) {
   const facts = el('dl');
   const fact = (name, value) => { if (value) facts.append(el('dt', '', name), el('dd', '', value)); };
   fact('Account', n.account && n.account + (n.account_inferred ? ' (inferred)' : ''));
+  fact('Resource group', n.resource_group);
   fact('Region', n.region && n.region + (n.region_inferred ? ' (inferred)' : ''));
   fact('Status', n.status === 'drifted' && n.drift ? `drifted: ${n.drift} outside Terraform` : n.status);
   fact('Cloud ID', n.cloud_id);

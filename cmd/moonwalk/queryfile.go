@@ -33,10 +33,14 @@ type providerSchemas struct {
 
 // queryFileOptions says what to put in a query file.
 type queryFileOptions struct {
-	regions      []string // One list block per region; none means the provider's own.
-	types        []string // Patterns of resource types to list; none means all.
-	provider     string   // Local name of the one provider to write for; "" means all.
-	identityOnly bool     // Leave out include_resource.
+	regions []string // One list block per region; none means the provider's own.
+	// subscriptions is the same for Azure subscriptions, which are to the
+	// azurerm provider what regions are to the aws one: a list block
+	// covers one, the provider's own unless it names another.
+	subscriptions []string
+	types         []string // Patterns of resource types to list; none means all.
+	provider      string   // Local name of the one provider to write for; "" means all.
+	identityOnly  bool     // Leave out include_resource.
 }
 
 // writeQueryFile writes a .tfquery.hcl file that lists every resource type
@@ -98,14 +102,21 @@ func writeQueryFile(w io.Writer, schema []byte, o queryFileOptions) error {
 		}
 		b.WriteByte('\n')
 		for _, t := range listable {
-			_, takesRegion := lists[t].Block.Attributes["region"]
-			if len(o.regions) == 0 || !takesRegion {
-				writeListBlock(&b, t, "all", name, "", o.identityOnly)
+			// The argument that says where to list, and the places asked for.
+			argument, places, prefix := "", []string(nil), ""
+			if _, takes := lists[t].Block.Attributes["region"]; takes {
+				argument, places = "region", o.regions
+			} else if _, takes := lists[t].Block.Attributes["subscription_id"]; takes {
+				// A subscription ID can start with a digit; a block name cannot.
+				argument, places, prefix = "subscription_id", o.subscriptions, "sub_"
+			}
+			if len(places) == 0 {
+				writeListBlock(&b, t, "all", name, "", "", o.identityOnly)
 				written++
 				continue
 			}
-			for _, region := range o.regions {
-				writeListBlock(&b, t, label(region), name, region, o.identityOnly)
+			for _, place := range places {
+				writeListBlock(&b, t, prefix+label(place), name, argument, place, o.identityOnly)
 				written++
 			}
 		}
@@ -117,24 +128,24 @@ func writeQueryFile(w io.Writer, schema []byte, o queryFileOptions) error {
 	return err
 }
 
-func writeListBlock(b *strings.Builder, resourceType, name, provider, region string, identityOnly bool) {
+func writeListBlock(b *strings.Builder, resourceType, name, provider, argument, place string, identityOnly bool) {
 	fmt.Fprintf(b, "list %q %q {\n", resourceType, name)
 	if identityOnly {
 		fmt.Fprintf(b, "  provider = %s\n  limit    = %d\n", provider, listLimit)
 	} else {
 		fmt.Fprintf(b, "  provider         = %s\n  include_resource = true\n  limit            = %d\n", provider, listLimit)
 	}
-	if region != "" {
-		fmt.Fprintf(b, "\n  config {\n    region = %q\n  }\n", region)
+	if argument != "" {
+		fmt.Fprintf(b, "\n  config {\n    %s = %q\n  }\n", argument, place)
 	}
 	b.WriteString("}\n\n")
 }
 
 var notIdentifier = regexp.MustCompile(`[^A-Za-z0-9_]`)
 
-// label turns a region into a valid block name.
-func label(region string) string {
-	return notIdentifier.ReplaceAllString(region, "_")
+// label turns a region or a subscription into part of a valid block name.
+func label(place string) string {
+	return notIdentifier.ReplaceAllString(place, "_")
 }
 
 func matchesAnyPattern(patterns []string, s string) bool {

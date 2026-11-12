@@ -175,6 +175,9 @@ type metaResponse struct {
 	Accounts []string `json:"accounts"`
 	Regions  []string `json:"regions"`
 	Statuses []string `json:"statuses"`
+	// ResourceGroups lists the Azure resource groups present. Grouping by
+	// them is offered only when there are some.
+	ResourceGroups []string `json:"resource_groups"`
 	// Changes lists what a loaded plan intends, if one was loaded.
 	Changes        []string         `json:"changes"`
 	Dimensions     []view.Dimension `json:"dimensions"`
@@ -184,7 +187,7 @@ type metaResponse struct {
 
 func (s *snapshot) meta(w http.ResponseWriter, _ *http.Request) {
 	sources, accounts, regions, statuses := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
-	changes := map[string]bool{}
+	changes, groups := map[string]bool{}, map[string]bool{}
 	resources := 0
 	for n := range s.g.AllNodes() {
 		resources++
@@ -193,6 +196,7 @@ func (s *snapshot) meta(w http.ResponseWriter, _ *http.Request) {
 		regions[n.Region] = true
 		statuses[string(n.Status)] = true
 		changes[n.Change] = true
+		groups[n.ResourceGroup] = true
 	}
 	writeJSON(w, metaResponse{
 		Generation:     s.generation,
@@ -202,6 +206,7 @@ func (s *snapshot) meta(w http.ResponseWriter, _ *http.Request) {
 		Regions:        sortedKeys(regions),
 		Statuses:       sortedKeys(statuses),
 		Changes:        sortedKeys(changes),
+		ResourceGroups: sortedKeys(groups),
 		Dimensions:     view.AllDimensions(),
 		DefaultGroupBy: view.DefaultDimensions,
 		Budget:         view.Budget,

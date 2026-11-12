@@ -1,0 +1,476 @@
+{
+  "schema_version": 1,
+  "nodes": [
+    {
+      "id": "az::azurerm_kubernetes_cluster.app",
+      "source": "az",
+      "address": "azurerm_kubernetes_cluster.app",
+      "config_address": "azurerm_kubernetes_cluster.app",
+      "account": "11111111-2222-3333-4444-555555555555",
+      "region": "westeurope",
+      "resource_group": "rg-app",
+      "mode": "managed",
+      "type": "azurerm_kubernetes_cluster",
+      "name": "app",
+      "provider": "registry.terraform.io/hashicorp/azurerm",
+      "status": "managed",
+      "cloud_id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-app/providers/Microsoft.ContainerService/managedClusters/aks-app"
+    },
+    {
+      "id": "az::azurerm_linux_virtual_machine.web",
+      "source": "az",
+      "address": "azurerm_linux_virtual_machine.web",
+      "config_address": "azurerm_linux_virtual_machine.web",
+      "account": "11111111-2222-3333-4444-555555555555",
+      "region": "westeurope",
+      "resource_group": "rg-app",
+      "mode": "managed",
+      "type": "azurerm_linux_virtual_machine",
+      "name": "web",
+      "provider": "registry.terraform.io/hashicorp/azurerm",
+      "status": "managed",
+      "cloud_id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-app/providers/Microsoft.Compute/virtualMachines/vm-web"
+    },
+    {
+      "id": "az::azurerm_mssql_database.app",
+      "source": "az",
+      "address": "azurerm_mssql_database.app",
+      "config_address": "azurerm_mssql_database.app",
+      "account": "11111111-2222-3333-4444-555555555555",
+      "region": "westeurope",
+      "resource_group": "rg-app",
+      "region_inferred": true,
+      "mode": "managed",
+      "type": "azurerm_mssql_database",
+      "name": "app",
+      "provider": "registry.terraform.io/hashicorp/azurerm",
+      "status": "managed",
+      "cloud_id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-app/providers/Microsoft.Sql/servers/sql-app/databases/app"
+    },
+    {
+      "id": "az::azurerm_mssql_server.app",
+      "source": "az",
+      "address": "azurerm_mssql_server.app",
+      "config_address": "azurerm_mssql_server.app",
+      "account": "11111111-2222-3333-4444-555555555555",
+      "region": "westeurope",
+      "resource_group": "rg-app",
+      "mode": "managed",
+      "type": "azurerm_mssql_server",
+      "name": "app",
+      "provider": "registry.terraform.io/hashicorp/azurerm",
+      "status": "managed",
+      "cloud_id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-app/providers/Microsoft.Sql/servers/sql-app"
+    },
+    {
+      "id": "az::azurerm_network_interface.web",
+      "source": "az",
+      "address": "azurerm_network_interface.web",
+      "config_address": "azurerm_network_interface.web",
+      "account": "11111111-2222-3333-4444-555555555555",
+      "region": "westeurope",
+      "resource_group": "rg-app",
+      "mode": "managed",
+      "type": "azurerm_network_interface",
+      "name": "web",
+      "provider": "registry.terraform.io/hashicorp/azurerm",
+      "status": "managed",
+      "cloud_id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-app/providers/Microsoft.Network/networkInterfaces/nic-web"
+    },
+    {
+      "id": "az::azurerm_network_security_group.web",
+      "source": "az",
+      "address": "azurerm_network_security_group.web",
+      "config_address": "azurerm_network_security_group.web",
+      "account": "11111111-2222-3333-4444-555555555555",
+      "region": "westeurope",
+      "resource_group": "rg-app",
+      "mode": "managed",
+      "type": "azurerm_network_security_group",
+      "name": "web",
+      "provider": "registry.terraform.io/hashicorp/azurerm",
+      "status": "managed",
+      "cloud_id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-app/providers/Microsoft.Network/networkSecurityGroups/nsg-web"
+    },
+    {
+      "id": "az::azurerm_private_endpoint.sql",
+      "source": "az",
+      "address": "azurerm_private_endpoint.sql",
+      "config_address": "azurerm_private_endpoint.sql",
+      "account": "11111111-2222-3333-4444-555555555555",
+      "region": "westeurope",
+      "resource_group": "rg-app",
+      "mode": "managed",
+      "type": "azurerm_private_endpoint",
+      "name": "sql",
+      "provider": "registry.terraform.io/hashicorp/azurerm",
+      "status": "managed",
+      "cloud_id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-app/providers/Microsoft.Network/privateEndpoints/pe-sql"
+    },
+    {
+      "id": "az::azurerm_resource_group.app",
+      "source": "az",
+      "address": "azurerm_resource_group.app",
+      "config_address": "azurerm_resource_group.app",
+      "account": "11111111-2222-3333-4444-555555555555",
+      "region": "westeurope",
+      "resource_group": "rg-app",
+      "mode": "managed",
+      "type": "azurerm_resource_group",
+      "name": "app",
+      "provider": "registry.terraform.io/hashicorp/azurerm",
+      "status": "managed",
+      "cloud_id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-app"
+    },
+    {
+      "id": "az::azurerm_resource_group.shared",
+      "source": "az",
+      "address": "azurerm_resource_group.shared",
+      "config_address": "azurerm_resource_group.shared",
+      "account": "11111111-2222-3333-4444-555555555555",
+      "region": "northeurope",
+      "resource_group": "rg-shared",
+      "mode": "managed",
+      "type": "azurerm_resource_group",
+      "name": "shared",
+      "provider": "registry.terraform.io/hashicorp/azurerm",
+      "status": "managed",
+      "cloud_id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-shared"
+    },
+    {
+      "id": "az::azurerm_storage_account.logs",
+      "source": "az",
+      "address": "azurerm_storage_account.logs",
+      "config_address": "azurerm_storage_account.logs",
+      "account": "11111111-2222-3333-4444-555555555555",
+      "region": "northeurope",
+      "resource_group": "rg-shared",
+      "mode": "managed",
+      "type": "azurerm_storage_account",
+      "name": "logs",
+      "provider": "registry.terraform.io/hashicorp/azurerm",
+      "status": "managed",
+      "cloud_id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-shared/providers/Microsoft.Storage/storageAccounts/stlogs0042"
+    },
+    {
+      "id": "az::azurerm_subnet.app[\"data\"]",
+      "source": "az",
+      "address": "azurerm_subnet.app[\"data\"]",
+      "config_address": "azurerm_subnet.app",
+      "account": "11111111-2222-3333-4444-555555555555",
+      "region": "westeurope",
+      "resource_group": "rg-app",
+      "region_inferred": true,
+      "mode": "managed",
+      "type": "azurerm_subnet",
+      "name": "app",
+      "provider": "registry.terraform.io/hashicorp/azurerm",
+      "status": "managed",
+      "cloud_id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-app/providers/Microsoft.Network/virtualNetworks/vnet-app/subnets/data"
+    },
+    {
+      "id": "az::azurerm_subnet.app[\"web\"]",
+      "source": "az",
+      "address": "azurerm_subnet.app[\"web\"]",
+      "config_address": "azurerm_subnet.app",
+      "account": "11111111-2222-3333-4444-555555555555",
+      "region": "westeurope",
+      "resource_group": "rg-app",
+      "region_inferred": true,
+      "mode": "managed",
+      "type": "azurerm_subnet",
+      "name": "app",
+      "provider": "registry.terraform.io/hashicorp/azurerm",
+      "status": "managed",
+      "cloud_id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-app/providers/Microsoft.Network/virtualNetworks/vnet-app/subnets/web"
+    },
+    {
+      "id": "az::azurerm_subnet_network_security_group_association.web",
+      "source": "az",
+      "address": "azurerm_subnet_network_security_group_association.web",
+      "config_address": "azurerm_subnet_network_security_group_association.web",
+      "account": "11111111-2222-3333-4444-555555555555",
+      "region": "westeurope",
+      "resource_group": "rg-app",
+      "region_inferred": true,
+      "glue": true,
+      "mode": "managed",
+      "type": "azurerm_subnet_network_security_group_association",
+      "name": "web",
+      "provider": "registry.terraform.io/hashicorp/azurerm",
+      "status": "managed",
+      "cloud_id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-app/providers/Microsoft.Network/virtualNetworks/vnet-app/subnets/web"
+    },
+    {
+      "id": "az::azurerm_virtual_network.app",
+      "source": "az",
+      "address": "azurerm_virtual_network.app",
+      "config_address": "azurerm_virtual_network.app",
+      "account": "11111111-2222-3333-4444-555555555555",
+      "region": "westeurope",
+      "resource_group": "rg-app",
+      "mode": "managed",
+      "type": "azurerm_virtual_network",
+      "name": "app",
+      "provider": "registry.terraform.io/hashicorp/azurerm",
+      "status": "managed",
+      "cloud_id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-app/providers/Microsoft.Network/virtualNetworks/vnet-app"
+    },
+    {
+      "id": "az::azurerm_virtual_network.hub",
+      "source": "az",
+      "address": "azurerm_virtual_network.hub",
+      "config_address": "azurerm_virtual_network.hub",
+      "account": "11111111-2222-3333-4444-555555555555",
+      "region": "northeurope",
+      "resource_group": "rg-shared",
+      "mode": "managed",
+      "type": "azurerm_virtual_network",
+      "name": "hub",
+      "provider": "registry.terraform.io/hashicorp/azurerm",
+      "status": "managed",
+      "cloud_id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-shared/providers/Microsoft.Network/virtualNetworks/vnet-hub"
+    },
+    {
+      "id": "az::azurerm_virtual_network_peering.app_to_hub",
+      "source": "az",
+      "address": "azurerm_virtual_network_peering.app_to_hub",
+      "config_address": "azurerm_virtual_network_peering.app_to_hub",
+      "account": "11111111-2222-3333-4444-555555555555",
+      "region": "westeurope",
+      "resource_group": "rg-app",
+      "region_inferred": true,
+      "glue": true,
+      "mode": "managed",
+      "type": "azurerm_virtual_network_peering",
+      "name": "app_to_hub",
+      "provider": "registry.terraform.io/hashicorp/azurerm",
+      "status": "managed",
+      "cloud_id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-app/providers/Microsoft.Network/virtualNetworks/vnet-app/virtualNetworkPeerings/app-to-hub"
+    }
+  ],
+  "edges": [
+    {
+      "from": "az::azurerm_kubernetes_cluster.app",
+      "to": "az::azurerm_resource_group.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_kubernetes_cluster.app",
+      "to": "az::azurerm_subnet.app[\"data\"]",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_kubernetes_cluster.app",
+      "to": "az::azurerm_subnet.app[\"web\"]",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_kubernetes_cluster.app",
+      "to": "az::azurerm_virtual_network.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_linux_virtual_machine.web",
+      "to": "az::azurerm_network_interface.web",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_linux_virtual_machine.web",
+      "to": "az::azurerm_resource_group.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_linux_virtual_machine.web",
+      "to": "az::azurerm_subnet.app[\"web\"]",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_linux_virtual_machine.web",
+      "to": "az::azurerm_virtual_network.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_mssql_database.app",
+      "to": "az::azurerm_mssql_server.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_mssql_database.app",
+      "to": "az::azurerm_resource_group.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_mssql_server.app",
+      "to": "az::azurerm_resource_group.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_network_interface.web",
+      "to": "az::azurerm_resource_group.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_network_interface.web",
+      "to": "az::azurerm_subnet.app[\"web\"]",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_network_interface.web",
+      "to": "az::azurerm_virtual_network.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_network_security_group.web",
+      "to": "az::azurerm_resource_group.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_network_security_group.web",
+      "to": "az::azurerm_subnet.app[\"web\"]",
+      "kind": "links",
+      "via": "az::azurerm_subnet_network_security_group_association.web"
+    },
+    {
+      "from": "az::azurerm_private_endpoint.sql",
+      "to": "az::azurerm_mssql_server.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_private_endpoint.sql",
+      "to": "az::azurerm_resource_group.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_private_endpoint.sql",
+      "to": "az::azurerm_subnet.app[\"data\"]",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_private_endpoint.sql",
+      "to": "az::azurerm_virtual_network.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_storage_account.logs",
+      "to": "az::azurerm_resource_group.shared",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_subnet.app[\"data\"]",
+      "to": "az::azurerm_private_endpoint.sql",
+      "kind": "contains"
+    },
+    {
+      "from": "az::azurerm_subnet.app[\"data\"]",
+      "to": "az::azurerm_resource_group.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_subnet.app[\"data\"]",
+      "to": "az::azurerm_virtual_network.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_subnet.app[\"web\"]",
+      "to": "az::azurerm_linux_virtual_machine.web",
+      "kind": "contains"
+    },
+    {
+      "from": "az::azurerm_subnet.app[\"web\"]",
+      "to": "az::azurerm_network_interface.web",
+      "kind": "contains"
+    },
+    {
+      "from": "az::azurerm_subnet.app[\"web\"]",
+      "to": "az::azurerm_resource_group.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_subnet.app[\"web\"]",
+      "to": "az::azurerm_subnet_network_security_group_association.web",
+      "kind": "contains"
+    },
+    {
+      "from": "az::azurerm_subnet.app[\"web\"]",
+      "to": "az::azurerm_virtual_network.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_subnet_network_security_group_association.web",
+      "to": "az::azurerm_network_security_group.web",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_subnet_network_security_group_association.web",
+      "to": "az::azurerm_resource_group.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_subnet_network_security_group_association.web",
+      "to": "az::azurerm_subnet.app[\"web\"]",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_subnet_network_security_group_association.web",
+      "to": "az::azurerm_virtual_network.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_virtual_network.app",
+      "to": "az::azurerm_kubernetes_cluster.app",
+      "kind": "contains"
+    },
+    {
+      "from": "az::azurerm_virtual_network.app",
+      "to": "az::azurerm_resource_group.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_virtual_network.app",
+      "to": "az::azurerm_subnet.app[\"data\"]",
+      "kind": "contains"
+    },
+    {
+      "from": "az::azurerm_virtual_network.app",
+      "to": "az::azurerm_subnet.app[\"web\"]",
+      "kind": "contains"
+    },
+    {
+      "from": "az::azurerm_virtual_network.app",
+      "to": "az::azurerm_virtual_network.hub",
+      "kind": "links",
+      "via": "az::azurerm_virtual_network_peering.app_to_hub"
+    },
+    {
+      "from": "az::azurerm_virtual_network.app",
+      "to": "az::azurerm_virtual_network_peering.app_to_hub",
+      "kind": "contains"
+    },
+    {
+      "from": "az::azurerm_virtual_network.hub",
+      "to": "az::azurerm_resource_group.shared",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_virtual_network_peering.app_to_hub",
+      "to": "az::azurerm_resource_group.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_virtual_network_peering.app_to_hub",
+      "to": "az::azurerm_resource_group.shared",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_virtual_network_peering.app_to_hub",
+      "to": "az::azurerm_virtual_network.app",
+      "kind": "depends_on"
+    },
+    {
+      "from": "az::azurerm_virtual_network_peering.app_to_hub",
+      "to": "az::azurerm_virtual_network.hub",
+      "kind": "depends_on"
+    }
+  ]
+}

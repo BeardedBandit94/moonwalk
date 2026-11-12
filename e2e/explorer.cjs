@@ -66,7 +66,8 @@ async function main() {
   fs.copyFileSync(path.join(fixtures, 'drift.json'), path.join(dir, 'drift.json'));
   const server = spawn(bin, ['serve', '-addr', `127.0.0.1:${port}`, '-code', `net=${code}`, '-code', `plan=${planCode}`, `plan=${path.join(dir, 'plan.json')}`,
     `prod=${path.join(found, 'managed.tfstate')}`, `cloud=${path.join(found, 'query.jsonl')}`, `drift=${path.join(dir, 'drift.json')}`,
-    `net=${net}`, `lab=${path.join(dir, 'lab.tfstate')}`, `old=${path.join(dir, 'old.tfstate')}`, `crowd=${path.join(dir, 'crowd.tfstate')}`],
+    `net=${net}`, `lab=${path.join(dir, 'lab.tfstate')}`, `old=${path.join(dir, 'old.tfstate')}`, `crowd=${path.join(dir, 'crowd.tfstate')}`,
+    `az=${path.join(fixtures, 'azure.tfstate')}`],
   { stdio: ['ignore', 'inherit', 'inherit'] });
   const browser = await chromium.launch();
   try {
@@ -202,6 +203,22 @@ async function main() {
     await page.waitForSelector('.group > .title');
     const restored = await page.locator('.group > .title').allInnerTexts();
     check('the address bar restores the view', restored.join() === open.join(), restored);
+
+    // With Azure resources loaded, the menu offers to group by resource
+    // group, and a machine sits in the subnet its network interface is in.
+    await page.goto(base + '#q=azurerm');
+    await page.reload();
+    await page.waitForSelector('.item');
+    const offered = await page.locator('#group-by option').allInnerTexts();
+    check('grouping by resource group is offered', offered.includes('Account, resource group, network'), offered);
+    await page.selectOption('#group-by', 'account,resource_group,network');
+    await page.waitForSelector('.group > .title:has-text("rg-app")');
+    const azure = await page.locator('.group > .title').allInnerTexts();
+    check('resource groups are drawn', azure.some((t) => t.startsWith('rg-app')) && azure.some((t) => t.startsWith('rg-shared')), azure);
+    await page.locator('.item.resource', { hasText: 'azurerm_linux_virtual_machine.web' }).first().click();
+    await page.waitForSelector('#panel h2');
+    const machine = await page.innerText('#panel');
+    check('the panel names the resource group', machine.includes('Resource group') && machine.includes('rg-app'), machine);
 
     // A state that changes on disk is picked up.
     await page.goto(base + '#g=source');

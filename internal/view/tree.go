@@ -18,8 +18,13 @@ type Dimension string
 const (
 	BySource  Dimension = "source"
 	ByAccount Dimension = "account"
-	ByRegion  Dimension = "region"
-	ByModule  Dimension = "module"
+	// ByResourceGroup groups a resource under the named group it belongs
+	// to within its account, where the cloud has such groups: Azure's
+	// resource groups. Resources of other clouds have none and stay where
+	// the levels above put them.
+	ByResourceGroup Dimension = "resource_group"
+	ByRegion        Dimension = "region"
+	ByModule        Dimension = "module"
 	// ByNetwork groups a resource under the network and subnet that
 	// contain it, as recorded by the graph's containment edges.
 	ByNetwork Dimension = "network"
@@ -28,7 +33,7 @@ const (
 // DefaultDimensions is the grouping used when none is asked for.
 var DefaultDimensions = []Dimension{BySource, ByAccount, ByRegion, ByModule}
 
-var allDimensions = []Dimension{BySource, ByAccount, ByRegion, ByModule, ByNetwork}
+var allDimensions = []Dimension{BySource, ByAccount, ByResourceGroup, ByRegion, ByModule, ByNetwork}
 
 // AllDimensions returns every dimension a tree can be grouped by.
 func AllDimensions() []Dimension { return slices.Clone(allDimensions) }
@@ -39,7 +44,7 @@ func ParseDimensions(s string) ([]Dimension, error) {
 	for _, part := range strings.Split(s, ",") {
 		d := Dimension(strings.TrimSpace(part))
 		if !slices.Contains(allDimensions, d) {
-			return nil, fmt.Errorf("unknown grouping %q (want any of source, account, region, module, network)", part)
+			return nil, fmt.Errorf("unknown grouping %q (want any of source, account, resource_group, region, module, network)", part)
 		}
 		if slices.Contains(dims, d) {
 			return nil, fmt.Errorf("grouping %q is given twice", d)
@@ -55,6 +60,7 @@ type Kind string
 const (
 	KindSource   Kind = "source"
 	KindAccount  Kind = "account"
+	KindResGroup Kind = "resource_group" // An Azure resource group.
 	KindRegion   Kind = "region"
 	KindModule   Kind = "module"          // A module call, such as module.app.
 	KindInstance Kind = "module_instance" // One instance of a call with count or for_each.
@@ -179,6 +185,10 @@ func Build(g *graph.Graph, o Options) *Tree {
 			case ByAccount:
 				if n.Account != "" {
 					grp = t.child(grp, KindAccount, n.Account)
+				}
+			case ByResourceGroup:
+				if n.ResourceGroup != "" {
+					grp = t.child(grp, KindResGroup, n.ResourceGroup)
 				}
 			case ByRegion:
 				if n.Region != "" {

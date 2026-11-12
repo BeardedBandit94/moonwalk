@@ -4,6 +4,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/BeardedBandit94/moonwalk/internal/azureid"
 	"github.com/BeardedBandit94/moonwalk/internal/graph"
 )
 
@@ -28,7 +29,10 @@ func CrossState(g *graph.Graph) int {
 	owner := map[string]graph.Node{}
 	ambiguous := map[string]bool{}
 	for _, n := range nodes {
-		if n.Status == graph.StatusDeclared || n.Mode == graph.ModeData {
+		// What only joins two resources is not named by anything, and
+		// may carry the ID of one of the two: Azure gives a subnet's
+		// association with a security group the subnet's own ID.
+		if n.Status == graph.StatusDeclared || n.Mode == graph.ModeData || glueType(n.Type) {
 			continue
 		}
 		for _, id := range identities(n) {
@@ -50,6 +54,7 @@ func CrossState(g *graph.Graph) int {
 		}
 		seen := map[string]bool{}
 		visit := func(value string, anywhere bool) {
+			value = azureid.Canonical(value)
 			target, ok := owner[value]
 			if !ok || ambiguous[value] || target.Source == n.Source || seen[target.ID] {
 				return
@@ -82,6 +87,7 @@ func CrossState(g *graph.Graph) int {
 func identities(n graph.Node) []string {
 	var out []string
 	add := func(v string) {
+		v = azureid.Canonical(v)
 		if distinctive(v) && !slices.Contains(out, v) {
 			out = append(out, v)
 		}

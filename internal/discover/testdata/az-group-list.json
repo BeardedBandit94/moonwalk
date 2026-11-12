@@ -1,0 +1,57 @@
+[
+  {
+    "id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-app",
+    "location": "westeurope",
+    "managedBy": null,
+    "name": "rg-app",
+    "properties": {
+      "provisioningState": "Succeeded"
+    },
+    "tags": null,
+    "type": "Microsoft.Resources/resourceGroups"
+  },
+  {
+    "id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-shared",
+    "location": "northeurope",
+    "managedBy": null,
+    "name": "rg-shared",
+    "properties": {
+      "provisioningState": "Succeeded"
+    },
+    "tags": null,
+    "type": "Microsoft.Resources/resourceGroups"
+  },
+  {
+    "id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-sandbox",
+    "location": "westeurope",
+    "managedBy": null,
+    "name": "rg-sandbox",
+    "properties": {
+      "provisioningState": "Succeeded"
+    },
+    "tags": null,
+    "type": "Microsoft.Resources/resourceGroups"
+  },
+  {
+    "id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/MC_rg-app_aks-app_westeurope",
+    "location": "westeurope",
+    "managedBy": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/rg-app/providers/Microsoft.ContainerService/managedClusters/aks-app",
+    "name": "MC_rg-app_aks-app_westeurope",
+    "properties": {
+      "provisioningState": "Succeeded"
+    },
+    "tags": null,
+    "type": "Microsoft.Resources/resourceGroups"
+  },
+  {
+    "id": "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/NetworkWatcherRG",
+    "location": "westeurope",
+    "managedBy": null,
+    "name": "NetworkWatcherRG",
+    "properties": {
+      "provisioningState": "Succeeded"
+    },
+    "tags": null,
+    "type": "Microsoft.Resources/resourceGroups"
+  }
+]

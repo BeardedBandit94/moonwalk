@@ -1,0 +1,41 @@
+14 resources in 20 items, grouped by account, resource_group, network
+2 glue resources folded into links marked -- (-glue shows them)
+
+11111111-2222-3333-4444-555555555555  (account, 14 resources)
+  rg-app  (resource group, 11 resources)
+    az::azurerm_virtual_network.app  (network, 7 resources)
+      az::azurerm_subnet.app["data"]  (subnet, 2 resources)
+        az::azurerm_private_endpoint.sql
+            -> az::azurerm_mssql_server.app
+            -> az::azurerm_subnet.app["data"]
+        az::azurerm_subnet.app["data"]
+            -> az::azurerm_virtual_network.app
+      az::azurerm_subnet.app["web"]  (subnet, 3 resources)
+        az::azurerm_linux_virtual_machine.web
+            -> az::azurerm_network_interface.web
+        az::azurerm_network_interface.web
+            -> az::azurerm_subnet.app["web"]
+        az::azurerm_subnet.app["web"]
+            -- az::azurerm_network_security_group.web
+            -> az::azurerm_virtual_network.app
+      az::azurerm_kubernetes_cluster.app
+          -> az::azurerm_subnet.app["data"] / az::azurerm_subnet.app["data"]
+          -> az::azurerm_subnet.app["web"] / az::azurerm_subnet.app["web"]
+      az::azurerm_virtual_network.app
+          -> az::azurerm_resource_group.app
+          -- rg-shared / az::azurerm_virtual_network.hub
+    az::azurerm_mssql_database.app
+        -> az::azurerm_mssql_server.app
+    az::azurerm_mssql_server.app
+        -> az::azurerm_resource_group.app
+    az::azurerm_network_security_group.web
+        -> az::azurerm_resource_group.app
+        -- az::azurerm_virtual_network.app / az::azurerm_subnet.app["web"] / az::azurerm_subnet.app["web"]
+    az::azurerm_resource_group.app
+  rg-shared  (resource group, 3 resources)
+    az::azurerm_resource_group.shared
+    az::azurerm_storage_account.logs
+        -> az::azurerm_resource_group.shared
+    az::azurerm_virtual_network.hub
+        -- rg-app / az::azurerm_virtual_network.app / az::azurerm_virtual_network.app
+        -> az::azurerm_resource_group.shared

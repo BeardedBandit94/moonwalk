@@ -1,0 +1,11 @@
+5 resources in 7 items, grouped by resource_group
+14 resources left out by the filter
+2 glue resources folded into links marked -- (-glue shows them)
+
+rg-app  (resource group, 1 resource, 1 unmanaged)
+  cloud::azurerm_storage_account.stmanual01  (unmanaged)
+rg-sandbox  (resource group, 4 resources, 4 unmanaged)
+  cloud::azure:Microsoft.Maps/accounts.maps-demo  (unmanaged)
+  cloud::azurerm_linux_function_app.fn-report  (unmanaged)
+  cloud::azurerm_public_ip.pip-test  (unmanaged)
+  groups::azurerm_resource_group.rg-sandbox  (unmanaged)
