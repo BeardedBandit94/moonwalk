@@ -12,7 +12,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkAccountAccessLimited",
+      "Sid": "MoonwalkAccountAccessLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "account-access:GetApplication",
@@ -33,7 +33,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkAcmLimited",
+      "Sid": "MoonwalkAcmLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "acm:DescribeCertificate",
@@ -54,7 +54,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkAgentRegistryLimited",
+      "Sid": "MoonwalkAgentRegistryLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "agent-registry:GetRegistry",
@@ -76,7 +76,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkAidevopsLimited",
+      "Sid": "MoonwalkAidevopsLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "aidevops:ListTagsForResource"
@@ -103,7 +103,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkAossLimited",
+      "Sid": "MoonwalkAossLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "aoss:ListTagsForResource"
@@ -116,7 +116,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkApigatewayLimited",
+      "Sid": "MoonwalkApigatewayLimitedToService",
       "Effect": "Allow",
       "Action": [
         "apigateway:GET"
@@ -137,7 +137,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkAppflowLimited",
+      "Sid": "MoonwalkAppflowLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "appflow:DescribeFlow",
@@ -158,7 +158,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkApsLimited",
+      "Sid": "MoonwalkApsLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "aps:DescribeScraper",
@@ -179,7 +179,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkArcZonalShiftLimited",
+      "Sid": "MoonwalkArcZonalShiftLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "arc-zonal-shift:GetManagedResource"
@@ -212,7 +212,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkBackupLimited",
+      "Sid": "MoonwalkBackupLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "backup:DescribeBackupVault",
@@ -248,7 +248,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkBedrockLimited",
+      "Sid": "MoonwalkBedrockLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "bedrock:GetBlueprint",
@@ -260,7 +260,24 @@
         "bedrock:ListBlueprints",
         "bedrock:ListDataAutomationLibraries",
         "bedrock:ListDataAutomationProjects",
-        "bedrock:ListGuardrails",
+        "bedrock:ListGuardrails"
+      ],
+      "Resource": [
+        "arn:aws:bedrock:*:111122223333:blueprint/*",
+        "arn:aws:bedrock:*:111122223333:custom-model/*",
+        "arn:aws:bedrock:*:111122223333:data-automation-library/*",
+        "arn:aws:bedrock:*:111122223333:data-automation-project/*",
+        "arn:aws:bedrock:*:111122223333:evaluation-job/*",
+        "arn:aws:bedrock:*:111122223333:guardrail-profile/*",
+        "arn:aws:bedrock:*:111122223333:guardrail/*",
+        "arn:aws:bedrock:*:111122223333:knowledge-base/*",
+        "arn:aws:bedrock:*:111122223333:model-invocation-job/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkBedrockLimitedToService",
+      "Effect": "Allow",
+      "Action": [
         "bedrock:ListTagsForResource"
       ],
       "Resource": [
@@ -286,7 +303,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkBedrockAgentcoreLimited",
+      "Sid": "MoonwalkBedrockAgentcoreLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "bedrock-agentcore:GetGateway",
@@ -294,88 +311,26 @@
         "bedrock-agentcore:GetOnlineEvaluationConfig",
         "bedrock-agentcore:GetPolicyEngine",
         "bedrock-agentcore:GetRegistry",
-        "bedrock-agentcore:GetResourcePolicy",
+        "bedrock-agentcore:GetResourcePolicy"
+      ],
+      "Resource": [
+        "arn:aws:bedrock-agentcore:*:111122223333:gateway/*",
+        "arn:aws:bedrock-agentcore:*:111122223333:harness/*",
+        "arn:aws:bedrock-agentcore:*:111122223333:online-evaluation-config/*",
+        "arn:aws:bedrock-agentcore:*:111122223333:policy-engine/*",
+        "arn:aws:bedrock-agentcore:*:111122223333:registry/*",
+        "arn:aws:bedrock-agentcore:*:111122223333:runtime/*",
+        "arn:aws:bedrock-agentcore:*:111122223333:runtime/*/runtime-endpoint/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkBedrockAgentcoreLimitedToService",
+      "Effect": "Allow",
+      "Action": [
         "bedrock-agentcore:ListTagsForResource"
       ],
       "Resource": [
         "arn:aws:bedrock-agentcore:*:111122223333:*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkCleanrooms",
-      "Effect": "Allow",
-      "Action": [
-        "cleanrooms:ListCollaborations",
-        "cleanrooms:ListConfiguredTables",
-        "cleanrooms:ListMemberships"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkCleanroomsLimited",
-      "Effect": "Allow",
-      "Action": [
-        "cleanrooms:GetCollaboration",
-        "cleanrooms:GetConfiguredTable",
-        "cleanrooms:GetMembership",
-        "cleanrooms:ListMembers",
-        "cleanrooms:ListTagsForResource"
-      ],
-      "Resource": [
-        "arn:aws:cleanrooms:*:111122223333:*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkCloudfront",
-      "Effect": "Allow",
-      "Action": [
-        "cloudfront:ListDistributions",
-        "cloudfront:ListKeyValueStores"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkCloudwatch",
-      "Effect": "Allow",
-      "Action": [
-        "cloudwatch:ListAccessGrants",
-        "cloudwatch:ListDomains",
-        "cloudwatch:ListSpaces",
-        "cloudwatch:ListViews"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkCloudwatchLimited",
-      "Effect": "Allow",
-      "Action": [
-        "cloudwatch:DescribeAlarms",
-        "cloudwatch:GetAlarmMuteRule",
-        "cloudwatch:GetDomain",
-        "cloudwatch:GetSpace",
-        "cloudwatch:GetView",
-        "cloudwatch:ListAlarmMuteRules",
-        "cloudwatch:ListTagsForResource"
-      ],
-      "Resource": [
-        "arn:aws:cloudwatch:*:111122223333:*",
-        "arn:aws:cloudwatch::111122223333:*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkCodebuild",
-      "Effect": "Allow",
-      "Action": [
-        "codebuild:ListProjects"
-      ],
-      "Resource": [
-        "*"
       ]
     }
   ]

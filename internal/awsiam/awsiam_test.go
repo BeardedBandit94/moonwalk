@@ -51,12 +51,12 @@ func TestPolicies(t *testing.T) {
 		// What cannot be limited to a resource applies to all of them...
 		{Sid: "MoonwalkEc2InRegions", Effect: "Allow", Action: []string{"ec2:DescribeVpcs"}, Resource: []string{"*"}, Condition: regions},
 		// ...and what can is limited to its kind, in the one account.
-		{Sid: "MoonwalkEc2LimitedInRegions", Effect: "Allow", Action: []string{"ec2:DescribeVpcAttribute"}, Resource: []string{"arn:aws:ec2:*:123456789012:vpc/*"}, Condition: regions},
+		{Sid: "MoonwalkEc2LimitedToKindsInRegions", Effect: "Allow", Action: []string{"ec2:DescribeVpcAttribute"}, Resource: []string{"arn:aws:ec2:*:123456789012:vpc/*"}, Condition: regions},
 		// A global service answers from one region whichever are asked for.
 		{Sid: "MoonwalkIam", Effect: "Allow", Action: []string{"iam:ListRoles"}, Resource: []string{"*"}},
-		{Sid: "MoonwalkIamLimited", Effect: "Allow", Action: []string{"iam:GetRole"}, Resource: []string{"arn:aws:iam::123456789012:role/*"}},
+		{Sid: "MoonwalkIamLimitedToKinds", Effect: "Allow", Action: []string{"iam:GetRole"}, Resource: []string{"arn:aws:iam::123456789012:role/*"}},
 		{Sid: "MoonwalkLambdaInRegions", Effect: "Allow", Action: []string{"lambda:ListFunctions"}, Resource: []string{"*"}, Condition: regions},
-		{Sid: "MoonwalkLambdaLimitedInRegions", Effect: "Allow", Action: []string{"lambda:GetFunction", "lambda:ListVersionsByFunction"}, Resource: []string{"arn:aws:lambda:*:123456789012:function:*"}, Condition: regions},
+		{Sid: "MoonwalkLambdaLimitedToKindsInRegions", Effect: "Allow", Action: []string{"lambda:GetFunction", "lambda:ListVersionsByFunction"}, Resource: []string{"arn:aws:lambda:*:123456789012:function:*"}, Condition: regions},
 	}}}
 	if !reflect.DeepEqual(docs, want) {
 		got, _ := json.MarshalIndent(docs, "", "  ")
@@ -160,6 +160,40 @@ func TestWithheldActions(t *testing.T) {
 	}
 	if _, err := p.Plan(Options{Types: types, Allow: []string{"s3:GetObject"}}); err == nil {
 		t.Error("an action that is not on the list was accepted as allowed")
+	}
+}
+
+// An action is limited to the kinds of resource it applies to, each named
+// as AWS names it, and its neighbours' kinds are not lumped in with one
+// that applies to everything in the service: that one gets a statement of
+// its own, limited to the service and the account.
+func TestKindsAreNamedAndTheRestKeptApart(t *testing.T) {
+	p := &Permissions{
+		Types: map[string]TypePermissions{"aws_db_instance": {List: []string{"rds:DescribeDBInstances"}, Read: []string{"rds:DescribeDBClusters", "rds:ListTagsForResource"}}},
+		Actions: map[string]Action{
+			"rds:DescribeDBInstances": {Level: "List", Resources: []string{"arn:${Partition}:rds:${Region}:${Account}:db:${DbInstanceName}"}},
+			"rds:DescribeDBClusters":  {Level: "List", Resources: []string{"arn:${Partition}:rds:${Region}:${Account}:cluster:${DbClusterInstanceName}"}},
+			"rds:ListTagsForResource": {Level: "Read"},
+		},
+	}
+	tags := p.Actions["rds:ListTagsForResource"]
+	for _, kind := range []string{"db", "cluster", "pg", "subgrp", "snapshot", "og", "es", "ri", "secgrp"} {
+		tags.Resources = append(tags.Resources, "arn:${Partition}:rds:${Region}:${Account}:"+kind+":${Name}")
+	}
+	p.Actions["rds:ListTagsForResource"] = tags
+	docs, _, err := p.Policies(Options{Types: []string{"aws_db_instance"}, Account: "111122223333"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []Statement{
+		{Sid: "MoonwalkRdsLimitedToKinds", Effect: "Allow", Action: []string{"rds:DescribeDBClusters", "rds:DescribeDBInstances"},
+			Resource: []string{"arn:aws:rds:*:111122223333:cluster:*", "arn:aws:rds:*:111122223333:db:*"}},
+		{Sid: "MoonwalkRdsLimitedToService", Effect: "Allow", Action: []string{"rds:ListTagsForResource"},
+			Resource: []string{"arn:aws:rds:*:111122223333:*"}},
+	}
+	if !reflect.DeepEqual(docs[0].Statement, want) {
+		got, _ := json.MarshalIndent(docs[0].Statement, "", "  ")
+		t.Errorf("got\n%s", got)
 	}
 }
 

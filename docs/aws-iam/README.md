@@ -8,7 +8,7 @@ for everything it can list, kept here to be read without running anything.
 | Directory | For | Documents | Actions |
 |---|---|---|---|
 | [`identities-only`](identities-only) | Finding what exists: names, IDs, ARNs | 3 | 216 |
-| [`with-attributes`](with-attributes) | The same, and each resource's settings, which lets moonwalk place it in its network | 4 | 337 |
+| [`with-attributes`](with-attributes) | The same, and each resource's settings, which lets moonwalk place it in its network | 5 | 337 |
 | [`state`](state) | Reading states from one bucket | 1 | 3 |
 
 They are written for account `111122223333` and no particular region. Write
@@ -31,14 +31,22 @@ asks for and nothing else.
 3. **Nothing that hands over what is stored.** Three actions the provider
    calls return stored content or the means to fetch it. They are left out
    unless you name them (see below).
-4. **Resources as narrow as AWS allows.** An action that can be limited to
-   a kind of resource is limited to that kind, in your account. Where an
-   action applies to more than six kinds, the statement names the service
-   and account instead of every kind.
-5. **`"Resource": "*"` only where AWS leaves no choice.** Most actions that
-   list or describe cannot be limited to a resource: AWS evaluates them
-   against `*` whatever the policy says. Those, and only those, are in
-   statements with `*`. A statement whose ID contains `Limited` never has it.
+4. **Resources as narrow as AWS allows, named as AWS names them.** An
+   action that can be limited to kinds of resource is limited to those
+   kinds, each written in the ARN format AWS defines for it, in your
+   account: `arn:aws:lambda:*:111122223333:function:*`,
+   `arn:aws:iam::111122223333:role/*`. These are the statements whose ID
+   ends in `LimitedToKinds`. An action that applies to more than six
+   kinds, which in practice is a service's listing of tags, has a
+   statement of its own, `LimitedToService`, for everything of that
+   service in your account: `arn:aws:rds:*:111122223333:*`.
+5. **`"Resource": "*"` only where AWS leaves no choice.** Many actions that
+   list or describe cannot be limited to a resource at all: AWS's Service
+   Reference gives them no resource type, and AWS evaluates such a call
+   against the resource `*`. An ARN in their statement, however well
+   formed, matches nothing, and the call is refused. Those actions, and
+   only those, are in statements with `*`: 156 of the 337. A statement
+   whose ID contains `Limited` never has it.
 6. **Regions.** With `-region`, every statement of a regional service
    carries `aws:RequestedRegion`. The global services (IAM, Route 53,
    CloudFront, Organizations) answer from one region for all and are not

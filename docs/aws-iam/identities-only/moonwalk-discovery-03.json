@@ -2,6 +2,17 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "MoonwalkRoute53resolver",
+      "Effect": "Allow",
+      "Action": [
+        "route53resolver:ListResolverRuleAssociations",
+        "route53resolver:ListResolverRules"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
       "Sid": "MoonwalkS3",
       "Effect": "Allow",
       "Action": [
@@ -13,7 +24,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkS3Limited",
+      "Sid": "MoonwalkS3LimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "s3:GetBucketCORS",
@@ -30,7 +41,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkS3filesLimited",
+      "Sid": "MoonwalkS3filesLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "s3files:GetFileSystem",
@@ -55,7 +66,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkSagemakerLimited",
+      "Sid": "MoonwalkSagemakerLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "sagemaker:DescribeAlgorithm",
@@ -89,7 +100,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkSecretsmanagerLimited",
+      "Sid": "MoonwalkSecretsmanagerLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "secretsmanager:GetResourcePolicy"
@@ -110,7 +121,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkSecurityhubLimited",
+      "Sid": "MoonwalkSecurityhubLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "securityhub:GetAutomationRuleV2",
@@ -138,7 +149,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkSmsVoiceLimited",
+      "Sid": "MoonwalkSmsVoiceLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "sms-voice:DescribePools",
@@ -173,7 +184,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkSqsLimited",
+      "Sid": "MoonwalkSqsLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "sqs:GetQueueAttributes"
@@ -217,7 +228,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkWorkmailLimited",
+      "Sid": "MoonwalkWorkmailLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "workmail:DescribeOrganization"

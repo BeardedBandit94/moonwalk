@@ -2,7 +2,7 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "MoonwalkEc2Limited",
+      "Sid": "MoonwalkEc2LimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "ec2:DescribeImageAttribute"
@@ -12,7 +12,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkEcrLimited",
+      "Sid": "MoonwalkEcrLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "ecr:DescribeRepositories",
@@ -37,7 +37,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkEcsLimited",
+      "Sid": "MoonwalkEcsLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "ecs:DescribeDaemonTaskDefinition"
@@ -78,7 +78,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkEventsLimited",
+      "Sid": "MoonwalkEventsLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "events:DescribeRule"
@@ -98,7 +98,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkFisLimited",
+      "Sid": "MoonwalkFisLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "fis:GetSafetyLever"
@@ -118,10 +118,20 @@
       ]
     },
     {
-      "Sid": "MoonwalkGlueLimited",
+      "Sid": "MoonwalkGlueLimitedToKinds",
       "Effect": "Allow",
       "Action": [
-        "glue:GetCatalogs",
+        "glue:GetCatalogs"
+      ],
+      "Resource": [
+        "arn:aws:glue:*:111122223333:catalog",
+        "arn:aws:glue:*:111122223333:catalog/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkGlueLimitedToService",
+      "Effect": "Allow",
+      "Action": [
         "glue:GetTags"
       ],
       "Resource": [
@@ -144,7 +154,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkIamLimited",
+      "Sid": "MoonwalkIamLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "iam:ListAccessKeys",
@@ -181,7 +191,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkKmsLimited",
+      "Sid": "MoonwalkKmsLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "kms:DescribeKey",
@@ -212,7 +222,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkLambdaLimited",
+      "Sid": "MoonwalkLambdaLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "lambda:GetResourcePolicy",
@@ -245,7 +255,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkNetworkFirewallLimited",
+      "Sid": "MoonwalkNetworkFirewallLimitedToService",
       "Effect": "Allow",
       "Action": [
         "network-firewall:ListTagsForResource"
@@ -282,7 +292,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkObservabilityadminLimited",
+      "Sid": "MoonwalkObservabilityadminLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "observabilityadmin:GetTelemetryRule",
@@ -315,7 +325,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkOsisLimited",
+      "Sid": "MoonwalkOsisLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "osis:GetPipeline",
@@ -356,7 +366,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkRdsLimited",
+      "Sid": "MoonwalkRdsLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "rds:DescribeDBClusters",
@@ -400,17 +410,6 @@
       "Effect": "Allow",
       "Action": [
         "route53:ListHostedZones"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkRoute53resolver",
-      "Effect": "Allow",
-      "Action": [
-        "route53resolver:ListResolverRuleAssociations",
-        "route53resolver:ListResolverRules"
       ],
       "Resource": [
         "*"

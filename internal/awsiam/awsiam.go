@@ -223,18 +223,38 @@ func (p *Permissions) Policies(o Options) (docs []Document, plan Plan, err error
 	use(plan.Identity, func(tp TypePermissions) []string { return tp.List })
 	use(plan.Full, func(tp TypePermissions) []string { return append(slices.Clone(tp.List), tp.Read...) })
 
+	// How far an action's resources can be narrowed.
+	const (
+		toAll     = iota // Not at all: AWS evaluates the action against "*".
+		toKinds          // To the kinds of resource it applies to, each by its ARN format.
+		toService        // To its service and the account: it applies to more kinds than are worth naming.
+	)
 	type group struct {
-		service            string
-		limited, inRegions bool
+		service   string
+		scope     int
+		inRegions bool
 	}
 	groups := map[group][]string{}
+	patterns := map[string][]string{}
 	for a := range used {
 		info, ok := p.Actions[a]
 		if !ok {
 			return nil, plan, fmt.Errorf("awsiam: %s is used and not described", a)
 		}
 		service, _, _ := strings.Cut(a, ":")
-		g := group{service, limitable(info.Resources), !global[a] && len(o.Regions) > 0}
+		scope := toAll
+		if limitable(info.Resources) {
+			for _, format := range info.Resources {
+				if arn := fill(format, partition, o.Account); !slices.Contains(patterns[a], arn) {
+					patterns[a] = append(patterns[a], arn)
+				}
+			}
+			scope = toKinds
+			if len(patterns[a]) > mostKinds {
+				scope = toService
+			}
+		}
+		g := group{service, scope, !global[a] && len(o.Regions) > 0}
 		groups[g] = append(groups[g], a)
 	}
 	keys := make([]group, 0, len(groups))
@@ -246,8 +266,8 @@ func (p *Permissions) Policies(o Options) (docs []Document, plan Plan, err error
 		if a.service != b.service {
 			return a.service < b.service
 		}
-		if a.limited != b.limited {
-			return !a.limited
+		if a.scope != b.scope {
+			return a.scope < b.scope
 		}
 		return !a.inRegions && b.inRegions
 	})
@@ -258,17 +278,21 @@ func (p *Permissions) Policies(o Options) (docs []Document, plan Plan, err error
 		sort.Strings(actions)
 		s := Statement{Effect: "Allow", Action: actions, Resource: []string{"*"}}
 		s.Sid = "Moonwalk" + sidPart(g.service)
-		if g.limited {
-			s.Sid += "Limited"
+		if g.scope != toAll {
 			s.Resource = nil
 			for _, a := range actions {
-				for _, format := range p.Actions[a].Resources {
-					if arn := fill(format, partition, o.Account); !slices.Contains(s.Resource, arn) {
+				for _, arn := range patterns[a] {
+					if !slices.Contains(s.Resource, arn) {
 						s.Resource = append(s.Resource, arn)
 					}
 				}
 			}
-			s.Resource = summarize(s.Resource)
+			sort.Strings(s.Resource)
+			s.Sid += "LimitedToKinds"
+			if g.scope == toService {
+				s.Sid = strings.TrimSuffix(s.Sid, "Kinds") + "Service"
+				s.Resource = wholeService(s.Resource)
+			}
 		}
 		if g.inRegions {
 			s.Sid += "InRegions"
@@ -291,19 +315,16 @@ func limitable(formats []string) bool {
 	return len(formats) > 0
 }
 
-// mostKinds is how many kinds of resource a statement names one by one.
+// mostKinds is the most kinds of resource an action is limited to by
+// name. An action that applies to more, as a service's listing of tags
+// applies to everything in the service that can be tagged, is limited to
+// the service and the account instead: naming dozens of kinds, most of
+// which moonwalk never lists, would say no more.
 const mostKinds = 6
 
-// summarize sorts a statement's ARN patterns and, where there are more
-// than a handful, replaces them with one pattern for each service,
-// region and account among them. An action that applies to every kind of
-// resource a service has, as its tag listing does, would otherwise name
-// dozens, which says no more than the service does.
-func summarize(arns []string) []string {
-	sort.Strings(arns)
-	if len(arns) <= mostKinds {
-		return arns
-	}
+// wholeService replaces ARN patterns with one for each service, region
+// and account among them, standing for every resource there.
+func wholeService(arns []string) []string {
 	var out []string
 	for _, arn := range arns {
 		parts := strings.SplitN(arn, ":", 6)

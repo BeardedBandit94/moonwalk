@@ -55,7 +55,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkApigatewayLimited",
+      "Sid": "MoonwalkApigatewayLimitedToService",
       "Effect": "Allow",
       "Action": [
         "apigateway:GET"
@@ -76,7 +76,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkAppflowLimited",
+      "Sid": "MoonwalkAppflowLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "appflow:DescribeFlow",
@@ -97,7 +97,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkApsLimited",
+      "Sid": "MoonwalkApsLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "aps:DescribeScraperLoggingConfiguration"
@@ -138,7 +138,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkBackupLimited",
+      "Sid": "MoonwalkBackupLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "backup:ListBackupSelections"
@@ -170,7 +170,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkBedrockLimited",
+      "Sid": "MoonwalkBedrockLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "bedrock:GetResourcePolicy",
@@ -207,7 +207,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkBedrockAgentcoreLimited",
+      "Sid": "MoonwalkBedrockAgentcoreLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "bedrock-agentcore:GetGateway",
@@ -232,7 +232,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkCleanroomsLimited",
+      "Sid": "MoonwalkCleanroomsLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "cleanrooms:GetCollaboration",
@@ -269,7 +269,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkCloudwatchLimited",
+      "Sid": "MoonwalkCloudwatchLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "cloudwatch:DescribeAlarms",
@@ -322,7 +322,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkDmsLimited",
+      "Sid": "MoonwalkDmsLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "dms:ListInstanceProfiles",
@@ -345,7 +345,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkDsqlLimited",
+      "Sid": "MoonwalkDsqlLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "dsql:GetClusterPolicy"

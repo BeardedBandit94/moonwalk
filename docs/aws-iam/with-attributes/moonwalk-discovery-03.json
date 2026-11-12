@@ -2,6 +2,161 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "MoonwalkEvents",
+      "Effect": "Allow",
+      "Action": [
+        "events:ListRules"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkEventsLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "events:DescribeRule"
+      ],
+      "Resource": [
+        "arn:aws:events:*:111122223333:rule/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkFirehose",
+      "Effect": "Allow",
+      "Action": [
+        "firehose:ListDeliveryStreams"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkFirehoseLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "firehose:DescribeDeliveryStream",
+        "firehose:ListTagsForDeliveryStream"
+      ],
+      "Resource": [
+        "arn:aws:firehose:*:111122223333:deliverystream/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkFisLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "fis:GetSafetyLever"
+      ],
+      "Resource": [
+        "arn:aws:fis:*:111122223333:safety-lever/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkGlue",
+      "Effect": "Allow",
+      "Action": [
+        "glue:GetJobs"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkGlueLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "glue:GetCatalogs"
+      ],
+      "Resource": [
+        "arn:aws:glue:*:111122223333:catalog",
+        "arn:aws:glue:*:111122223333:catalog/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkGlueLimitedToService",
+      "Effect": "Allow",
+      "Action": [
+        "glue:GetTags"
+      ],
+      "Resource": [
+        "arn:aws:glue:*:111122223333:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkIam",
+      "Effect": "Allow",
+      "Action": [
+        "iam:ListGroups",
+        "iam:ListInstanceProfiles",
+        "iam:ListOpenIDConnectProviders",
+        "iam:ListPolicies",
+        "iam:ListRoles",
+        "iam:ListUsers"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkIamLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetInstanceProfile",
+        "iam:GetOpenIDConnectProvider",
+        "iam:GetPolicyVersion",
+        "iam:ListAccessKeys",
+        "iam:ListAttachedGroupPolicies",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListAttachedUserPolicies",
+        "iam:ListUserTags"
+      ],
+      "Resource": [
+        "arn:aws:iam::111122223333:group/*",
+        "arn:aws:iam::111122223333:instance-profile/*",
+        "arn:aws:iam::111122223333:oidc-provider/*",
+        "arn:aws:iam::111122223333:policy/*",
+        "arn:aws:iam::111122223333:role/*",
+        "arn:aws:iam::111122223333:user/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkKafka",
+      "Effect": "Allow",
+      "Action": [
+        "kafka:GetBootstrapBrokers",
+        "kafka:ListClusters",
+        "kafka:ListClustersV2"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkKms",
+      "Effect": "Allow",
+      "Action": [
+        "kms:ListAliases",
+        "kms:ListKeys"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkKmsLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "kms:DescribeKey",
+        "kms:GetKeyPolicy",
+        "kms:GetKeyRotationStatus",
+        "kms:ListResourceTags"
+      ],
+      "Resource": [
+        "arn:aws:kms:*:111122223333:key/*"
+      ]
+    },
+    {
       "Sid": "MoonwalkLambda",
       "Effect": "Allow",
       "Action": [
@@ -20,7 +175,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkLambdaLimited",
+      "Sid": "MoonwalkLambdaLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "lambda:GetEventSourceMapping",
@@ -29,7 +184,21 @@
         "lambda:GetNetworkConnector",
         "lambda:GetResourcePolicy",
         "lambda:GetWebFunction",
-        "lambda:ListFunctionVersionsByCapacityProvider",
+        "lambda:ListFunctionVersionsByCapacityProvider"
+      ],
+      "Resource": [
+        "arn:aws:lambda:*:111122223333:capacity-provider:*",
+        "arn:aws:lambda:*:111122223333:event-source-mapping:*",
+        "arn:aws:lambda:*:111122223333:function:*",
+        "arn:aws:lambda:*:111122223333:microvm-image:*",
+        "arn:aws:lambda:*:111122223333:network-connector:*",
+        "arn:aws:lambda:*:111122223333:web-function/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkLambdaLimitedToService",
+      "Effect": "Allow",
+      "Action": [
         "lambda:ListTags"
       ],
       "Resource": [
@@ -47,7 +216,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkLogsLimited",
+      "Sid": "MoonwalkLogsLimitedToService",
       "Effect": "Allow",
       "Action": [
         "logs:ListTagsForResource"
@@ -67,10 +236,19 @@
       ]
     },
     {
-      "Sid": "MoonwalkNetworkFirewallLimited",
+      "Sid": "MoonwalkNetworkFirewallLimitedToKinds",
       "Effect": "Allow",
       "Action": [
-        "network-firewall:DescribeContainerAssociation",
+        "network-firewall:DescribeContainerAssociation"
+      ],
+      "Resource": [
+        "arn:aws:network-firewall:*:111122223333:container-association/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkNetworkFirewallLimitedToService",
+      "Effect": "Allow",
+      "Action": [
         "network-firewall:ListTagsForResource"
       ],
       "Resource": [
@@ -94,7 +272,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkNetworkSecurityManagerLimited",
+      "Sid": "MoonwalkNetworkSecurityManagerLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "network-security-manager:GetDeployment",
@@ -124,7 +302,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkObservabilityadminLimited",
+      "Sid": "MoonwalkObservabilityadminLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "observabilityadmin:GetTelemetryRule",
@@ -156,170 +334,6 @@
       "Action": [
         "osis:ListPipelineEndpoints",
         "osis:ListPipelines"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkOsisLimited",
-      "Effect": "Allow",
-      "Action": [
-        "osis:GetPipeline",
-        "osis:GetResourcePolicy"
-      ],
-      "Resource": [
-        "arn:aws:osis:*:111122223333:pipeline/*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkPricingplanmanager",
-      "Effect": "Allow",
-      "Action": [
-        "pricingplanmanager:GetSubscription",
-        "pricingplanmanager:ListSubscriptions"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkQuicksight",
-      "Effect": "Allow",
-      "Action": [
-        "quicksight:DescribeAccountCustomPermission"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkRam",
-      "Effect": "Allow",
-      "Action": [
-        "ram:GetResourceShareAssociations"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkRdsLimited",
-      "Effect": "Allow",
-      "Action": [
-        "rds:DescribeDBClusters",
-        "rds:DescribeDBInstances",
-        "rds:DescribeDBParameterGroups",
-        "rds:DescribeDBParameters",
-        "rds:DescribeDBSubnetGroups",
-        "rds:DescribeTenantDatabases",
-        "rds:ListTagsForResource"
-      ],
-      "Resource": [
-        "arn:aws:rds:*:111122223333:*",
-        "arn:aws:rds::111122223333:*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkRekognition",
-      "Effect": "Allow",
-      "Action": [
-        "rekognition:ListCollections"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkRekognitionLimited",
-      "Effect": "Allow",
-      "Action": [
-        "rekognition:DescribeCollection",
-        "rekognition:ListTagsForResource"
-      ],
-      "Resource": [
-        "arn:aws:rekognition:*:111122223333:collection/*",
-        "arn:aws:rekognition:*:111122223333:project/*",
-        "arn:aws:rekognition:*:111122223333:project/*/dataset/*",
-        "arn:aws:rekognition:*:111122223333:project/*/version/*",
-        "arn:aws:rekognition:*:111122223333:streamprocessor/*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkResiliencehub",
-      "Effect": "Allow",
-      "Action": [
-        "resiliencehub:ListPolicies",
-        "resiliencehub:ListServices",
-        "resiliencehub:ListSystems"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkResiliencehubLimited",
-      "Effect": "Allow",
-      "Action": [
-        "resiliencehub:GetPolicy",
-        "resiliencehub:GetService",
-        "resiliencehub:GetSystem"
-      ],
-      "Resource": [
-        "arn:aws:resiliencehub:*:111122223333:policy/*",
-        "arn:aws:resiliencehub:*:111122223333:service/*",
-        "arn:aws:resiliencehub:*:111122223333:system/*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkRoute53",
-      "Effect": "Allow",
-      "Action": [
-        "route53:ListHostedZones"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkRoute53Limited",
-      "Effect": "Allow",
-      "Action": [
-        "route53:GetHostedZone",
-        "route53:ListTagsForResource"
-      ],
-      "Resource": [
-        "arn:aws:route53:::healthcheck/*",
-        "arn:aws:route53:::hostedzone/*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkRoute53resolver",
-      "Effect": "Allow",
-      "Action": [
-        "route53resolver:ListResolverRuleAssociations",
-        "route53resolver:ListResolverRules"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkRoute53resolverLimited",
-      "Effect": "Allow",
-      "Action": [
-        "route53resolver:ListTagsForResource"
-      ],
-      "Resource": [
-        "arn:aws:route53resolver:*:111122223333:*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkS3",
-      "Effect": "Allow",
-      "Action": [
-        "s3:ListAllMyBuckets",
-        "s3:ListMultiRegionAccessPoints"
       ],
       "Resource": [
         "*"

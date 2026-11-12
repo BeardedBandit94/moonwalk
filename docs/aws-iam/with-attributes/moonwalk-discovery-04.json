@@ -2,7 +2,184 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "MoonwalkS3Limited",
+      "Sid": "MoonwalkOsisLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "osis:GetPipeline",
+        "osis:GetResourcePolicy"
+      ],
+      "Resource": [
+        "arn:aws:osis:*:111122223333:pipeline/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkPricingplanmanager",
+      "Effect": "Allow",
+      "Action": [
+        "pricingplanmanager:GetSubscription",
+        "pricingplanmanager:ListSubscriptions"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkQuicksight",
+      "Effect": "Allow",
+      "Action": [
+        "quicksight:DescribeAccountCustomPermission"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkRam",
+      "Effect": "Allow",
+      "Action": [
+        "ram:GetResourceShareAssociations"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkRdsLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "rds:DescribeDBClusters",
+        "rds:DescribeDBInstances",
+        "rds:DescribeDBParameterGroups",
+        "rds:DescribeDBParameters",
+        "rds:DescribeDBSubnetGroups",
+        "rds:DescribeTenantDatabases"
+      ],
+      "Resource": [
+        "arn:aws:rds:*:111122223333:cluster:*",
+        "arn:aws:rds:*:111122223333:db:*",
+        "arn:aws:rds:*:111122223333:pg:*",
+        "arn:aws:rds:*:111122223333:subgrp:*",
+        "arn:aws:rds:*:111122223333:tenant-database:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkRdsLimitedToService",
+      "Effect": "Allow",
+      "Action": [
+        "rds:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:rds:*:111122223333:*",
+        "arn:aws:rds::111122223333:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkRekognition",
+      "Effect": "Allow",
+      "Action": [
+        "rekognition:ListCollections"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkRekognitionLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "rekognition:DescribeCollection",
+        "rekognition:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:rekognition:*:111122223333:collection/*",
+        "arn:aws:rekognition:*:111122223333:project/*",
+        "arn:aws:rekognition:*:111122223333:project/*/dataset/*",
+        "arn:aws:rekognition:*:111122223333:project/*/version/*",
+        "arn:aws:rekognition:*:111122223333:streamprocessor/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkResiliencehub",
+      "Effect": "Allow",
+      "Action": [
+        "resiliencehub:ListPolicies",
+        "resiliencehub:ListServices",
+        "resiliencehub:ListSystems"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkResiliencehubLimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "resiliencehub:GetPolicy",
+        "resiliencehub:GetService",
+        "resiliencehub:GetSystem"
+      ],
+      "Resource": [
+        "arn:aws:resiliencehub:*:111122223333:policy/*",
+        "arn:aws:resiliencehub:*:111122223333:service/*",
+        "arn:aws:resiliencehub:*:111122223333:system/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkRoute53",
+      "Effect": "Allow",
+      "Action": [
+        "route53:ListHostedZones"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkRoute53LimitedToKinds",
+      "Effect": "Allow",
+      "Action": [
+        "route53:GetHostedZone",
+        "route53:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:route53:::healthcheck/*",
+        "arn:aws:route53:::hostedzone/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkRoute53resolver",
+      "Effect": "Allow",
+      "Action": [
+        "route53resolver:ListResolverRuleAssociations",
+        "route53resolver:ListResolverRules"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkRoute53resolverLimitedToService",
+      "Effect": "Allow",
+      "Action": [
+        "route53resolver:ListTagsForResource"
+      ],
+      "Resource": [
+        "arn:aws:route53resolver:*:111122223333:*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkS3",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListAllMyBuckets",
+        "s3:ListMultiRegionAccessPoints"
+      ],
+      "Resource": [
+        "*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkS3LimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "s3:GetBucketAcl",
@@ -24,7 +201,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkS3filesLimited",
+      "Sid": "MoonwalkS3filesLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "s3files:GetFileSystem",
@@ -51,7 +228,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkSagemakerLimited",
+      "Sid": "MoonwalkSagemakerLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "sagemaker:DescribeAlgorithm",
@@ -59,7 +236,21 @@
         "sagemaker:DescribeHyperParameterTuningJob",
         "sagemaker:DescribeInferenceComponent",
         "sagemaker:DescribeTrainingJob",
-        "sagemaker:ListHubContents",
+        "sagemaker:ListHubContents"
+      ],
+      "Resource": [
+        "arn:aws:sagemaker:*:111122223333:algorithm/*",
+        "arn:aws:sagemaker:*:111122223333:hub-content/*",
+        "arn:aws:sagemaker:*:111122223333:hub/*",
+        "arn:aws:sagemaker:*:111122223333:hyper-parameter-tuning-job/*",
+        "arn:aws:sagemaker:*:111122223333:inference-component/*",
+        "arn:aws:sagemaker:*:111122223333:training-job/*"
+      ]
+    },
+    {
+      "Sid": "MoonwalkSagemakerLimitedToService",
+      "Effect": "Allow",
+      "Action": [
         "sagemaker:ListTags"
       ],
       "Resource": [
@@ -77,7 +268,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkSchedulerLimited",
+      "Sid": "MoonwalkSchedulerLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "scheduler:GetSchedule"
@@ -97,7 +288,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkSecretsmanagerLimited",
+      "Sid": "MoonwalkSecretsmanagerLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "secretsmanager:DescribeSecret",
@@ -119,7 +310,7 @@
       ]
     },
     {
-      "Sid": "MoonwalkSecurityhubLimited",
+      "Sid": "MoonwalkSecurityhubLimitedToKinds",
       "Effect": "Allow",
       "Action": [
         "securityhub:GetAutomationRuleV2",
@@ -144,160 +335,6 @@
         "ses:ListRelays",
         "ses:ListRuleSets",
         "ses:ListTrafficPolicies"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkSesLimited",
-      "Effect": "Allow",
-      "Action": [
-        "ses:GetArchive",
-        "ses:GetIngressPoint",
-        "ses:GetRelay",
-        "ses:GetRuleSet",
-        "ses:GetTrafficPolicy",
-        "ses:ListTagsForResource"
-      ],
-      "Resource": [
-        "arn:aws:ses:*:111122223333:*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkSmsVoiceLimited",
-      "Effect": "Allow",
-      "Action": [
-        "sms-voice:DescribePools",
-        "sms-voice:DescribeProtectConfigurations",
-        "sms-voice:DescribeSenderIds",
-        "sms-voice:GetProtectConfigurationCountryRuleSet",
-        "sms-voice:ListPoolOriginationIdentities",
-        "sms-voice:ListTagsForResource"
-      ],
-      "Resource": [
-        "arn:aws:sms-voice:*:111122223333:*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkSns",
-      "Effect": "Allow",
-      "Action": [
-        "sns:ListTopics"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkSnsLimited",
-      "Effect": "Allow",
-      "Action": [
-        "sns:GetTopicAttributes"
-      ],
-      "Resource": [
-        "arn:aws:sns:*:111122223333:*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkSqs",
-      "Effect": "Allow",
-      "Action": [
-        "sqs:ListQueues"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkSqsLimited",
-      "Effect": "Allow",
-      "Action": [
-        "sqs:GetQueueAttributes"
-      ],
-      "Resource": [
-        "arn:aws:sqs:*:111122223333:*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkSsm",
-      "Effect": "Allow",
-      "Action": [
-        "ssm:DescribeParameters",
-        "ssm:DescribePatchBaselines",
-        "ssm:DescribePatchGroups",
-        "ssm:ListAssociations",
-        "ssm:ListDocuments"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkSsmLimited",
-      "Effect": "Allow",
-      "Action": [
-        "ssm:DescribeAssociation",
-        "ssm:DescribeDocument",
-        "ssm:DescribeDocumentPermission",
-        "ssm:GetDocument",
-        "ssm:GetPatchBaseline",
-        "ssm:ListTagsForResource"
-      ],
-      "Resource": [
-        "arn:aws:ssm:*:111122223333:*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkStates",
-      "Effect": "Allow",
-      "Action": [
-        "states:ListStateMachines"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkStatesLimited",
-      "Effect": "Allow",
-      "Action": [
-        "states:DescribeStateMachine",
-        "states:ListStateMachineVersions",
-        "states:ListTagsForResource"
-      ],
-      "Resource": [
-        "arn:aws:states:*:111122223333:activity:*",
-        "arn:aws:states:*:111122223333:stateMachine:*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkWorkmail",
-      "Effect": "Allow",
-      "Action": [
-        "workmail:ListOrganizations"
-      ],
-      "Resource": [
-        "*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkWorkmailLimited",
-      "Effect": "Allow",
-      "Action": [
-        "workmail:DescribeOrganization",
-        "workmail:ListTagsForResource"
-      ],
-      "Resource": [
-        "arn:aws:workmail:*:111122223333:organization/*"
-      ]
-    },
-    {
-      "Sid": "MoonwalkWorkspaces",
-      "Effect": "Allow",
-      "Action": [
-        "workspaces:DescribeTags",
-        "workspaces:DescribeWorkspacesPools"
       ],
       "Resource": [
         "*"
