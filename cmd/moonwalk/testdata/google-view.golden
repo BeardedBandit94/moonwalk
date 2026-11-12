@@ -1,0 +1,31 @@
+12 resources in 18 items, grouped by source, account, region, module
+1 glue resource folded into links marked -- (-glue shows them)
+
+g  (source, 12 resources)
+  acme-prod  (account, 12 resources)
+    EU  (region, 1 resource)
+      google_storage_bucket.logs
+    europe-west1  (region, 7 resources)
+      google_compute_subnetwork.app  (block, 2 resources)
+        google_compute_subnetwork.app["data"]
+            -> global / google_compute_network.main
+        google_compute_subnetwork.app["web"]
+            -> global / google_compute_network.main
+      google_compute_instance.batch
+          -> google_compute_subnetwork.app / google_compute_subnetwork.app["data"]
+      google_compute_instance.web
+          -> google_compute_subnetwork.app / google_compute_subnetwork.app["web"]
+      google_compute_router.nat
+          -> global / google_compute_network.main
+      google_container_cluster.main
+          -> google_compute_subnetwork.app / google_compute_subnetwork.app["web"]
+      google_sql_database_instance.db
+          -> global / google_compute_network.main
+    global  (region, 4 resources)
+      google_compute_firewall.web
+          -> google_compute_network.main
+      google_compute_network.main
+          -- google_compute_network.shared
+      google_compute_network.shared
+          -- google_compute_network.main
+      google_service_account.app

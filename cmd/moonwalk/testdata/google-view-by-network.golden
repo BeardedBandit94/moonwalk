@@ -1,0 +1,29 @@
+12 resources in 16 items, grouped by account, network
+1 glue resource folded into links marked -- (-glue shows them)
+
+acme-prod  (account, 12 resources)
+  g::google_compute_network.main  (network, 9 resources)
+    g::google_compute_subnetwork.app["data"]  (subnet, 2 resources)
+      g::google_compute_instance.batch
+          -> g::google_compute_subnetwork.app["data"]
+      g::google_compute_subnetwork.app["data"]
+          -> g::google_compute_network.main
+    g::google_compute_subnetwork.app["web"]  (subnet, 3 resources)
+      g::google_compute_instance.web
+          -> g::google_compute_subnetwork.app["web"]
+      g::google_compute_subnetwork.app["web"]
+          -> g::google_compute_network.main
+      g::google_container_cluster.main
+          -> g::google_compute_subnetwork.app["web"]
+    g::google_compute_firewall.web
+        -> g::google_compute_network.main
+    g::google_compute_network.main
+        -- g::google_compute_network.shared
+    g::google_compute_router.nat
+        -> g::google_compute_network.main
+    g::google_sql_database_instance.db
+        -> g::google_compute_network.main
+  g::google_compute_network.shared
+      -- g::google_compute_network.main / g::google_compute_network.main
+  g::google_service_account.app
+  g::google_storage_bucket.logs

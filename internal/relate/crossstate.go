@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/BeardedBandit94/moonwalk/internal/azureid"
+	"github.com/BeardedBandit94/moonwalk/internal/googleid"
 	"github.com/BeardedBandit94/moonwalk/internal/graph"
 )
 
@@ -54,7 +55,7 @@ func CrossState(g *graph.Graph) int {
 		}
 		seen := map[string]bool{}
 		visit := func(value string, anywhere bool) {
-			value = azureid.Canonical(value)
+			value = canonical(value)
 			target, ok := owner[value]
 			if !ok || ambiguous[value] || target.Source == n.Source || seen[target.ID] {
 				return
@@ -83,11 +84,18 @@ func CrossState(g *graph.Graph) int {
 	return added
 }
 
+// canonical returns an identity in the one form it is compared by. Azure
+// spells one ID in several cases, and Google writes one name with or
+// without the address in front.
+func canonical(v string) string {
+	return googleid.Canonical(azureid.Canonical(v))
+}
+
 // identities returns the values by which another resource could name n.
 func identities(n graph.Node) []string {
 	var out []string
 	add := func(v string) {
-		v = azureid.Canonical(v)
+		v = canonical(v)
 		if distinctive(v) && !slices.Contains(out, v) {
 			out = append(out, v)
 		}

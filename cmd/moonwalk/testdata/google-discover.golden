@@ -1,0 +1,13 @@
+5 resources in 9 items, grouped by account, region
+12 resources left out by the filter
+1 glue resource folded into links marked -- (-glue shows them)
+
+acme-prod  (account, 5 resources, 5 unmanaged)
+  europe-west1  (region, 2 resources, 2 unmanaged)
+    cloud::google:workflows.googleapis.com/Workflow.nightly  (unmanaged)
+    cloud::google_compute_instance.scratch  (unmanaged)
+  global  (region, 2 resources, 2 unmanaged)
+    cloud::google_pubsub_topic.manual  (unmanaged)
+    cloud::google_secret_manager_secret.api-key  (unmanaged)
+  us  (region, 1 resource, 1 unmanaged)
+    cloud::google_storage_bucket.acme-scratch-data  (unmanaged)

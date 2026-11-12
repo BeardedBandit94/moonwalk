@@ -1,0 +1,329 @@
+{
+ "provider": "hashicorp/google 8.11.0",
+ "catalog": "Google's published IAM permissions and their support in custom roles, read 2026-11-12",
+ "types": {
+  "google_apigee_addons_config": {
+   "list": [
+    "apigee.organizations.list"
+   ]
+  },
+  "google_apigee_organization": {
+   "list": [
+    "apigee.organizations.list"
+   ]
+  },
+  "google_app_engine_domain_mapping": {
+   "list": [],
+   "list_unknown": "a permission that Google's published list does not name, for appengine.apps.domainMappings.list"
+  },
+  "google_app_engine_service_network_settings": {
+   "list": [
+    "appengine.services.list"
+   ]
+  },
+  "google_app_engine_service_split_traffic": {
+   "list": [
+    "appengine.services.list"
+   ]
+  },
+  "google_bigquery_dataset": {
+   "list": [
+    "bigquery.datasets.get"
+   ]
+  },
+  "google_cloud_scheduler_job": {
+   "list": [
+    "cloudscheduler.jobs.list"
+   ]
+  },
+  "google_compute_address": {
+   "list": [
+    "compute.addresses.list"
+   ]
+  },
+  "google_compute_cross_site_network": {
+   "list": [
+    "compute.crossSiteNetworks.list"
+   ]
+  },
+  "google_compute_disk": {
+   "list": [
+    "compute.disks.list"
+   ]
+  },
+  "google_compute_external_vpn_gateway": {
+   "list": [
+    "compute.externalVpnGateways.list"
+   ]
+  },
+  "google_compute_firewall": {
+   "list": [
+    "compute.firewalls.list"
+   ]
+  },
+  "google_compute_global_address": {
+   "list": [
+    "compute.globalAddresses.list"
+   ]
+  },
+  "google_compute_global_network_endpoint_group": {
+   "list": [
+    "compute.globalNetworkEndpointGroups.list"
+   ]
+  },
+  "google_compute_ha_vpn_gateway": {
+   "list": [
+    "compute.vpnGateways.list"
+   ]
+  },
+  "google_compute_https_health_check": {
+   "list": [
+    "compute.httpsHealthChecks.list"
+   ]
+  },
+  "google_compute_image": {
+   "list": [
+    "compute.images.list"
+   ]
+  },
+  "google_compute_instance": {
+   "list": [
+    "compute.instances.list"
+   ]
+  },
+  "google_compute_instant_snapshot": {
+   "list": [
+    "compute.instantSnapshots.list"
+   ]
+  },
+  "google_compute_interconnect_attachment_group": {
+   "list": [
+    "compute.interconnectAttachmentGroups.list"
+   ]
+  },
+  "google_compute_interconnect_group": {
+   "list": [
+    "compute.interconnectGroups.list"
+   ]
+  },
+  "google_compute_network_firewall_policy": {
+   "list": [
+    "compute.firewallPolicies.list"
+   ]
+  },
+  "google_compute_node_template": {
+   "list": [
+    "compute.nodeTemplates.list"
+   ]
+  },
+  "google_compute_packet_mirroring": {
+   "list": [
+    "compute.packetMirrorings.list"
+   ]
+  },
+  "google_compute_preview_feature": {
+   "list": [
+    "compute.previewFeatures.list"
+   ]
+  },
+  "google_compute_public_advertised_prefix": {
+   "list": [
+    "compute.publicAdvertisedPrefixes.list"
+   ]
+  },
+  "google_compute_region_autoscaler": {
+   "list": [
+    "compute.autoscalers.list"
+   ]
+  },
+  "google_compute_region_commitment": {
+   "list": [
+    "compute.commitments.list"
+   ]
+  },
+  "google_compute_region_instant_snapshot": {
+   "list": [
+    "compute.instantSnapshots.list"
+   ]
+  },
+  "google_compute_region_network_firewall_policy": {
+   "list": [
+    "compute.regionFirewallPolicies.list"
+   ]
+  },
+  "google_compute_region_target_http_proxy": {
+   "list": [
+    "compute.regionTargetHttpProxies.list"
+   ]
+  },
+  "google_compute_region_target_tcp_proxy": {
+   "list": [
+    "compute.regionTargetTcpProxies.list"
+   ]
+  },
+  "google_compute_region_url_map": {
+   "list": [
+    "compute.regionUrlMaps.list"
+   ]
+  },
+  "google_compute_rollout_plan": {
+   "list": [
+    "compute.rolloutPlans.list"
+   ]
+  },
+  "google_compute_snapshot": {
+   "list": [
+    "compute.snapshots.list"
+   ]
+  },
+  "google_compute_subnetwork": {
+   "list": [
+    "compute.subnetworks.list"
+   ]
+  },
+  "google_compute_target_grpc_proxy": {
+   "list": [
+    "compute.targetGrpcProxies.list"
+   ]
+  },
+  "google_compute_target_http_proxy": {
+   "list": [
+    "compute.targetHttpProxies.list"
+   ]
+  },
+  "google_compute_target_ssl_proxy": {
+   "list": [
+    "compute.targetSslProxies.list"
+   ]
+  },
+  "google_compute_target_tcp_proxy": {
+   "list": [
+    "compute.targetTcpProxies.list"
+   ]
+  },
+  "google_compute_vpn_gateway": {
+   "list": [
+    "compute.targetVpnGateways.list"
+   ]
+  },
+  "google_dns_managed_zone": {
+   "list": [
+    "dns.managedZones.list"
+   ]
+  },
+  "google_identity_platform_inbound_saml_config": {
+   "list": [],
+   "list_unknown": "a permission that Google's published list does not name, for identitytoolkit.projects.inboundSamlConfigs.list"
+  },
+  "google_identity_platform_oauth_idp_config": {
+   "list": [],
+   "list_unknown": "a permission that Google's published list does not name, for identitytoolkit.projects.oauthIdpConfigs.list"
+  },
+  "google_identity_platform_tenant": {
+   "list": [
+    "identitytoolkit.tenants.list"
+   ]
+  },
+  "google_monitoring_alert_policy": {
+   "list": [
+    "monitoring.alertPolicies.list"
+   ]
+  },
+  "google_project": {
+   "list": [],
+   "list_unknown": "a request to an address of the provider's own choosing, which could not be recorded"
+  },
+  "google_project_iam_custom_role": {
+   "list": [
+    "iam.roles.list"
+   ]
+  },
+  "google_project_service": {
+   "list": [
+    "serviceusage.services.list"
+   ]
+  },
+  "google_pubsub_subscription": {
+   "list": [
+    "pubsub.subscriptions.list"
+   ]
+  },
+  "google_pubsub_topic": {
+   "list": [
+    "pubsub.topics.list"
+   ]
+  },
+  "google_secret_manager_secret": {
+   "list": [
+    "secretmanager.secrets.list"
+   ]
+  },
+  "google_service_account": {
+   "list": [
+    "iam.serviceAccounts.list"
+   ]
+  },
+  "google_storage_bucket": {
+   "list": [
+    "storage.buckets.list"
+   ]
+  },
+  "google_storage_hmac_key": {
+   "list": [
+    "storage.hmacKeys.list"
+   ]
+  },
+  "google_vertex_ai_dataset": {
+   "list": [
+    "aiplatform.datasets.list"
+   ]
+  },
+  "google_vertex_ai_deployment_resource_pool": {
+   "list": [
+    "aiplatform.deploymentResourcePools.list"
+   ]
+  },
+  "google_vertex_ai_feature_group": {
+   "list": [
+    "aiplatform.featureGroups.list"
+   ]
+  },
+  "google_vertex_ai_feature_online_store": {
+   "list": [
+    "aiplatform.featureOnlineStores.list"
+   ]
+  },
+  "google_vertex_ai_featurestore": {
+   "list": [
+    "aiplatform.featurestores.list"
+   ]
+  },
+  "google_vertex_ai_index": {
+   "list": [
+    "aiplatform.indexes.list"
+   ]
+  },
+  "google_vertex_ai_online_evaluator": {
+   "list": [
+    "aiplatform.onlineEvaluators.list"
+   ]
+  },
+  "google_vertex_ai_persistent_resource": {
+   "list": [
+    "aiplatform.persistentResources.list"
+   ]
+  },
+  "google_vertex_ai_reasoning_engine": {
+   "list": [
+    "aiplatform.reasoningEngines.list"
+   ]
+  },
+  "google_vertex_ai_tensorboard": {
+   "list": [
+    "aiplatform.tensorboards.list"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  }
+ }
+}

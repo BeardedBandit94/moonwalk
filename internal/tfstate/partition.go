@@ -1,9 +1,11 @@
 package tfstate
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/BeardedBandit94/moonwalk/internal/azureid"
+	"github.com/BeardedBandit94/moonwalk/internal/googleid"
 	"github.com/BeardedBandit94/moonwalk/internal/graph"
 )
 
@@ -20,7 +22,7 @@ func Partition(provider, resourceType string, attrs map[string]any) (account, re
 	case "azurerm":
 		return azurePartition(attrs)
 	case "google", "google-beta":
-		return googlePartition(attrs)
+		return googlePartition(resourceType, attrs)
 	}
 	return "", ""
 }
@@ -130,9 +132,12 @@ func azurePartition(attrs map[string]any) (account, region string) {
 }
 
 // googlePartition uses project as the account. Region comes from region,
-// else from the zone with its suffix removed, else from location. Values may
-// be self links, so only the last path segment counts.
-func googlePartition(attrs map[string]any) (account, region string) {
+// else from the zone with its suffix removed, else from location, which
+// some resources use for either. Values may be self links, so only the last
+// path segment counts. A resource whose own name puts "global" where the
+// region would be, as a network's does, or that belongs to a service
+// without regions, is global.
+func googlePartition(resourceType string, attrs map[string]any) (account, region string) {
 	account = lastSegment(str(attrs, "project"))
 	if r := lastSegment(str(attrs, "region")); r != "" {
 		return account, r
@@ -142,7 +147,32 @@ func googlePartition(attrs map[string]any) (account, region string) {
 			return account, z[:i]
 		}
 	}
-	return account, lastSegment(str(attrs, "location"))
+	if l := lastSegment(str(attrs, "location")); l != "" {
+		if googleZone.MatchString(l) {
+			l = l[:strings.LastIndex(l, "-")]
+		}
+		return account, l
+	}
+	if googleid.Global(str(attrs, "self_link")) || googleid.Global(str(attrs, "id")) || googleGlobalType(resourceType) {
+		return account, graph.RegionGlobal
+	}
+	return account, ""
+}
+
+// googleZone is the form of a zone's name: a region's and a letter.
+var googleZone = regexp.MustCompile(`^[a-z]+-[a-z]+[0-9]+-[a-z]$`)
+
+// googleGlobalType reports whether a resource type belongs to a Google
+// Cloud service that is not tied to a region.
+func googleGlobalType(resourceType string) bool {
+	for _, prefix := range []string{
+		"google_service_account", "google_project", "google_iam_", "google_organization_", "google_folder", "google_dns_",
+	} {
+		if strings.HasPrefix(resourceType, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 // str returns attrs[key] if it is a string that was not redacted, and ""

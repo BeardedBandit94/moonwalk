@@ -85,7 +85,7 @@ func glueType(resourceType string) bool {
 	switch resourceType {
 	case "aws_security_group_rule", "aws_vpc_security_group_ingress_rule", "aws_vpc_security_group_egress_rule":
 		return true
-	case "azurerm_virtual_network_peering":
+	case "azurerm_virtual_network_peering", "google_compute_network_peering":
 		return true // Joins two networks, one resource for each direction.
 	}
 	return false
