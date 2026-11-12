@@ -1,0 +1,389 @@
+{
+ "provider": "hashicorp/azurerm 5.13.0",
+ "catalog": "Microsoft's published Azure permissions, dated 07/01/2026, read 2026-11-12",
+ "types": {
+  "azurerm_analysis_services_server": {
+   "list": [
+    "Microsoft.AnalysisServices/servers/read"
+   ]
+  },
+  "azurerm_application_gateway": {
+   "list": [
+    "Microsoft.Network/applicationGateways/read"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "azurerm_application_insights_standard_web_test": {
+   "list": [
+    "Microsoft.Insights/Webtests/Read"
+   ]
+  },
+  "azurerm_application_insights_workbook": {
+   "list": [
+    "Microsoft.Insights/Workbooks/Read"
+   ]
+  },
+  "azurerm_application_security_group": {
+   "list": [
+    "Microsoft.Network/applicationSecurityGroups/read"
+   ]
+  },
+  "azurerm_arc_kubernetes_provisioned_cluster": {
+   "list": [
+    "Microsoft.Kubernetes/connectedClusters/Read"
+   ]
+  },
+  "azurerm_attestation_provider": {
+   "list": [
+    "Microsoft.Attestation/attestationProviders/read"
+   ],
+   "beyond": "a request to the service's own endpoint, for what it stores"
+  },
+  "azurerm_automation_account": {
+   "list": [
+    "Microsoft.Automation/automationAccounts/read"
+   ],
+   "beyond": "Microsoft.Automation/automationAccounts/agentRegistrationInformation/read, which returns the account's registration keys"
+  },
+  "azurerm_availability_set": {
+   "list": [
+    "Microsoft.Compute/availabilitySets/read"
+   ]
+  },
+  "azurerm_batch_account": {
+   "list": [
+    "Microsoft.Batch/batchAccounts/read"
+   ]
+  },
+  "azurerm_capacity_reservation_group": {
+   "list": [
+    "Microsoft.Compute/capacityReservationGroups/read"
+   ]
+  },
+  "azurerm_cognitive_account": {
+   "list": [
+    "Microsoft.CognitiveServices/accounts/read"
+   ],
+   "beyond": "Microsoft.CognitiveServices/accounts/listKeys/action, which asks for the resource's keys"
+  },
+  "azurerm_dedicated_host_group": {
+   "list": [
+    "Microsoft.Compute/hostGroups/read"
+   ]
+  },
+  "azurerm_firewall": {
+   "list": [
+    "Microsoft.Network/azurefirewalls/read"
+   ]
+  },
+  "azurerm_firewall_policy": {
+   "list": [
+    "Microsoft.Network/firewallPolicies/read"
+   ]
+  },
+  "azurerm_ip_group": {
+   "list": [
+    "Microsoft.Network/ipGroups/read"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "azurerm_key_vault": {
+   "list": [
+    "Microsoft.KeyVault/vaults/read"
+   ],
+   "beyond": "a request to the service's own endpoint, for what it stores"
+  },
+  "azurerm_kubernetes_automatic_cluster": {
+   "list": [
+    "Microsoft.ContainerService/managedClusters/read"
+   ]
+  },
+  "azurerm_linux_virtual_machine": {
+   "list": [
+    "Microsoft.Compute/virtualMachines/read"
+   ]
+  },
+  "azurerm_log_analytics_workspace": {
+   "list": [
+    "Microsoft.OperationalInsights/workspaces/read"
+   ],
+   "beyond": "Microsoft.OperationalInsights/workspaces/sharedkeys/action, which asks for the resource's keys"
+  },
+  "azurerm_monitor_action_group": {
+   "list": [
+    "Microsoft.Insights/ActionGroups/Read"
+   ]
+  },
+  "azurerm_monitor_activity_log_alert": {
+   "list": [
+    "Microsoft.Insights/ActivityLogAlerts/Read"
+   ]
+  },
+  "azurerm_monitor_metric_alert": {
+   "list": [
+    "Microsoft.Insights/MetricAlerts/Read"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "azurerm_monitor_scheduled_query_rules_alert": {
+   "list": [
+    "Microsoft.Insights/ScheduledQueryRules/Read"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "azurerm_monitor_scheduled_query_rules_alert_v2": {
+   "list": [
+    "Microsoft.Insights/ScheduledQueryRules/Read"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "azurerm_monitor_workspace": {
+   "list": [
+    "microsoft.monitor/accounts/read"
+   ]
+  },
+  "azurerm_mssql_server": {
+   "list": [
+    "Microsoft.Sql/servers/connectionPolicies/read",
+    "Microsoft.Sql/servers/read",
+    "Microsoft.Sql/servers/restorableDroppedDatabases/read",
+    "Microsoft.Sql/servers/sqlVulnerabilityAssessments/read"
+   ]
+  },
+  "azurerm_mssql_virtual_machine": {
+   "list": [
+    "Microsoft.SqlVirtualMachine/sqlVirtualMachines/read"
+   ]
+  },
+  "azurerm_mysql_flexible_server": {
+   "list": [
+    "Microsoft.DBforMySQL/flexibleServers/read"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "azurerm_nat_gateway": {
+   "list": [
+    "Microsoft.Network/natGateways/read"
+   ]
+  },
+  "azurerm_network_ddos_protection_plan": {
+   "list": [
+    "Microsoft.Network/ddosProtectionPlans/read"
+   ]
+  },
+  "azurerm_network_interface": {
+   "list": [
+    "Microsoft.Network/networkInterfaces/read"
+   ]
+  },
+  "azurerm_network_profile": {
+   "list": [
+    "Microsoft.Network/networkProfiles/read"
+   ]
+  },
+  "azurerm_network_security_group": {
+   "list": [
+    "Microsoft.Network/networkSecurityGroups/read"
+   ]
+  },
+  "azurerm_playwright_workspace": {
+   "list": [
+    "Microsoft.LoadTestService/PlaywrightWorkspaces/Read"
+   ]
+  },
+  "azurerm_private_dns_zone": {
+   "list": [
+    "Microsoft.Network/privateDnsZones/read"
+   ],
+   "read": [
+    "Microsoft.Network/privateDnsZones/SOA/read"
+   ]
+  },
+  "azurerm_private_endpoint": {
+   "list": [
+    "Microsoft.Network/privateEndpoints/read"
+   ],
+   "read": [
+    "Microsoft.Network/privateEndpoints/privateDnsZoneGroups/read"
+   ]
+  },
+  "azurerm_public_ip": {
+   "list": [
+    "Microsoft.Network/publicIPAddresses/read"
+   ]
+  },
+  "azurerm_redhat_openshift_cluster": {
+   "list": [
+    "Microsoft.RedHatOpenShift/openShiftClusters/read"
+   ]
+  },
+  "azurerm_redis_cache": {
+   "list": [
+    "Microsoft.Cache/redis/read"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "azurerm_resource_group": {
+   "list": [
+    "Microsoft.Resources/subscriptions/resourceGroups/read"
+   ]
+  },
+  "azurerm_route_table": {
+   "list": [
+    "Microsoft.Network/routeTables/read"
+   ]
+  },
+  "azurerm_service_plan": {
+   "list": [
+    "Microsoft.Web/serverfarms/Read"
+   ]
+  },
+  "azurerm_servicebus_namespace": {
+   "list": [
+    "Microsoft.ServiceBus/namespaces/networkrulesets/read",
+    "Microsoft.ServiceBus/namespaces/read"
+   ],
+   "list_beyond": "Microsoft.ServiceBus/namespaces/authorizationRules/listkeys/action, which asks for the resource's keys"
+  },
+  "azurerm_servicebus_namespace_customer_managed_key": {
+   "list": [
+    "Microsoft.ServiceBus/namespaces/read"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "azurerm_signalr_service": {
+   "list": [
+    "Microsoft.SignalRService/SignalR/read"
+   ],
+   "beyond": "Microsoft.SignalRService/SignalR/listkeys/action, which asks for the resource's keys"
+  },
+  "azurerm_storage_account": {
+   "list": [
+    "Microsoft.Storage/storageAccounts/read"
+   ],
+   "read": [
+    "Microsoft.Storage/storageAccounts/accountMigrations/read",
+    "Microsoft.Storage/storageAccounts/blobServices/read"
+   ],
+   "beyond": "Microsoft.Storage/storageAccounts/listkeys/action, which asks for the resource's keys"
+  },
+  "azurerm_storage_account_customer_managed_key": {
+   "list": [
+    "Microsoft.Storage/storageAccounts/read"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "azurerm_storage_account_network_rules": {
+   "list": [
+    "Microsoft.Storage/storageAccounts/read"
+   ]
+  },
+  "azurerm_storage_mover": {
+   "list": [
+    "Microsoft.StorageMover/storageMovers/read"
+   ]
+  },
+  "azurerm_storage_sync": {
+   "list": [
+    "Microsoft.StorageSync/storageSyncServices/read"
+   ],
+   "read_unconfirmed": true
+  },
+  "azurerm_system_center_virtual_machine_manager_availability_set": {
+   "list": [
+    "Microsoft.SCVMM/availabilitySets/Read"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "azurerm_system_center_virtual_machine_manager_cloud": {
+   "list": [
+    "Microsoft.SCVMM/clouds/Read"
+   ]
+  },
+  "azurerm_system_center_virtual_machine_manager_server": {
+   "list": [
+    "Microsoft.SCVMM/vmmservers/Read"
+   ]
+  },
+  "azurerm_system_center_virtual_machine_manager_virtual_machine_template": {
+   "list": [
+    "Microsoft.SCVMM/virtualmachinetemplates/Read"
+   ]
+  },
+  "azurerm_system_center_virtual_machine_manager_virtual_network": {
+   "list": [
+    "Microsoft.SCVMM/virtualnetworks/Read"
+   ]
+  },
+  "azurerm_traffic_manager_profile": {
+   "list": [
+    "Microsoft.Network/trafficManagerProfiles/read"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "azurerm_user_assigned_identity": {
+   "list": [
+    "Microsoft.ManagedIdentity/userAssignedIdentities/read"
+   ]
+  },
+  "azurerm_video_indexer_account": {
+   "list": [
+    "Microsoft.VideoIndexer/accounts/read"
+   ]
+  },
+  "azurerm_web_application_firewall_policy": {
+   "list": [
+    "Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies/read"
+   ]
+  },
+  "azurerm_web_pubsub": {
+   "list": [
+    "Microsoft.SignalRService/WebPubSub/read"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "azurerm_web_pubsub_socketio": {
+   "list": [
+    "Microsoft.SignalRService/WebPubSub/read"
+   ],
+   "list_unconfirmed": true,
+   "read_unconfirmed": true
+  },
+  "azurerm_windows_virtual_machine": {
+   "list": [
+    "Microsoft.Compute/virtualMachines/read"
+   ]
+  },
+  "azurerm_workloads_sap_discovery_virtual_instance": {
+   "list": [
+    "Microsoft.Workloads/sapVirtualInstances/read"
+   ]
+  },
+  "azurerm_workloads_sap_single_node_virtual_instance": {
+   "list": [
+    "Microsoft.Workloads/sapVirtualInstances/read"
+   ]
+  },
+  "azurerm_workloads_sap_three_tier_virtual_instance": {
+   "list": [
+    "Microsoft.Workloads/sapVirtualInstances/read"
+   ]
+  }
+ },
+ "unlisted": [
+  "Microsoft.Network/natGateways/read",
+  "Microsoft.StorageMover/storageMovers/read"
+ ]
+}

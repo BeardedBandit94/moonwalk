@@ -275,6 +275,29 @@ least: about two thirds of the actions, and no resource's settings.
 list, the rules they keep, how to set up the role, and the policy for
 reading states from S3.
 
+#### Permissions on Azure
+
+`azure-role` writes the custom role that the query file needs, in the form
+`az role definition create` takes:
+
+```bash
+go run ./cmd/moonwalk azure-role -subscription 11111111-2222-3333-4444-555555555555 schema.json > moonwalk-discovery.json
+```
+
+Every permission is named in full and ends in `/read`; there are no
+wildcards, no data actions, and nothing that asks for keys. The role can be
+assigned only at the subscriptions named. As for AWS, the permissions were
+recorded from the provider itself, run against a stand-in, and have not
+been tried against a real subscription; a permission the role lacks is
+named when the listing is refused it.
+
+Eight types take more than reading: a storage account's attributes, for
+one, take its keys. Those are listed without attributes, or in one case
+left out, by the query file and the role alike. Set
+`resource_provider_registrations = "none"` in the provider: registering
+resource providers is a write. [docs/azure-rbac](docs/azure-rbac) has the
+roles, the rules they keep and how to assign them.
+
 #### Without `terraform query`
 
 OpenTofu has no `query` command (as of 1.10), and Terraform before 1.14 has
@@ -571,6 +594,9 @@ and a snapshot, carry a `schema_version`. It changes only when a field is remove
 | `internal/awsiam` | The IAM policies that listing an AWS account takes, from recorded permissions |
 | `scripts/aws-permissions` | Records which AWS API calls the provider makes; not part of the build |
 | `docs/aws-iam` | The policies for everything moonwalk can list, and how to set up the role |
+| `internal/azurerbac` | The Azure custom role that listing a subscription takes, from recorded permissions |
+| `scripts/azure-permissions` | Records which requests the azurerm provider makes of Azure; not part of the build |
+| `docs/azure-rbac` | The roles for everything moonwalk can list in Azure, and how to assign them |
 | `internal/relate` | Relationships inferred from attributes: containment, glue, links between states |
 | `internal/snapshot` | A graph written to a file and read back, and the comparison of two |
 | `internal/view` | Grouping of a graph, filters, and the collapsed views of it |

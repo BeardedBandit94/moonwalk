@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/BeardedBandit94/moonwalk/internal/awsiam"
+	"github.com/BeardedBandit94/moonwalk/internal/azurerbac"
 )
 
 // listLimit is the limit written into every list block. Without one a
@@ -86,21 +87,37 @@ func writeQueryFile(w io.Writer, schema []byte, o queryFileOptions) error {
 		if len(listable)+len(needArgument) == 0 {
 			continue
 		}
-		// For AWS, the file asks for what the policy from 'moonwalk
-		// iam-policy' allows and no more: a type that cannot be listed, or
-		// not with its attributes, without an action that reads what is
-		// stored is left out, or listed by identity alone.
-		var plan awsiam.Plan
-		if name == "aws" {
+		// The file asks for what the policy or role moonwalk writes for
+		// the same provider allows, and no more: a type that cannot be
+		// listed, or not with its attributes, without more than reading
+		// how things are set up is left out, or listed by identity alone.
+		var leftOut, identityBecause map[string]string
+		var leftOutNote string
+		switch name {
+		case "aws":
 			perms, err := awsiam.Load()
 			if err != nil {
 				return err
 			}
-			if plan, err = perms.Plan(awsiam.Options{Types: listable, IdentityOnly: o.identityOnly, Allow: o.allow}); err != nil {
+			plan, err := perms.Plan(awsiam.Options{Types: listable, IdentityOnly: o.identityOnly, Allow: o.allow})
+			if err != nil {
 				return err
 			}
-			listable = slices.DeleteFunc(listable, func(t string) bool { return plan.LeftOut[t] != "" })
+			leftOut, identityBecause = plan.LeftOut, plan.IdentityBecause
+			leftOutNote = "Left out, because listing them takes an action that reads what is stored in the\n" +
+				"# service, which the policy from 'moonwalk iam-policy' withholds. To include one, give\n" +
+				"# both commands -allow with the action:"
+		case "azurerm":
+			perms, err := azurerbac.Load()
+			if err != nil {
+				return err
+			}
+			plan := perms.Plan(azurerbac.Options{Types: listable, IdentityOnly: o.identityOnly})
+			leftOut, identityBecause = plan.LeftOut, plan.IdentityBecause
+			leftOutNote = "Left out, because listing them takes more than reading, which the role from\n" +
+				"# 'moonwalk azure-role' does not allow:"
 		}
+		listable = slices.DeleteFunc(listable, func(t string) bool { return leftOut[t] != "" })
 
 		fmt.Fprintf(&b, "# Lists what exists through the %s provider: %d resource types.\n", name, len(listable))
 		fmt.Fprintf(&b, "# Written by 'moonwalk query-file'. Put it next to the provider configuration and run:\n#\n")
@@ -128,10 +145,8 @@ func writeQueryFile(w io.Writer, schema []byte, o queryFileOptions) error {
 				fmt.Fprintf(&b, "#   %s\n", e)
 			}
 		}
-		withheld("Left out, because listing them takes an action that reads what is stored in the\n"+
-			"# service, which the policy from 'moonwalk iam-policy' withholds. To include one, give\n"+
-			"# both commands -allow with the action:", plan.LeftOut)
-		withheld("Listed without attributes, for the same reason:", plan.IdentityBecause)
+		withheld(leftOutNote, leftOut)
+		withheld("Listed without attributes, for the same reason:", identityBecause)
 		b.WriteByte('\n')
 		for _, t := range listable {
 			// The argument that says where to list, and the places asked for.
@@ -142,7 +157,7 @@ func writeQueryFile(w io.Writer, schema []byte, o queryFileOptions) error {
 				// A subscription ID can start with a digit; a block name cannot.
 				argument, places, prefix = "subscription_id", o.subscriptions, "sub_"
 			}
-			identityOnly := o.identityOnly || plan.IdentityBecause[t] != ""
+			identityOnly := o.identityOnly || identityBecause[t] != ""
 			if len(places) == 0 {
 				writeListBlock(&b, t, "all", name, "", "", identityOnly)
 				written++
