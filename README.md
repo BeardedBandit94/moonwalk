@@ -251,12 +251,12 @@ and then it reads that and nothing else.
 
 #### Permissions on AWS
 
-`iam-policy` writes the IAM policies that the query file needs, from the
+`aws-iam-policy` writes the IAM policies that the query file needs, from the
 same schema and options, so that the role may do what the listing does and
 nothing else:
 
 ```bash
-go run ./cmd/moonwalk iam-policy -account 111122223333 -region us-east-1,eu-west-1 -out policies schema.json
+go run ./cmd/moonwalk aws-iam-policy -account 111122223333 -region us-east-1,eu-west-1 -out policies schema.json
 ```
 
 Every action is named in full, with no wildcards. Every one is a read by
@@ -482,7 +482,7 @@ Terraform take them: the environment, `~/.aws` and its profiles
 runs on. A bucket in another region than the configured one is found.
 Reading needs `s3:GetObject` on the states and, for an address ending in
 `/`, `s3:ListBucket` on the bucket; if the bucket is encrypted with a KMS
-key, `kms:Decrypt` on that key as well. `moonwalk iam-policy -state
+key, `kms:Decrypt` on that key as well. `moonwalk aws-iam-policy -state
 s3://acme-terraform-state/ -kms-key <key ARN>` writes exactly that policy.
 Nothing is written and no lock is taken. Another store that speaks the S3 protocol is reached by setting
 `AWS_ENDPOINT_URL_S3`.
@@ -625,6 +625,207 @@ An OpenTofu state encrypted at rest cannot be read directly; pipe
 
 `view`, `graph` and `diff` take `-format json`. The output of the first two,
 and a snapshot, carry a `schema_version`. It changes only when a field is removed or changes meaning.
+
+## Command reference
+
+Every command, what it reads and every option it takes. `moonwalk` with no
+arguments prints the same in short. The tests keep this section and that
+help in step with what the commands accept.
+
+Options come before the inputs. One whose value is a list takes it
+comma-separated, with no spaces. An option that may be repeated is given
+once for each value.
+
+### Inputs
+
+`serve`, `view`, `graph` and `collect` take one or more states, and `diff`
+takes two. A state is any of:
+
+| Written as | What is read |
+|---|---|
+| `terraform.tfstate` | A raw state file |
+| `state.json` | The output of `terraform show -json` or `tofu show -json` |
+| `plan.json` | The output of `terraform show -json <planfile>`: the state the plan was made against, with its changes and any drift marked |
+| `found.jsonl` | The output of `terraform query -json`, shown as unmanaged unless a state holds the resource |
+| `found.json` | A listing made with the AWS, Azure or Google Cloud command line (see [Without `terraform query`](#without-terraform-query)) |
+| `prod.snapshot.json` | A snapshot written by `moonwalk collect`, which keeps the names it was collected under |
+| `states/` | A directory: every `.tfstate` file below it, hidden directories excluded |
+| `s3://bucket/key` | A state in S3, read with the credentials the AWS command line would use |
+| `s3://bucket/prefix/` | Every object below the prefix whose key ends in `.tfstate` |
+| `-` | Standard input, named `stdin` |
+| `name=<any of these>` | The same, under a name of your choosing |
+
+Any file may be compressed with gzip. What a file holds is worked out from
+its contents, not its name.
+
+`query-file`, `aws-iam-policy`, `azure-role` and `gcp-role` take a provider
+schema: the output of `terraform providers schema -json`, as a file or `-`
+for standard input.
+
+### `moonwalk serve`
+
+Opens the graph as an interactive explorer in the browser, and reloads a
+state file when it changes.
+
+```
+moonwalk serve [options] <state>...
+```
+
+| Option | Default | What it does |
+|---|---|---|
+| `-code [name=]dir` | none | A root module's `.tf` or `.tofu` files, to show where each resource is declared and what is written but not applied. The name says which state the code belongs to, and can be left out when there is one state or none. May be repeated. |
+| `-addr host:port` | `127.0.0.1:7878` | The address to listen on. The explorer shows attribute values, so listen on another address only on a network you trust. |
+
+### `moonwalk view`
+
+Prints the graph collapsed into nested groups.
+
+```
+moonwalk view [options] <state>...
+```
+
+| Option | Default | What it does |
+|---|---|---|
+| `-code [name=]dir` | none | As for `serve`. With `-code` and no state, the view is of the configuration alone. |
+| `-format text\|json` | `text` | The output format. |
+| `-group-by levels` | `source,account,region,module` | The levels to group by, outermost first, from `source`, `account`, `resource_group` (Azure), `region`, `module` and `network`. |
+| `-depth n` | as many as fit in 300 items | How many levels to expand. |
+| `-type list` | all | Show only these resource types. Takes patterns such as `aws_iam_*`. |
+| `-account list` | all | Show only resources in these accounts, subscriptions or projects. |
+| `-region list` | all | Show only resources in these regions; `global` is one. |
+| `-source list` | all | Show only resources from the states with these names. |
+| `-status list` | all | Show only resources that are `managed`, `unmanaged`, `drifted` or `declared`. |
+| `-change list` | all | Show only resources a plan would `create`, `update`, `delete` or `replace`; `any` is all four. |
+| `-search text` | none | Show only resources whose address or type contains the text. |
+| `-around address` | none | Show only the resource with this address and the resources directly related to it. |
+| `-glue` | off | Show glue resources, such as route table associations, instead of folding each into a link between what it joins. |
+
+### `moonwalk graph`
+
+Prints every resource and every relationship.
+
+```
+moonwalk graph [options] <state>...
+```
+
+| Option | Default | What it does |
+|---|---|---|
+| `-code [name=]dir` | none | As for `serve`. |
+| `-format text\|json` | `text` | The output format. |
+| `-direct` | off | Leave out dependencies that others already imply. |
+| `-attributes` | off | Include attribute values in JSON output. Values that the state marks as sensitive are replaced with `(sensitive)`. |
+
+### `moonwalk collect`
+
+Writes everything it loaded, with every relationship it worked out, as one
+snapshot on standard output.
+
+```
+moonwalk collect [options] <state>...
+```
+
+| Option | Default | What it does |
+|---|---|---|
+| `-code [name=]dir` | none | As for `serve`. |
+
+### `moonwalk diff`
+
+Prints what differs between two snapshots, states or plans: the resources
+that came, went or changed. The older one goes first.
+
+```
+moonwalk diff [options] <older> <newer>
+```
+
+| Option | Default | What it does |
+|---|---|---|
+| `-format text\|json` | `text` | The output format. |
+
+### `moonwalk query-file`
+
+Writes the query file that `terraform query` lists the cloud with, on
+standard output.
+
+```
+moonwalk query-file [options] <schema>
+```
+
+| Option | Default | What it does |
+|---|---|---|
+| `-provider name` | every provider in the schema | Write for this provider only, such as `aws`. |
+| `-type list` | every type the provider can list | Patterns of resource types to list, such as `aws_iam_*`. |
+| `-identity-only` | off | Do not ask for each resource's attributes. Faster, and needs fewer permissions on AWS and Azure, but moonwalk cannot then place a resource in its network. |
+| `-region list` | the provider's own region | Regions to list in. For Google Cloud, this covers the types listed by region or by location. |
+| `-subscription list` | the provider's own subscription | Azure subscription IDs to list in. |
+| `-project list` | the provider's own project | Google Cloud projects to list in. |
+| `-zone list` | the provider's own zone | Google Cloud zones to list in, for the types listed by zone. |
+| `-allow list` | none | AWS actions that read what a service stores, and are left out unless named: `lambda:GetFunction`, `s3:ListBucket`, `ssm:GetParameter`. Without them, Lambda functions and S3 buckets are not listed, and SSM parameters are listed without attributes. Give `aws-iam-policy` the same. |
+
+### `moonwalk aws-iam-policy`
+
+Writes the AWS IAM policies that running the query file takes, and that
+reading states from S3 takes. Without a schema it writes for everything
+the recorded provider can list, and says so. See
+[docs/aws-iam](docs/aws-iam).
+
+```
+moonwalk aws-iam-policy [options] [<schema>]
+```
+
+| Option | Default | What it does |
+|---|---|---|
+| `-type list` | every type the provider can list | As for `query-file`, so that the policy matches the query file. |
+| `-identity-only` | off | As for `query-file`. About two thirds of the actions. |
+| `-allow list` | none | As for `query-file`: adds the named actions that are otherwise withheld. |
+| `-account id` | none | The 12-digit account the policy is for. Resources are limited to it wherever an action can be limited. Without it, the account in each resource is left open, so give it. |
+| `-region list` | none | Regions to allow the actions in, by condition. Global services, such as IAM, are not held to them. Without it, the actions are allowed in every region. |
+| `-partition name` | `aws` | `aws`, `aws-us-gov` or `aws-cn`. |
+| `-out dir` | standard output | The directory to write the policy documents to. Needed when there is more than one, since IAM limits a policy's size. |
+| `-state address` | none | `s3://bucket/key` or `s3://bucket/prefix/` to allow reading states from, as a policy of its own. May be repeated. Given alone, only that policy is written. |
+| `-kms-key arn` | none | The KMS key those states are encrypted with. Goes with `-state`. May be repeated. |
+
+### `moonwalk azure-role`
+
+Writes the Azure custom role that running the query file takes, in the
+form `az role definition create` takes. Without a schema it writes for
+everything the recorded provider can list, and says so. See
+[docs/azure-rbac](docs/azure-rbac).
+
+```
+moonwalk azure-role [options] [<schema>]
+```
+
+| Option | Default | What it does |
+|---|---|---|
+| `-subscription list` | required | The IDs of the subscriptions the role may be assigned at. |
+| `-type list` | every type the provider can list | As for `query-file`, so that the role matches the query file. |
+| `-identity-only` | off | As for `query-file`. |
+| `-name text` | `moonwalk discovery` | The role's name. |
+
+### `moonwalk gcp-role`
+
+Writes the Google Cloud custom role that running the query file takes, in
+the form `gcloud iam roles create --file` takes. Without a schema it writes
+for everything the recorded provider can list, and says so. See
+[docs/gcp-iam](docs/gcp-iam).
+
+```
+moonwalk gcp-role [options] [<schema>]
+```
+
+| Option | Default | What it does |
+|---|---|---|
+| `-type list` | every type the provider can list | As for `query-file`, so that the role matches the query file. |
+| `-identity-only` | off | As for `query-file`. For Google Cloud the role is the same either way: a listing already holds each resource's attributes. |
+| `-title text` | `moonwalk discovery` | The role's title, of 100 characters at most. |
+
+### `moonwalk version`
+
+Prints the version of this binary. `-version` and `--version` do the same.
+
+```
+moonwalk version
+```
 
 ## Layout
 

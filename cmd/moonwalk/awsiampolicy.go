@@ -16,11 +16,11 @@ import (
 	"github.com/BeardedBandit94/moonwalk/internal/s3state"
 )
 
-// runIAMPolicy handles the iam-policy command: the IAM policies that the
+// runAWSIAMPolicy handles the aws-iam-policy command: the IAM policies that the
 // query file for the same schema and options needs, and the policy for
 // reading states from S3.
-func runIAMPolicy(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
-	fs := flag.NewFlagSet("iam-policy", flag.ContinueOnError)
+func runAWSIAMPolicy(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
+	fs := flag.NewFlagSet("aws-iam-policy", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	types := fs.String("type", "", "")
 	regions := fs.String("region", "", "")

@@ -28,7 +28,7 @@ func TestExamplePolicies(t *testing.T) {
 	}
 	for name, args := range sets {
 		dir := t.TempDir()
-		if _, err := runCLI(t, "", append(append([]string{"iam-policy"}, args...), "-out", dir)...); err != nil {
+		if _, err := runCLI(t, "", append(append([]string{"aws-iam-policy"}, args...), "-out", dir)...); err != nil {
 			t.Fatal(err)
 		}
 		written, err := filepath.Glob(filepath.Join(dir, "*.json"))
@@ -149,10 +149,10 @@ func TestExamplePoliciesKeepToTheRules(t *testing.T) {
 	}
 }
 
-func TestIAMPolicyCommand(t *testing.T) {
+func TestAWSIAMPolicyCommand(t *testing.T) {
 	// For the provider in a schema: its types, with global services not
 	// held to the regions asked for.
-	out, warnings, err := runCLIWithWarnings(t, schema, "iam-policy", "-region", "eu-west-1,us-east-1", "-account", "111122223333", "-")
+	out, warnings, err := runCLIWithWarnings(t, schema, "aws-iam-policy", "-region", "eu-west-1,us-east-1", "-account", "111122223333", "-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -186,30 +186,30 @@ func TestIAMPolicyCommand(t *testing.T) {
 	}
 
 	// Narrowed to one type, for identities: the one action that takes.
-	out, err = runCLI(t, schema, "iam-policy", "-type", "aws_vpc", "-identity-only", "-")
+	out, err = runCLI(t, schema, "aws-iam-policy", "-type", "aws_vpc", "-identity-only", "-")
 	if err != nil || strings.Count(out, `"ec2:`) != 1 || !strings.Contains(out, `"ec2:DescribeVpcs"`) {
 		t.Errorf("one type, identities only (err %v):\n%s", err, out)
 	}
 
 	// Without a schema: what the recorded provider can list.
-	out, warnings, err = runCLIWithWarnings(t, "", "iam-policy", "-type", "aws_iam_*", "-identity-only")
+	out, warnings, err = runCLIWithWarnings(t, "", "aws-iam-policy", "-type", "aws_iam_*", "-identity-only")
 	if err != nil || !strings.Contains(out, `"iam:ListUsers"`) || !strings.Contains(warnings, "no provider schema was given") {
 		t.Errorf("without a schema (err %v, warnings %q):\n%s", err, warnings, out)
 	}
 
 	// More than one document needs somewhere to go.
-	if _, err := runCLI(t, "", "iam-policy"); err == nil || !strings.Contains(err.Error(), "-out") {
+	if _, err := runCLI(t, "", "aws-iam-policy"); err == nil || !strings.Contains(err.Error(), "-out") {
 		t.Errorf("several documents and no directory: %v", err)
 	}
 
 	for name, args := range map[string][]string{
-		"an account that is not one": {"iam-policy", "-account", "prod", "-type", "aws_vpc"},
-		"a key without states":       {"iam-policy", "-kms-key", "arn:aws:kms:eu-west-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab", "-type", "aws_vpc"},
-		"states that are not in S3":  {"iam-policy", "-state", "terraform.tfstate"},
-		"an action not withheld":     {"iam-policy", "-allow", "s3:GetObject", "-type", "aws_vpc"},
-		"no type that matches":       {"iam-policy", "-type", "azurerm_*"},
-		"two schemas":                {"iam-policy", "a.json", "b.json"},
-		"unknown flag":               {"iam-policy", "-depth", "2"},
+		"an account that is not one": {"aws-iam-policy", "-account", "prod", "-type", "aws_vpc"},
+		"a key without states":       {"aws-iam-policy", "-kms-key", "arn:aws:kms:eu-west-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab", "-type", "aws_vpc"},
+		"states that are not in S3":  {"aws-iam-policy", "-state", "terraform.tfstate"},
+		"an action not withheld":     {"aws-iam-policy", "-allow", "s3:GetObject", "-type", "aws_vpc"},
+		"no type that matches":       {"aws-iam-policy", "-type", "azurerm_*"},
+		"two schemas":                {"aws-iam-policy", "a.json", "b.json"},
+		"unknown flag":               {"aws-iam-policy", "-depth", "2"},
 	} {
 		if _, err := runCLI(t, "", args...); err == nil {
 			t.Errorf("%s: no error", name)
@@ -225,7 +225,7 @@ func TestWithheldActionsInPolicyAndQueryFile(t *testing.T) {
 	  "aws_ssm_parameter":{"block":{"attributes":{"region":{"type":"string","optional":true}}}},
 	  "aws_sqs_queue":{"block":{"attributes":{"region":{"type":"string","optional":true}}}}}}}}`
 
-	policy, warnings, err := runCLIWithWarnings(t, lambdaAndParameters, "iam-policy", "-")
+	policy, warnings, err := runCLIWithWarnings(t, lambdaAndParameters, "aws-iam-policy", "-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -257,7 +257,7 @@ func TestWithheldActionsInPolicyAndQueryFile(t *testing.T) {
 	}
 
 	// Asked for by name, in both.
-	policy, _, err = runCLIWithWarnings(t, lambdaAndParameters, "iam-policy", "-allow", "lambda:GetFunction,ssm:GetParameter", "-")
+	policy, _, err = runCLIWithWarnings(t, lambdaAndParameters, "aws-iam-policy", "-allow", "lambda:GetFunction,ssm:GetParameter", "-")
 	if err != nil || !strings.Contains(policy, `"lambda:GetFunction"`) || !strings.Contains(policy, `"ssm:GetParameter"`) {
 		t.Errorf("allowed by name (err %v):\n%s", err, policy)
 	}

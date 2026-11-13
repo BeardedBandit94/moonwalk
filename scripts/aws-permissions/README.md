@@ -67,7 +67,7 @@ every action is a plain read; the rest are reported and left out.
   setting the made-up resource does not have.
 - Calls after the point where the provider rejects a made-up answer. Such
   types are marked `list_unconfirmed` or `read_unconfirmed`, and
-  `moonwalk iam-policy` names them.
+  `moonwalk aws-iam-policy` names them.
 
 Both show up the first time the policy is used: AWS says which action it
 refused, and moonwalk repeats it when it reads the listing.

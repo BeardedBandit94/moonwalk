@@ -2,8 +2,9 @@
 
 What an AWS role needs so that moonwalk can show an account: to list what
 exists, and, separately, to read Terraform states from S3. Both are written
-by `moonwalk iam-policy`; the policies in this directory are what it writes
-for everything it can list, kept here to be read without running anything.
+by `moonwalk aws-iam-policy`; the policies in this directory are what it
+writes for everything it can list, kept here to be read without running
+anything.
 
 | Directory | For | Documents | Actions |
 |---|---|---|---|
@@ -15,10 +16,10 @@ They are written for account `111122223333` and no particular region. Write
 your own with your account, your regions and only the types you list:
 
 ```bash
-moonwalk iam-policy -account 111122223333 -region eu-west-1,us-east-1 -out policies schema.json
+moonwalk aws-iam-policy -account 111122223333 -region eu-west-1,us-east-1 -out policies schema.json
 ```
 
-Give `iam-policy` and `query-file` the same schema and the same `-type`,
+Give `aws-iam-policy` and `query-file` the same schema and the same `-type`,
 `-identity-only` and `-allow`, and the policy allows what the query file
 asks for and nothing else.
 
@@ -71,7 +72,7 @@ does it again for a newer provider.
 - For 30 of the 194 types the recording stopped before the end, because
   the provider did not accept the stand-in's made-up answers. What was
   called up to that point is in the policy; a real account may show more.
-  `moonwalk iam-policy` names those types.
+  `moonwalk aws-iam-policy` names those types.
 - A call the provider makes only for some resources, depending on how they
   are set up, may not have been seen.
 
@@ -97,7 +98,7 @@ which cannot be listed without naming a file system, and
 To include one, give both commands `-allow` with the action:
 
 ```bash
-moonwalk iam-policy -allow lambda:GetFunction -account 111122223333 -out policies schema.json
+moonwalk aws-iam-policy -allow lambda:GetFunction -account 111122223333 -out policies schema.json
 ```
 
 ```bash
@@ -171,7 +172,7 @@ own, to attach only where states are to be read, and possibly to a
 different role than the one that lists.
 
 ```bash
-moonwalk iam-policy -state s3://acme-terraform-states/live/ \
+moonwalk aws-iam-policy -state s3://acme-terraform-states/live/ \
   -kms-key arn:aws:kms:eu-west-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab
 ```
 

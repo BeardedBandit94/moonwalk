@@ -29,43 +29,45 @@ import (
 )
 
 const usage = `Usage:
-  moonwalk serve      [options] <state>...
-  moonwalk view       [options] <state>...
-  moonwalk graph      [options] <state>...
-  moonwalk collect    [options] <state>...
-  moonwalk diff       [options] <older> <newer>
-  moonwalk query-file [options] <schema>
-  moonwalk iam-policy [options] [<schema>]
-  moonwalk azure-role [options] [<schema>]
-  moonwalk gcp-role   [options] [<schema>]
+  moonwalk serve          [options] <state>...
+  moonwalk view           [options] <state>...
+  moonwalk graph          [options] <state>...
+  moonwalk collect        [options] <state>...
+  moonwalk diff           [options] <older> <newer>
+  moonwalk query-file     [options] <schema>
+  moonwalk aws-iam-policy [options] [<schema>]
+  moonwalk azure-role     [options] [<schema>]
+  moonwalk gcp-role       [options] [<schema>]
   moonwalk version
 
 Reads Terraform or OpenTofu states ('terraform show -json' output or raw
 .tfstate files) into a single resource graph.
 
-  serve       opens the graph as an interactive explorer in the browser
-  view        prints the graph collapsed into nested groups, sized to stay
-              readable however large the states are
-  graph       prints every resource and relationship
-  collect     writes everything it loaded as one snapshot, which the other
-              commands read in place of a state. Collect where the
-              credentials are, an account at a time, and look at the
-              snapshots together somewhere else.
-  diff        prints what differs between two snapshots, states or plans:
-              the resources that came, went or changed
-  query-file  writes a query file for 'terraform query', which lists what
-              exists in the cloud, from the output of 'terraform providers
-              schema -json' (a file, or - for standard input)
-  iam-policy  writes the AWS IAM policies that running that query file
-              takes, and that reading states from S3 takes: every action
-              named in full, reads only, limited to resources where AWS
-              allows it
-  azure-role  writes the Azure custom role that running that query file
-              takes: every permission named in full, reads only, no data
-              actions, assignable only at the subscriptions named
-  gcp-role    writes the Google Cloud custom role that running that query
-              file takes: every permission named in full, each a list or
-              a get
+  serve           opens the graph as an interactive explorer in the browser
+  view            prints the graph collapsed into nested groups, sized to
+                  stay readable however large the states are
+  graph           prints every resource and relationship
+  collect         writes everything it loaded as one snapshot, which the
+                  other commands read in place of a state. Collect where
+                  the credentials are, an account at a time, and look at
+                  the snapshots together somewhere else.
+  diff            prints what differs between two snapshots, states or
+                  plans: the resources that came, went or changed
+  query-file      writes a query file for 'terraform query', which lists
+                  what exists in the cloud, from the output of 'terraform
+                  providers schema -json' (a file, or - for standard input)
+  aws-iam-policy  writes the AWS IAM policies that running that query file
+                  takes, and that reading states from S3 takes: every
+                  action named in full, reads only, limited to resources
+                  where AWS allows it
+  azure-role      writes the Azure custom role that running that query
+                  file takes: every permission named in full, reads only,
+                  no data actions, assignable only at the subscriptions
+                  named
+  gcp-role        writes the Google Cloud custom role that running that
+                  query file takes: every permission named in full, each a
+                  list or a get
+  version         prints the version of this binary
 
 Add the configuration with -code to see where each resource is declared and
 the resources that are written but not applied yet. With -code and no state,
@@ -136,9 +138,9 @@ Options for query-file:
                and are left out unless named: lambda:GetFunction,
                s3:ListBucket, ssm:GetParameter. Without them, Lambda
                functions and S3 buckets are not listed, and SSM parameters
-               are listed without attributes. Give iam-policy the same.
+               are listed without attributes. Give aws-iam-policy the same.
 
-Options for iam-policy:
+Options for aws-iam-policy:
   -type, -identity-only, -allow   as for query-file, so that the policy
                matches the query file written with the same options
   -region      comma-separated regions to allow the actions in; global
@@ -224,8 +226,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		_, err := fmt.Fprintln(stdout, "moonwalk", buildVersion())
 		return err
 	}
-	if len(args) == 0 || !slices.Contains([]string{"serve", "view", "graph", "collect", "diff", "query-file", "iam-policy", "azure-role", "gcp-role"}, args[0]) {
-		return fmt.Errorf("expected one of the commands serve, view, graph, collect, diff, query-file, iam-policy, azure-role or gcp-role\n\n%s", usage)
+	if len(args) == 0 || !slices.Contains([]string{"serve", "view", "graph", "collect", "diff", "query-file", "aws-iam-policy", "azure-role", "gcp-role"}, args[0]) {
+		return fmt.Errorf("expected one of the commands serve, view, graph, collect, diff, query-file, aws-iam-policy, azure-role or gcp-role\n\n%s", usage)
 	}
 	command := args[0]
 	switch command {
@@ -233,8 +235,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) error {
 		return runQueryFile(args[1:], stdin, stdout)
 	case "diff":
 		return runDiff(args[1:], stdin, stdout, stderr)
-	case "iam-policy":
-		return runIAMPolicy(args[1:], stdin, stdout, stderr)
+	case "aws-iam-policy":
+		return runAWSIAMPolicy(args[1:], stdin, stdout, stderr)
 	case "azure-role":
 		return runAzureRole(args[1:], stdin, stdout, stderr)
 	case "gcp-role":

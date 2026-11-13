@@ -109,8 +109,8 @@ func writeQueryFile(w io.Writer, schema []byte, o queryFileOptions) error {
 			}
 			leftOut, identityBecause = plan.LeftOut, plan.IdentityBecause
 			leftOutNote = "Left out, because listing them takes an action that reads what is stored in the\n" +
-				"# service, which the policy from 'moonwalk iam-policy' withholds. To include one, give\n" +
-				"# both commands -allow with the action:"
+				"# service, which the policy from 'moonwalk aws-iam-policy' withholds. To include one,\n" +
+				"# give both commands -allow with the action:"
 		case "azurerm":
 			perms, err := azurerbac.Load()
 			if err != nil {
