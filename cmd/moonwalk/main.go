@@ -146,7 +146,12 @@ Options for aws-iam-policy:
   -region      comma-separated regions to allow the actions in; global
                services, such as IAM, are not held to them
   -account     the 12-digit account the policy is for, to limit resources
-               to it wherever an action can be limited
+               to it wherever an action can be limited. Without it, the
+               resources have * where the account goes, and the command
+               asks whether that is meant before it writes anything.
+  -any-account   answers that question with yes, for use in a script,
+               where there is no terminal to ask at and a missing -account
+               is otherwise an error
   -partition   aws (default), aws-us-gov or aws-cn
   -state       s3://bucket/key or s3://bucket/prefix/ to allow reading
                states from, as its own policy. May be given repeatedly.

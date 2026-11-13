@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -25,6 +26,7 @@ func runAWSIAMPolicy(args []string, stdin io.Reader, stdout, stderr io.Writer) e
 	types := fs.String("type", "", "")
 	regions := fs.String("region", "", "")
 	account := fs.String("account", "", "")
+	anyAccount := fs.Bool("any-account", false, "")
 	partition := fs.String("partition", "aws", "")
 	identityOnly := fs.Bool("identity-only", false, "")
 	allow := fs.String("allow", "", "")
@@ -40,6 +42,9 @@ func runAWSIAMPolicy(args []string, stdin io.Reader, stdout, stderr io.Writer) e
 	}
 	if len(keys) > 0 && len(states) == 0 {
 		return fmt.Errorf("-kms-key goes with -state: it is the key the states are encrypted with")
+	}
+	if *anyAccount && *account != "" {
+		return fmt.Errorf("-any-account says to write the policy for no account in particular, and -account names one; give one of them")
 	}
 
 	type file struct {
@@ -92,6 +97,13 @@ func runAWSIAMPolicy(args []string, stdin io.Reader, stdout, stderr io.Writer) e
 		}
 		if len(docs) == 0 {
 			return fmt.Errorf("nothing is known about the permissions of the %d types chosen; they were recorded from %s", len(listed), perms.Provider)
+		}
+		// Everything else about the request holds. Before anything is
+		// written, a policy for no account in particular is agreed to.
+		if *account == "" {
+			if err := confirmAnyAccount(stdin, stderr, *anyAccount, fs.Arg(0) == "-"); err != nil {
+				return err
+			}
 		}
 		for i, d := range docs {
 			files = append(files, file{fmt.Sprintf("moonwalk-discovery-%02d.json", i+1), d})
@@ -243,4 +255,44 @@ func providerListTypes(schema []byte, name string, patterns []string) (types []s
 	}
 	sort.Strings(types)
 	return types, global, nil
+}
+
+// isTerminal reports whether r is a terminal, where someone can be asked
+// a question. Tests replace it.
+var isTerminal = func(r io.Reader) bool {
+	f, ok := r.(*os.File)
+	if !ok {
+		return false
+	}
+	info, err := f.Stat()
+	return err == nil && info.Mode()&os.ModeCharDevice != 0
+}
+
+// confirmAnyAccount settles what happens when no account was given. The
+// policy's resources then have * where the account goes, which is wider
+// than a policy for one account has to be, so it is not written without
+// a yes: from -any-account, or typed at the terminal. Where there is
+// neither, such as in a script, it is an error and nothing is written.
+func confirmAnyAccount(stdin io.Reader, stderr io.Writer, accepted, stdinTaken bool) error {
+	const warning = "moonwalk: warning: no -account was given, so the resources in the policy are not limited to an account. " +
+		"Each has * where the account goes: arn:aws:ec2:*:*:vpc/* where -account 111122223333 gives arn:aws:ec2:*:111122223333:vpc/*."
+	const remedy = "give -account with the 12-digit account the policy is for, or -any-account to write it for no account in particular"
+	if accepted {
+		fmt.Fprintln(stderr, warning)
+		return nil
+	}
+	if stdinTaken || !isTerminal(stdin) {
+		return fmt.Errorf("no -account was given, and there is no terminal to ask at whether that is meant: %s", remedy)
+	}
+	fmt.Fprintf(stderr, "%s\nWrite the policy for any account? [y/N] ", warning)
+	answer, _ := bufio.NewReader(stdin).ReadString('\n')
+	if !strings.HasSuffix(answer, "\n") {
+		// The input ended without an answer; what follows starts a line.
+		fmt.Fprintln(stderr)
+	}
+	switch strings.ToLower(strings.TrimSpace(answer)) {
+	case "y", "yes":
+		return nil
+	}
+	return fmt.Errorf("nothing was written; %s", remedy)
 }

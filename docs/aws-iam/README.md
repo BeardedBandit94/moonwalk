@@ -23,6 +23,14 @@ Give `aws-iam-policy` and `query-file` the same schema and the same `-type`,
 `-identity-only` and `-allow`, and the policy allows what the query file
 asks for and nothing else.
 
+Always give `-account`. Without it every resource has `*` where the
+account goes: `arn:aws:ec2:*:*:vpc/*` where `-account 111122223333` gives
+`arn:aws:ec2:*:111122223333:vpc/*`. The command does not write that
+unasked. At a terminal it warns and asks `[y/N]`. In a script, where there
+is nobody to ask, it stops with an error, unless `-any-account` says that a
+policy for no account in particular is what is wanted, such as one kept as
+a template.
+
 ## The rules the policies keep
 
 1. **Every action is named in full.** No `*` or `?` in any action; no

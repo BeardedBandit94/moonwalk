@@ -268,6 +268,12 @@ AWS's Service Reference; they have not been tried against a real account.
 If the role lacks an action, the listing is refused it, and moonwalk says
 which.
 
+Give `-account`. Without it the resources have `*` where the account goes,
+which is wider than a policy for one account has to be, so the command
+warns and asks before it writes anything. In a script, where there is
+nobody to ask, it stops with an error unless `-any-account` says that a
+policy for no account in particular is what is wanted.
+
 Three actions that the provider calls return what a service stores:
 `lambda:GetFunction` (a link to the code), `s3:ListBucket` (a bucket's
 objects) and `ssm:GetParameter` (a parameter's value). They are left out,
@@ -777,7 +783,8 @@ moonwalk aws-iam-policy [options] [<schema>]
 | `-type list` | every type the provider can list | As for `query-file`, so that the policy matches the query file. |
 | `-identity-only` | off | As for `query-file`. About two thirds of the actions. |
 | `-allow list` | none | As for `query-file`: adds the named actions that are otherwise withheld. |
-| `-account id` | none | The 12-digit account the policy is for. Resources are limited to it wherever an action can be limited. Without it, the account in each resource is left open, so give it. |
+| `-account id` | none | The 12-digit account the policy is for. Resources are limited to it wherever an action can be limited. Without it, each resource has `*` where the account goes, and the command warns and asks `[y/N]` at the terminal before it writes anything. Where there is no terminal to ask at, a missing `-account` is an error. |
+| `-any-account` | off | Answers that question with yes, so that a script can write a policy for no account in particular without being asked. The warning is still printed. Not to be given with `-account`. |
 | `-region list` | none | Regions to allow the actions in, by condition. Global services, such as IAM, are not held to them. Without it, the actions are allowed in every region. |
 | `-partition name` | `aws` | `aws`, `aws-us-gov` or `aws-cn`. |
 | `-out dir` | standard output | The directory to write the policy documents to. Needed when there is more than one, since IAM limits a policy's size. |
