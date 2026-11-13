@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -186,24 +187,25 @@ func TestAWSIAMPolicyCommand(t *testing.T) {
 	}
 
 	// Narrowed to one type, for identities: the one action that takes.
-	out, err = runCLI(t, schema, "aws-iam-policy", "-type", "aws_vpc", "-identity-only", "-")
+	out, err = runCLI(t, schema, "aws-iam-policy", "-any-account", "-type", "aws_vpc", "-identity-only", "-")
 	if err != nil || strings.Count(out, `"ec2:`) != 1 || !strings.Contains(out, `"ec2:DescribeVpcs"`) {
 		t.Errorf("one type, identities only (err %v):\n%s", err, out)
 	}
 
 	// Without a schema: what the recorded provider can list.
-	out, warnings, err = runCLIWithWarnings(t, "", "aws-iam-policy", "-type", "aws_iam_*", "-identity-only")
+	out, warnings, err = runCLIWithWarnings(t, "", "aws-iam-policy", "-any-account", "-type", "aws_iam_*", "-identity-only")
 	if err != nil || !strings.Contains(out, `"iam:ListUsers"`) || !strings.Contains(warnings, "no provider schema was given") {
 		t.Errorf("without a schema (err %v, warnings %q):\n%s", err, warnings, out)
 	}
 
 	// More than one document needs somewhere to go.
-	if _, err := runCLI(t, "", "aws-iam-policy"); err == nil || !strings.Contains(err.Error(), "-out") {
+	if _, err := runCLI(t, "", "aws-iam-policy", "-any-account"); err == nil || !strings.Contains(err.Error(), "-out") {
 		t.Errorf("several documents and no directory: %v", err)
 	}
 
 	for name, args := range map[string][]string{
 		"an account that is not one": {"aws-iam-policy", "-account", "prod", "-type", "aws_vpc"},
+		"an account and any account": {"aws-iam-policy", "-account", "111122223333", "-any-account", "-type", "aws_vpc"},
 		"a key without states":       {"aws-iam-policy", "-kms-key", "arn:aws:kms:eu-west-1:111122223333:key/1234abcd-12ab-34cd-56ef-1234567890ab", "-type", "aws_vpc"},
 		"states that are not in S3":  {"aws-iam-policy", "-state", "terraform.tfstate"},
 		"an action not withheld":     {"aws-iam-policy", "-allow", "s3:GetObject", "-type", "aws_vpc"},
@@ -225,7 +227,7 @@ func TestWithheldActionsInPolicyAndQueryFile(t *testing.T) {
 	  "aws_ssm_parameter":{"block":{"attributes":{"region":{"type":"string","optional":true}}}},
 	  "aws_sqs_queue":{"block":{"attributes":{"region":{"type":"string","optional":true}}}}}}}}`
 
-	policy, warnings, err := runCLIWithWarnings(t, lambdaAndParameters, "aws-iam-policy", "-")
+	policy, warnings, err := runCLIWithWarnings(t, lambdaAndParameters, "aws-iam-policy", "-any-account", "-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -257,7 +259,7 @@ func TestWithheldActionsInPolicyAndQueryFile(t *testing.T) {
 	}
 
 	// Asked for by name, in both.
-	policy, _, err = runCLIWithWarnings(t, lambdaAndParameters, "aws-iam-policy", "-allow", "lambda:GetFunction,ssm:GetParameter", "-")
+	policy, _, err = runCLIWithWarnings(t, lambdaAndParameters, "aws-iam-policy", "-any-account", "-allow", "lambda:GetFunction,ssm:GetParameter", "-")
 	if err != nil || !strings.Contains(policy, `"lambda:GetFunction"`) || !strings.Contains(policy, `"ssm:GetParameter"`) {
 		t.Errorf("allowed by name (err %v):\n%s", err, policy)
 	}
@@ -276,5 +278,59 @@ func TestRefusedActionsAreNamed(t *testing.T) {
 	_, warnings, err := runCLIWithWarnings(t, listing, "graph", "cloud=-")
 	if err != nil || !strings.Contains(warnings, "were refused 2 actions: ec2:DescribeVpcs, iam:ListRoles.") {
 		t.Errorf("err %v, warnings %q", err, warnings)
+	}
+}
+
+// Without an account, the policy's resources are open where the account
+// goes. That is never written unasked: it takes a yes at the terminal, or
+// -any-account where there is no terminal.
+func TestPolicyForNoAccountIsAgreedTo(t *testing.T) {
+	args := []string{"aws-iam-policy", "-type", "aws_vpc"}
+	const open, limited = `"arn:aws:ec2:*:*:vpc/*"`, `"arn:aws:ec2:*:111122223333:vpc/*"`
+
+	// With an account there is nothing to ask.
+	out, warnings, err := runCLIWithWarnings(t, "", append(args, "-account", "111122223333")...)
+	if err != nil || !strings.Contains(out, limited) || strings.Contains(warnings, "-account") {
+		t.Errorf("with an account (err %v, warnings %q):\n%s", err, warnings, out)
+	}
+
+	// In a script: an error that names both ways out, and no policy.
+	out, _, err = runCLIWithWarnings(t, "", args...)
+	if err == nil || out != "" || !strings.Contains(err.Error(), "-account") || !strings.Contains(err.Error(), "-any-account") {
+		t.Errorf("no account and no terminal (err %v):\n%s", err, out)
+	}
+	// The same where standard input is the schema: it cannot also be asked.
+	asked := isTerminal
+	defer func() { isTerminal = asked }()
+	isTerminal = func(io.Reader) bool { return true }
+	const schema = `{"format_version":"1.0","provider_schemas":{"registry.terraform.io/hashicorp/aws":{"list_resource_schemas":{
+	  "aws_vpc":{"block":{"attributes":{"region":{"type":"string","optional":true}}}}}}}}`
+	if out, err := runCLI(t, schema, "aws-iam-policy", "-"); err == nil || out != "" {
+		t.Errorf("the schema on standard input (err %v):\n%s", err, out)
+	}
+
+	// At a terminal: asked, with what it means, and written on a yes.
+	for answer, written := range map[string]bool{"y\n": true, "YES\n": true, "n\n": false, "\n": false, "": false, "maybe\n": false} {
+		out, warnings, err := runCLIWithWarnings(t, answer, args...)
+		if !strings.Contains(warnings, "warning: no -account was given") || !strings.Contains(warnings, "[y/N]") {
+			t.Errorf("answer %q: not asked: %q", answer, warnings)
+		}
+		if written != (err == nil && strings.Contains(out, open)) || (!written && (err == nil || out != "")) {
+			t.Errorf("answer %q (err %v):\n%s", answer, err, out)
+		}
+	}
+	isTerminal = asked
+
+	// Agreed to beforehand: warned, not asked, and written.
+	out, warnings, err = runCLIWithWarnings(t, "", append(args, "-any-account")...)
+	if err != nil || !strings.Contains(out, open) || !strings.Contains(warnings, "warning: no -account was given") || strings.Contains(warnings, "[y/N]") {
+		t.Errorf("-any-account (err %v, warnings %q):\n%s", err, warnings, out)
+	}
+
+	// Only states: their policy names buckets, which have no account in
+	// them, so there is nothing to agree to.
+	out, warnings, err = runCLIWithWarnings(t, "", "aws-iam-policy", "-state", "s3://example-terraform-states/")
+	if err != nil || !strings.Contains(out, "arn:aws:s3:::example-terraform-states") || strings.Contains(warnings, "-account") {
+		t.Errorf("states only (err %v, warnings %q):\n%s", err, warnings, out)
 	}
 }
