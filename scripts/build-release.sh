@@ -3,9 +3,10 @@
 #
 #   scripts/build-release.sh 0.1.0 dist
 #
-# An archive holds the binary, the licence and notice, the README and the
-# licences of what the binary is built from. Nothing is published; the release workflow
-# does that with what this leaves behind.
+# An archive holds the binary, the licence and notice, the README with the
+# permission guides it links to, the changelog, and the licences of what the
+# binary is built from. Nothing is published; the release workflow does that
+# with what this leaves behind.
 set -euo pipefail
 
 version=${1:?usage: build-release.sh <version> <directory>}
@@ -19,6 +20,7 @@ work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
 scripts/third-party-licenses.sh > "$work/THIRD_PARTY_LICENSES"
+contents=(LICENSE NOTICE README.md CHANGELOG.md THIRD_PARTY_LICENSES docs)
 
 for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
   os=${target%/*}
@@ -32,11 +34,14 @@ for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 wi
   mkdir "$dir"
   CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -trimpath \
     -ldflags "-s -w -X main.version=$version" -o "$dir/$binary" ./cmd/moonwalk
-  cp LICENSE NOTICE README.md "$work/THIRD_PARTY_LICENSES" "$dir/"
+  cp LICENSE NOTICE README.md CHANGELOG.md "$work/THIRD_PARTY_LICENSES" "$dir/"
+  # The README's links to the permission guides are relative, so the
+  # guides go where the links lead.
+  cp -R docs "$dir/docs"
   if [ "$os" = windows ]; then
-    (cd "$dir" && zip -q "$out/$name.zip" "$binary" LICENSE NOTICE README.md THIRD_PARTY_LICENSES)
+    (cd "$dir" && zip -q -r "$out/$name.zip" "$binary" "${contents[@]}")
   else
-    tar -C "$dir" -czf "$out/$name.tar.gz" "$binary" LICENSE NOTICE README.md THIRD_PARTY_LICENSES
+    tar -C "$dir" -czf "$out/$name.tar.gz" "$binary" "${contents[@]}"
   fi
   echo "built $name"
 done

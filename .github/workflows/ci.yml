@@ -58,6 +58,14 @@ jobs:
           tar -xzf moonwalk_0.0.0-ci_linux_amd64.tar.gz
           test "$(./moonwalk version)" = "moonwalk 0.0.0-ci"
           test -s THIRD_PARTY_LICENSES && test -s NOTICE && test -s LICENSE
+          test -s README.md && test -s CHANGELOG.md
+          # The permission guides the README links to.
+          test -s docs/aws-iam/README.md && test -s docs/azure-rbac/README.md && test -s docs/gcp-iam/README.md
+          test -s docs/aws-iam/with-attributes/moonwalk-discovery-01.json && test -s docs/gcp-iam/moonwalk-discovery.yaml
+          unzip -l moonwalk_0.0.0-ci_windows_amd64.zip | grep -q "docs/azure-rbac/with-attributes.json"
+      - name: Check the release notes
+        # The newest section of the changelog is what the next tag publishes.
+        run: scripts/release-notes.sh "$(grep -m1 '^## v' CHANGELOG.md | cut -c4-)" | grep -q .
       - name: Check the Homebrew formula
         run: scripts/homebrew-formula.sh 0.0.0-ci dist > moonwalk.rb && ruby -c moonwalk.rb
       - name: Build the container image
