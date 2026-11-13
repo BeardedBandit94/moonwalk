@@ -3,7 +3,9 @@ name: Release
 # Pushing a tag such as v0.1.0 publishes that version: archives for Linux,
 # macOS and Windows with their checksums on the releases page, and a
 # container image at ghcr.io. A tag with a suffix, such as v0.2.0-rc1, is
-# published as a pre-release and does not become "latest".
+# published as a pre-release and does not become "latest". The release notes
+# are the version's section of CHANGELOG.md, so a tag without one fails
+# before anything is built.
 on:
   push:
     tags: ["v*"]
@@ -20,6 +22,8 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+      - name: Read the release notes
+        run: scripts/release-notes.sh "$GITHUB_REF_NAME" > "$RUNNER_TEMP/notes.md"
       - name: Test
         run: go vet ./... && go test ./...
       - name: Build the archives
@@ -32,7 +36,8 @@ jobs:
         run: |
           flags=()
           case "$GITHUB_REF_NAME" in *-*) flags+=(--prerelease) ;; esac
-          gh release create "$GITHUB_REF_NAME" dist/* --verify-tag --generate-notes "${flags[@]}"
+          gh release create "$GITHUB_REF_NAME" dist/* --verify-tag \
+            --notes-file "$RUNNER_TEMP/notes.md" --generate-notes "${flags[@]}"
       - name: Publish the container image
         env:
           TOKEN: ${{ github.token }}

@@ -861,6 +861,8 @@ moonwalk version
 | `internal/web` | The explorer: a JSON API over the graph and the browser front end |
 | `e2e` | A browser test of the explorer; not part of the build |
 | `internal/tfaddr` | Parsing of Terraform resource addresses |
+| `scripts` | Building a release, its licences, notes and Homebrew formula; not part of the build |
+| `CHANGELOG.md` | What changed in each release; a version's section becomes its release notes |
 
 New inputs (HCL, live discovery) are added as further adapters that produce a
 `graph.Graph`; nothing outside an adapter should know its source format.
@@ -903,22 +905,27 @@ go test ./internal/tfstate -run '^$' -bench Load100k
 
 ### Releasing
 
-Pushing a tag publishes that version:
+Write the version's section in [CHANGELOG.md](CHANGELOG.md) first: it
+becomes the release notes, and a tag without one fails before anything is
+built. Then pushing a tag publishes that version:
 
 ```bash
-git tag v0.1.0
+git tag v0.2.0
 ```
 
 ```bash
-git push origin v0.1.0
+git push origin v0.2.0
 ```
 
 The release workflow tests the tag, builds archives for Linux, macOS and
 Windows on amd64 and arm64 with their checksums, attaches them and a
 Homebrew formula to a release on GitHub, and pushes a container image to
-`ghcr.io`. A tag with a suffix, such as `v0.2.0-rc1`, becomes a pre-release.
-`scripts/build-release.sh 0.1.0 dist` builds the same archives locally, and
-every pull request builds them, and the image, without publishing.
+`ghcr.io`. An archive holds the binary, this README with the permission
+guides under `docs`, the changelog and the licences. A tag with a suffix,
+such as `v0.2.0-rc1`, becomes a pre-release, with the notes of the release
+it leads to. `scripts/build-release.sh 0.2.0 dist` builds the same archives
+locally, and every pull request builds them, and the image, without
+publishing.
 
 ## Credits
 
