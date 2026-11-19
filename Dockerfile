@@ -5,7 +5,7 @@
 # The build stage runs on the machine doing the build and compiles for the
 # platform the image is for, so an image for another architecture needs no
 # emulation.
-FROM --platform=$BUILDPLATFORM golang:1.25 AS build
+FROM --platform=$BUILDPLATFORM golang:1.27 AS build
 ARG TARGETOS
 ARG TARGETARCH
 ARG VERSION=
